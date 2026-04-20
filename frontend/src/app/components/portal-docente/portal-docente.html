@@ -1,0 +1,230 @@
+<div class="pd-wrapper">
+
+  <!-- ═══════════════════ TOP NAVBAR ═══════════════════ -->
+  <header class="pd-navbar">
+    <div class="pd-navbar-left">
+      <img src="images/logo.png" class="pd-logo" alt="Logo" />
+      <span class="pd-school-name">San Agustín Campus</span>
+    </div>
+    <div class="pd-navbar-right">
+      <div class="pd-user-info">
+        <span class="pd-user-role">docente</span>
+        <span class="pd-user-name">{{ nombre }}</span>
+      </div>
+      <div class="pd-avatar-wrapper">
+        <button class="pd-avatar" (click)="toggleDropdown()">{{ iniciales }}</button>
+        @if (dropdownOpen()) {
+          <div class="pd-dropdown">
+            <div class="pd-dropdown-header">
+              <span class="pd-dh-name">{{ nombre }}</span>
+              <span class="pd-dh-code">{{ codigo }}</span>
+            </div>
+            <button class="pd-dropdown-item logout" (click)="logout()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Cerrar sesión
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════ BODY ═══════════════════ -->
+  <div class="pd-body">
+
+    <!-- ── Left Sidebar ── -->
+    <aside class="pd-sidebar-left">
+      @for (item of navItems; track item.id) {
+        <button
+          class="pd-nav-item"
+          [class.active]="activeSection() === item.id"
+          (click)="setSection(item.id)">
+          <span class="pd-nav-icon">
+            @switch (item.id) {
+              @case ('inicio') {
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/>
+                  <polyline points="9 21 9 13 15 13 15 21"/>
+                </svg>
+              }
+              @case ('calendario') {
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              }
+              @case ('mensajes') {
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/>
+                  <polyline points="2 4 12 13 22 4"/>
+                </svg>
+              }
+              @case ('refuerzos') {
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+              }
+            }
+          </span>
+          <span class="pd-nav-label">{{ item.label }}</span>
+        </button>
+      }
+    </aside>
+
+    <!-- ── Main Content ── -->
+    <main class="pd-main">
+
+      @if (activeSection() === 'inicio') {
+        <h2 class="pd-section-title">Mis cursos</h2>
+
+        <!-- Filter bar -->
+        <div class="pd-filter-bar">
+          <div class="pd-grade-tabs">
+            @for (g of grades(); track g) {
+              <button
+                class="pd-grade-btn"
+                [class.active]="activeGrade() === g"
+                (click)="setGrade(g)">
+                {{ g }}
+              </button>
+            }
+          </div>
+          <div class="pd-year-filter">
+            <label class="pd-year-label">Año</label>
+            <select class="pd-year-select" [value]="selectedYear()" (change)="setYear($any($event.target).value)">
+              @for (y of years; track y) {
+                <option [value]="y">{{ y }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Course grid -->
+        <div class="pd-courses-grid">
+          @for (curso of filteredCursos(); track curso.nombre) {
+            <div class="pd-course-card" [style.background-color]="curso.color">
+              <div class="pd-card-badge">{{ curso.badge }}</div>
+
+              <div class="pd-card-icon">
+                @switch (curso.iconType) {
+                  @case ('algebra') {
+                    <svg width="52" height="52" viewBox="0 0 60 60" fill="none">
+                      <polygon points="30,8 54,50 6,50" stroke="#0d1b2a" stroke-width="3" fill="#1e3557" opacity="0.7"/>
+                      <line x1="30" y1="8" x2="30" y2="50" stroke="#ffffff" stroke-width="2"/>
+                      <line x1="18" y1="38" x2="42" y2="38" stroke="#ffffff" stroke-width="2"/>
+                    </svg>
+                  }
+                  @case ('trigo') {
+                    <svg width="52" height="52" viewBox="0 0 60 60" fill="none">
+                      <rect x="8"  y="30" width="10" height="22" rx="2" fill="#c1121f" opacity="0.6"/>
+                      <rect x="24" y="18" width="10" height="34" rx="2" fill="#c1121f" opacity="0.8"/>
+                      <rect x="40" y="8"  width="10" height="44" rx="2" fill="#c1121f"/>
+                    </svg>
+                  }
+                  @case ('razon') {
+                    <svg width="52" height="52" viewBox="0 0 60 60" fill="none">
+                      <rect x="8"  y="8"  width="20" height="20" rx="2" fill="#0d1b2a"/>
+                      <rect x="32" y="8"  width="20" height="20" rx="2" fill="#0d1b2a"/>
+                      <rect x="8"  y="32" width="20" height="20" rx="2" fill="#0d1b2a"/>
+                      <rect x="32" y="32" width="20" height="20" rx="2" fill="#0d1b2a"/>
+                      <text x="14" y="24" font-size="11" fill="white" font-weight="bold">1</text>
+                      <text x="38" y="24" font-size="11" fill="white" font-weight="bold">2</text>
+                      <text x="14" y="48" font-size="11" fill="white" font-weight="bold">3</text>
+                      <text x="38" y="48" font-size="11" fill="white" font-weight="bold">4</text>
+                    </svg>
+                  }
+                  @case ('historia') {
+                    <svg width="52" height="52" viewBox="0 0 60 60" fill="none">
+                      <rect x="6" y="46" width="48" height="6" rx="2" fill="#0d1b2a"/>
+                      <rect x="10" y="36" width="6" height="12" fill="#1e3557"/>
+                      <rect x="21" y="30" width="6" height="18" fill="#1e3557"/>
+                      <rect x="33" y="30" width="6" height="18" fill="#1e3557"/>
+                      <rect x="44" y="36" width="6" height="12" fill="#1e3557"/>
+                      <polygon points="30,10 8,36 52,36" fill="#0d1b2a"/>
+                    </svg>
+                  }
+                  @case ('comunica') {
+                    <svg width="52" height="52" viewBox="0 0 60 60" fill="none">
+                      <rect x="14" y="10" width="14" height="42" rx="4" transform="rotate(-30 30 30)" fill="#c1121f"/>
+                      <rect x="11" y="10" width="14" height="8" rx="2" transform="rotate(-30 30 30)" fill="#8a0d15"/>
+                      <polygon points="10,48 16,44 14,52" fill="#0d1b2a"/>
+                    </svg>
+                  }
+                  @case ('geo') {
+                    <svg width="52" height="52" viewBox="0 0 60 60" fill="none">
+                      <circle cx="30" cy="30" r="22" stroke="#c1121f" stroke-width="2.5" fill="#c1121f" opacity="0.1"/>
+                      <circle cx="30" cy="30" r="22" stroke="#c1121f" stroke-width="2.5" fill="none"/>
+                      <ellipse cx="30" cy="30" rx="12" ry="22" stroke="#c1121f" stroke-width="1.8" fill="none"/>
+                      <line x1="8" y1="30" x2="52" y2="30" stroke="#c1121f" stroke-width="1.5"/>
+                      <line x1="12" y1="18" x2="48" y2="18" stroke="#c1121f" stroke-width="1"/>
+                      <line x1="12" y1="42" x2="48" y2="42" stroke="#c1121f" stroke-width="1"/>
+                    </svg>
+                  }
+                }
+              </div>
+
+              <div class="pd-card-info">
+                <h4 class="pd-card-title">{{ curso.nombre }}</h4>
+                <p class="pd-card-sub">{{ curso.grado }} · Sección {{ curso.seccion }}</p>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      @if (activeSection() === 'calendario') {
+        <div class="pd-placeholder">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <p>Calendario — en desarrollo</p>
+        </div>
+      }
+
+      @if (activeSection() === 'mensajes') {
+        <div class="pd-placeholder">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <polyline points="2 4 12 13 22 4"/>
+          </svg>
+          <p>Mensajes — en desarrollo</p>
+        </div>
+      }
+
+      @if (activeSection() === 'refuerzos') {
+        <div class="pd-placeholder">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <p>Refuerzos — en desarrollo</p>
+        </div>
+      }
+
+    </main>
+
+    <!-- ── Right Sidebar ── -->
+    <aside class="pd-sidebar-right">
+      <h3 class="pd-review-title">POR REVISAR</h3>
+      @for (item of pendientes; track item.titulo + item.grado) {
+        <div class="pd-review-item">
+          <div class="pd-review-meta">{{ item.grado }} · {{ item.curso }}</div>
+          <div class="pd-review-tarea">{{ item.titulo }}</div>
+          <div class="pd-review-tema">{{ item.tema }}</div>
+        </div>
+      }
+      @if (pendientes.length === 0) {
+        <p class="pd-review-empty">Sin pendientes</p>
+      }
+    </aside>
+
+  </div>
+</div>
