@@ -1,0 +1,230 @@
+.login-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 27, 42, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.login-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 2.5rem 2rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.login-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #f0f2f5;
+  border: none;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #555;
+  transition: background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: #c1121f;
+    color: #ffffff;
+  }
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+
+  .login-logo {
+    height: 72px;
+    width: auto;
+    margin-bottom: 0.85rem;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #0d1b2a;
+    margin-bottom: 0.2rem;
+  }
+
+  p {
+    font-size: 0.85rem;
+    color: #888;
+  }
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0d1b2a;
+  }
+
+  .input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    border: 1.5px solid #dde1e7;
+    border-radius: 8px;
+    padding: 0 0.9rem;
+    background: #f8f9fa;
+    transition: border-color 0.2s ease;
+
+    &:focus-within {
+      border-color: #c1121f;
+      background: #ffffff;
+    }
+
+    svg {
+      flex-shrink: 0;
+      color: #aaa;
+    }
+
+    input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 0.7rem 0;
+      font-size: 0.9rem;
+      color: #0d1b2a;
+      outline: none;
+
+      &::placeholder {
+        color: #bbb;
+      }
+    }
+
+    .toggle-pass {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #aaa;
+      display: flex;
+      align-items: center;
+      padding: 0;
+      transition: color 0.2s ease;
+
+      &:hover { color: #0d1b2a; }
+    }
+  }
+}
+
+.form-remember {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: #555;
+
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 22px;
+    flex-shrink: 0;
+
+    input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #ccc;
+      border-radius: 22px;
+      cursor: pointer;
+      transition: background 0.25s ease;
+
+      &::before {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        left: 3px;
+        top: 3px;
+        background: white;
+        border-radius: 50%;
+        transition: transform 0.25s ease;
+      }
+    }
+
+    input:checked + .slider {
+      background: #c1121f;
+    }
+
+    input:checked + .slider::before {
+      transform: translateX(16px);
+    }
+  }
+}
+
+.btn-login {
+  background-color: #c1121f;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.85rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background 0.25s ease, transform 0.15s ease;
+
+  &:hover:not(.loading) {
+    background-color: #a50e19;
+    transform: translateY(-1px);
+  }
+
+  &.loading {
+    opacity: 0.8;
+    cursor: not-allowed;
+  }
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(255,255,255,0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

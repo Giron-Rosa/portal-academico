@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { Navbar } from '../navbar/navbar';
 import { Footer } from '../footer/footer';
+import { Login } from '../login/login';
 
 interface Slide {
   image: string;
@@ -9,7 +10,7 @@ interface Slide {
 
 @Component({
   selector: 'app-home',
-  imports: [Navbar, Footer],
+  imports: [Navbar, Footer, Login],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
