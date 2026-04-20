@@ -1,7 +1,406 @@
 <app-navbar />
 
-<main>
-  <p>Bienvenido al Portal Académico</p>
-</main>
+<div class="hero-carousel">
+  @for (slide of slides; track $index) {
+    <div
+      class="carousel-slide"
+      [class.active]="currentIndex() === $index"
+      [style.backgroundImage]="'url(' + slide.image + ')'">
+      <div class="carousel-overlay">
+        <p class="carousel-message">{{ slide.message }}</p>
+      </div>
+    </div>
+  }
+
+  <button class="carousel-btn carousel-prev" (click)="prev()">&#8249;</button>
+  <button class="carousel-btn carousel-next" (click)="next()">&#8250;</button>
+
+  <div class="carousel-dots">
+    @for (slide of slides; track $index) {
+      <span
+        class="dot"
+        [class.active]="currentIndex() === $index"
+        (click)="goTo($index)">
+      </span>
+    }
+  </div>
+</div>
+
+<!-- ===== SECCIÓN NOSOTROS ===== -->
+<section id="nosotros" class="nosotros-section">
+
+  <!-- Nuestra Historia -->
+  <div class="historia-container">
+    <h2 class="section-title">Nuestra Historia</h2>
+    <p class="section-subtitle">Más de 120 años formando líderes con valores agustinos</p>
+
+    <div class="timeline">
+
+      <div class="timeline-item left">
+        <div class="timeline-year">1903</div>
+        <div class="timeline-content">
+          <h3>Fundación del Colegio</h3>
+          <p>Fundado por la Orden Agustina el 15 de marzo bajo la dirección del Fr. Ignacio Monasterio, en el Convento San Agustín del Jirón Ica, en el centro histórico de Lima. Nació como internado para cerca de 80 alumnos, con maestros pertenecientes íntegramente a la orden religiosa, ganando rápidamente prestigio entre las familias más prominentes de Lima.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item right">
+        <div class="timeline-year">1955</div>
+        <div class="timeline-content">
+          <h3>Traslado a San Isidro</h3>
+          <p>El colegio se trasladó a su sede actual en San Isidro, consolidándose con importantes hitos: la inauguración de la Capilla (1958), la Biblioteca Escolar (1959) y el gran Coliseo con capacidad para 2,000 espectadores (1969). En 1978, por sus Bodas de Diamante, fue inscrito en el Registro de Honor del Ministerio de Educación.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item left">
+        <div class="timeline-year">1985</div>
+        <div class="timeline-content">
+          <h3>Expansión Educativa</h3>
+          <p>Se amplió la oferta educativa con un local de Educación Inicial en Monterrico. En 1993 inició la transición hacia la coeducación mixta, graduando a su primera promoción bajo ese modelo en 2004. Una etapa de transformación que consolidó el proyecto educativo integral del colegio.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item right">
+        <div class="timeline-year">2003</div>
+        <div class="timeline-content">
+          <h3>Celebración del Centenario</h3>
+          <p>Una importante expansión de infraestructura marcó este período: la inauguración del Auditorio en 2001 y la construcción del Pabellón Centenario en 2003, erigido para celebrar los 100 años de historia y excelencia del colegio. Un legado arquitectónico al servicio de la educación.</p>
+        </div>
+      </div>
+
+      <div class="timeline-item left">
+        <div class="timeline-year">Egresados</div>
+        <div class="timeline-content">
+          <h3>Ilustres Egresados</h3>
+          <p>Entre sus egresados más destacados se encuentran <strong>Javier Pérez de Cuéllar</strong> (Ex-Secretario General de la ONU y Primer Ministro del Perú), el filósofo <strong>Augusto Salazar Bondy</strong>, el escritor <strong>César Miró-Quesada Bahamonde</strong> y <strong>Gonzalo Ortiz de Zevallos Roedel</strong>, primer Fiscal de la Nación, entre otros.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Misión y Visión -->
+  <div class="mision-vision-container">
+
+    <div class="mv-card">
+      <div class="mv-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+        </svg>
+      </div>
+      <h3 class="mv-title">Misión</h3>
+      <p class="mv-text">Formar líderes cristianos capaces de conformar familias unidas en el amor, desarrollarse profesionalmente en la sociedad del conocimiento y transformar el mundo participando en la misión evangelizadora de la Iglesia al estilo de San Agustín.</p>
+    </div>
+
+    <div class="mv-card">
+      <div class="mv-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+      </div>
+      <h3 class="mv-title">Visión</h3>
+      <p class="mv-text">Ser una comunidad educativa cristiana y agustina en busca de la Verdad y del Otro, que brinde una educación de calidad internacional y una formación integral a los estudiantes, involucrando a las familias en un clima de libertad y respeto a la persona, y que salga al encuentro y servicio de la sociedad en fraternidad y solidaridad.</p>
+    </div>
+
+  </div>
+
+</section>
+
+<!-- ===== SECCIÓN INFRAESTRUCTURA ===== -->
+<section id="infraestructura" class="infraestructura-section">
+  <div class="infra-container">
+    <h2 class="section-title">Nuestra Infraestructura</h2>
+    <p class="section-subtitle">Contamos con una amplia y moderna infraestructura diseñada para todas las necesidades educativas.</p>
+
+    <div class="infra-grid">
+
+      <div class="infra-card">
+        <div class="infra-card-img">
+          <img src="images/area1.jpg" alt="Auditorio" />
+          <div class="infra-card-overlay">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+        </div>
+        <span class="infra-card-name">Auditorio</span>
+      </div>
+
+      <div class="infra-card">
+        <div class="infra-card-img">
+          <img src="images/area2.jpg" alt="Laboratorios" />
+          <div class="infra-card-overlay">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/>
+            </svg>
+          </div>
+        </div>
+        <span class="infra-card-name">Laboratorios</span>
+      </div>
+
+      <div class="infra-card">
+        <div class="infra-card-img">
+          <img src="images/area4.jpg" alt="Capilla y Oratorio" />
+          <div class="infra-card-overlay">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+        </div>
+        <span class="infra-card-name">Capilla y Oratorio</span>
+      </div>
+
+      <div class="infra-card">
+        <div class="infra-card-img">
+          <img src="images/area5.jpg" alt="Salas de Música y Arte" />
+          <div class="infra-card-overlay">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="9" cy="18" r="3"/><circle cx="18" cy="15" r="3"/>
+              <path d="M12 18V2l9-2v4"/>
+            </svg>
+          </div>
+        </div>
+        <span class="infra-card-name">Salas de Música y Arte</span>
+      </div>
+
+      <div class="infra-card">
+        <div class="infra-card-img">
+          <img src="images/area6.jpg" alt="Patios" />
+          <div class="infra-card-overlay">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            </svg>
+          </div>
+        </div>
+        <span class="infra-card-name">Patios</span>
+      </div>
+
+      <div class="infra-card">
+        <div class="infra-card-img">
+          <img src="images/area7.jpg" alt="Espacios Deportivos" />
+          <div class="infra-card-overlay">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M14.12 9.88a3 3 0 1 0-4.24 4.24 3 3 0 0 0 4.24-4.24z"/>
+            </svg>
+          </div>
+        </div>
+        <span class="infra-card-name">Espacios Deportivos</span>
+      </div>
+
+      <div class="infra-card">
+        <div class="infra-card-img">
+          <img src="images/area3.jpg" alt="Comedor" />
+          <div class="infra-card-overlay">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+              <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/>
+              <line x1="14" y1="1" x2="14" y2="4"/>
+            </svg>
+          </div>
+        </div>
+        <span class="infra-card-name">Comedor</span>
+      </div>
+
+      <div class="infra-card">
+        <div class="infra-card-img">
+          <img src="images/area8.jpg" alt="Sala de Conferencias" />
+          <div class="infra-card-overlay">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+        </div>
+        <span class="infra-card-name">Sala de Conferencias</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECCIÓN NIVEL EDUCATIVO ===== -->
+<section id="nivel-educativo" class="nivel-section">
+  <div class="nivel-container">
+    <h2 class="section-title dark">Niveles Educativos</h2>
+    <p class="section-subtitle dark">Formación integral en cada etapa del desarrollo de nuestros estudiantes.</p>
+
+    <div class="nivel-list">
+
+      <!-- Nivel Inicial -->
+      <div class="nivel-item">
+        <div class="nivel-badge">
+          <div class="nivel-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a5 5 0 1 0 0 10A5 5 0 0 0 12 2z"/>
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+            </svg>
+          </div>
+          <span class="nivel-label">Inicial</span>
+        </div>
+        <div class="nivel-content">
+          <h3>Nivel Inicial</h3>
+          <p>En el Nivel Inicial, el aprendizaje se construye a través de proyectos que despiertan la curiosidad y desarrollan habilidades de indagación. Uno de los más destacados: «Donde nos encontramos en el tiempo y el espacio», donde los niños investigan culturas del mundo, desarrollando inglés en contextos reales, empatía y pensamiento crítico — alineados con la formación agustiniana.</p>
+        </div>
+      </div>
+
+      <!-- Nivel Primaria -->
+      <div class="nivel-item reverse">
+        <div class="nivel-badge">
+          <div class="nivel-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+          </div>
+          <span class="nivel-label">Primaria</span>
+        </div>
+        <div class="nivel-content">
+          <h3>Nivel Primaria</h3>
+          <p>Creamos ambientes que fomentan la participación libre, espontánea y cooperativa de nuestros estudiantes. A través de programas académicos, formativos y espirituales, buscamos promover el desarrollo de habilidades y actitudes que les permitan actuar con autonomía, responsabilidad, sensibilidad social y respeto.</p>
+          <p class="nivel-meta">Nuestra meta es preparar a los estudiantes para enfrentar los desafíos del mundo actual con confianza y empatía.</p>
+        </div>
+      </div>
+
+      <!-- Nivel Secundaria -->
+      <div class="nivel-item">
+        <div class="nivel-badge">
+          <div class="nivel-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+          </div>
+          <span class="nivel-label">Secundaria</span>
+        </div>
+        <div class="nivel-content">
+          <h3>Nivel Secundaria</h3>
+          <p>Nuestro enfoque en el nivel secundario se centra en crear un ambiente propicio para el crecimiento personal y espiritual de nuestros alumnos, con el objetivo de formar líderes cristianos. Ofrecemos una educación integral que brinda una sólida preparación científico-humanista, permitiendo a los estudiantes explorar y valorar sus capacidades en relación con sus proyectos vocacionales.</p>
+        </div>
+      </div>
+
+      <!-- Programa IB -->
+      <div class="nivel-item reverse">
+        <div class="nivel-badge">
+          <div class="nivel-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <span class="nivel-label">IB</span>
+        </div>
+        <div class="nivel-content">
+          <h3>Programa IB</h3>
+          <p>El Programa del Diploma IB tiene como objetivo ampliar la experiencia educativa del estudiante y desafiarlo a aplicar sus conocimientos y habilidades. Los cursos que ofrecemos como parte del Diploma IB son seis grupos de asignatura y cursos troncales.</p>
+        </div>
+      </div>
+
+      <!-- Formación Personal -->
+      <div class="nivel-item">
+        <div class="nivel-badge">
+          <div class="nivel-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </div>
+          <span class="nivel-label">Personal</span>
+        </div>
+        <div class="nivel-content">
+          <h3>Formación Personal</h3>
+          <p>Nuestro departamento psicológico ofrece un sólido apoyo a nuestros estudiantes frente a los desafíos académicos y personales que puedan enfrentar, facilitando su proceso de adaptación escolar mediante asesoramiento especializado.</p>
+        </div>
+      </div>
+
+      <!-- Formación Espiritual -->
+      <div class="nivel-item reverse">
+        <div class="nivel-badge">
+          <div class="nivel-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <span class="nivel-label">Espiritual</span>
+        </div>
+        <div class="nivel-content">
+          <h3>Formación Espiritual</h3>
+          <p>En nuestro colegio, buscamos evangelizar a toda la comunidad (padres, estudiantes y colaboradores), promoviendo los valores cristianos. Esta responsabilidad la asume la comunidad religiosa, en la persona del Director Espiritual, que realiza esta tarea conjuntamente con la Comunidad de Evangelización (COEVA).</p>
+        </div>
+      </div>
+
+      <!-- Formación Deportiva -->
+      <div class="nivel-item">
+        <div class="nivel-badge">
+          <div class="nivel-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <span class="nivel-label">Deportiva</span>
+        </div>
+        <div class="nivel-content">
+          <h3>Formación Deportiva</h3>
+          <p>En nuestro compromiso con el desarrollo integral de nuestros alumnos, ofrecemos el curso de cultura física para fortalecer su dimensión corporal. Promovemos un estilo de vida saludable a través de la práctica deportiva, una dieta equilibrada, hábitos de higiene y el cuidado del medio ambiente.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECCIÓN DEPORTES ===== -->
+<section id="deportes" class="deportes-section">
+  <div class="deportes-container">
+    <h2 class="section-title white">Deportes</h2>
+    <p class="section-subtitle white">Compromiso con el desarrollo físico y el espíritu deportivo de cada alumno.</p>
+
+    <div class="deportes-box">
+
+      <!-- Columna izquierda: 3 imágenes -->
+      <div class="dep-col">
+        <div class="dep-img"><img src="images/dep1.jpg" alt="Deporte 1" /></div>
+        <div class="dep-img"><img src="images/dep2.jpg" alt="Deporte 2" /></div>
+        <div class="dep-img"><img src="images/dep3.jpg" alt="Deporte 3" /></div>
+      </div>
+
+      <!-- Centro: texto -->
+      <div class="dep-text-panel">
+        <div class="dep-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M14.12 9.88a3 3 0 1 0-4.24 4.24 3 3 0 0 0 4.24-4.24z"/>
+          </svg>
+        </div>
+        <h3>Nuestras Instalaciones Deportivas</h3>
+        <p>Estamos implementados con <strong>pista atlética</strong>, <strong>fosa de saltos</strong>, <strong>coliseo de básquet</strong>, <strong>cancha de fútbol</strong>, <strong>salón de gimnasia</strong>, <strong>piscina temperada</strong>, <strong>sala de tenis de mesa</strong>, <strong>coliseo de voleibol</strong>, <strong>losas multideportivas</strong> y <strong>gimnasio</strong>.</p>
+      </div>
+
+      <!-- Columna derecha: 3 imágenes -->
+      <div class="dep-col">
+        <div class="dep-img"><img src="images/dep4.jpg" alt="Deporte 4" /></div>
+        <div class="dep-img"><img src="images/dep5.jpg" alt="Deporte 5" /></div>
+        <div class="dep-img"><img src="images/dep6.jpg" alt="Deporte 6" /></div>
+      </div>
+
+    </div>
+  </div>
+</section>
 
 <app-footer />
