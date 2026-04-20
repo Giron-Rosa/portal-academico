@@ -1,4 +1,5 @@
 services:
+
   frontend:
     build:
       context: ./frontend
@@ -10,3 +11,49 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    container_name: portal-academico-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB:       portal_academico
+      POSTGRES_USER:     sa_admin
+      POSTGRES_PASSWORD: Sa2025*Secure
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: portal-academico-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/portal_academico
+      SPRING_DATASOURCE_USERNAME: sa_admin
+      SPRING_DATASOURCE_PASSWORD: Sa2025*Secure
+    depends_on:
+      - db
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: portal-academico-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    admin@sanagustin.edu.pe
+      PGADMIN_DEFAULT_PASSWORD: Admin2025*
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:

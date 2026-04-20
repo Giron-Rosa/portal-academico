@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://db:5432/portal_academico
+    username: sa_admin
+    password: Sa2025*Secure
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+jwt:
+  secret: cGFydGFsYWNhZGVtaWNvU2FuQWd1c3RpbkNhbXB1czIwMjVTZWN1cmVLZXk=
+  expiration: 86400000

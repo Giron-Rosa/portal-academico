@@ -1,0 +1,420 @@
+/* ═══════════════════════════════════════════
+   Portal Docente – Layout principal
+═══════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.pd-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #f4f5f7;
+  color: #1a1a2e;
+}
+
+/* ── Top Navbar ── */
+.pd-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  background: #ffffff;
+  border-bottom: 1px solid #e4e6ea;
+  padding: 0 1.5rem;
+  flex-shrink: 0;
+  z-index: 200;
+
+  &-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  &-right {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+}
+
+.pd-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.pd-school-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0d1b2a;
+}
+
+.pd-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.pd-user-role {
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: lowercase;
+}
+
+.pd-user-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #0d1b2a;
+}
+
+.pd-avatar-wrapper {
+  position: relative;
+}
+
+.pd-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #c1121f;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.5px;
+  transition: background 0.2s;
+
+  &:hover { background: #a00e19; }
+}
+
+.pd-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e4e6ea;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  min-width: 180px;
+  overflow: hidden;
+  z-index: 300;
+  animation: fadeDown 0.15s ease;
+
+  &-header {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &-item {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0.65rem 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.15s;
+
+    &:hover { background: #f7f7f7; }
+
+    &.logout {
+      color: #c1121f;
+      &:hover { background: #fff4f4; }
+    }
+  }
+}
+
+.pd-dh-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0d1b2a;
+}
+
+.pd-dh-code {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* ── Body (3 columnas) ── */
+.pd-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── Left Sidebar ── */
+.pd-sidebar-left {
+  width: 82px;
+  background: #ffffff;
+  border-right: 1px solid #e4e6ea;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.2rem 0;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.pd-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 66px;
+  padding: 0.6rem 0.4rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  color: #8a8f9d;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: #f0f1f5;
+    color: #0d1b2a;
+  }
+
+  &.active {
+    background: #fff0f0;
+    color: #c1121f;
+
+    .pd-nav-icon svg { stroke: #c1121f; }
+  }
+}
+
+.pd-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg { stroke: currentColor; }
+}
+
+.pd-nav-label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── Main Content ── */
+.pd-main {
+  flex: 1;
+  padding: 2rem 2.5rem;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.pd-section-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #0d1b2a;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Filter bar ── */
+.pd-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.pd-grade-tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pd-grade-btn {
+  padding: 0.35rem 0.85rem;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  color: #555;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+
+  &:hover { background: #f0f1f5; color: #0d1b2a; }
+
+  &.active {
+    background: #c1121f;
+    color: #ffffff;
+  }
+}
+
+.pd-year-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pd-year-label {
+  font-size: 0.8rem;
+  color: #888;
+  font-weight: 500;
+}
+
+.pd-year-select {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: #333;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+
+  &:focus { border-color: #c1121f; }
+}
+
+/* ── Course Grid ── */
+.pd-courses-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+
+  @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 720px)  { grid-template-columns: 1fr; }
+}
+
+.pd-course-card {
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  position: relative;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.pd-card-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: rgba(255,255,255,0.85);
+  color: #444;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.3px;
+}
+
+.pd-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 110px;
+  padding: 1rem;
+}
+
+.pd-card-info {
+  background: #ffffff;
+  padding: 0.7rem 1rem 0.9rem;
+}
+
+.pd-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0d1b2a;
+  margin-bottom: 3px;
+}
+
+.pd-card-sub {
+  font-size: 0.75rem;
+  color: #777;
+}
+
+/* ── Placeholder screens ── */
+.pd-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  height: 60vh;
+  color: #bbb;
+  font-size: 0.95rem;
+}
+
+/* ── Right Sidebar ── */
+.pd-sidebar-right {
+  width: 230px;
+  background: #ffffff;
+  border-left: 1px solid #e4e6ea;
+  padding: 1.5rem 1.1rem;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.pd-review-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: #aaa;
+  text-transform: uppercase;
+  margin-bottom: 1.1rem;
+}
+
+.pd-review-item {
+  padding: 0.7rem 0 0.7rem 0.85rem;
+  border-left: 3px solid #c1121f;
+  margin-bottom: 1.1rem;
+  transition: background 0.15s;
+  border-radius: 0 6px 6px 0;
+
+  &:hover { background: #fff5f5; }
+}
+
+.pd-review-meta {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 3px;
+}
+
+.pd-review-tarea {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0d1b2a;
+  margin-bottom: 2px;
+}
+
+.pd-review-tema {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.pd-review-empty {
+  font-size: 0.82rem;
+  color: #bbb;
+  text-align: center;
+  margin-top: 2rem;
+}
+
+/* ── Animations ── */
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
