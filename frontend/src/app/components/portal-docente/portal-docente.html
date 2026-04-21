@@ -83,6 +83,10 @@
       @if (activeSection() === 'inicio') {
         <h2 class="pd-section-title">Mis cursos</h2>
 
+        @if (errorCarga()) {
+          <div class="pd-error-msg">{{ errorCarga() }}</div>
+        }
+
         <!-- Filter bar -->
         <div class="pd-filter-bar">
           <div class="pd-grade-tabs">
@@ -106,6 +110,14 @@
         </div>
 
         <!-- Course grid -->
+        @if (cargando()) {
+          <div class="pd-loading">
+            <div class="pd-spinner"></div>
+            <span>Cargando cursos...</span>
+          </div>
+        }
+
+        @if (!cargando()) {
         <div class="pd-courses-grid">
           @for (curso of filteredCursos(); track curso.nombre) {
             <div class="pd-course-card" [style.background-color]="curso.color">
@@ -172,10 +184,18 @@
               <div class="pd-card-info">
                 <h4 class="pd-card-title">{{ curso.nombre }}</h4>
                 <p class="pd-card-sub">{{ curso.grado }} · Sección {{ curso.seccion }}</p>
+                <div class="pd-card-meta">
+                  <span>{{ curso.horasSemana }}h/sem</span>
+                  <span>{{ curso.totalAlumnos }} alumnos</span>
+                </div>
               </div>
             </div>
           }
+          @if (filteredCursos().length === 0 && !errorCarga()) {
+            <p class="pd-empty">No hay cursos asignados para este período.</p>
+          }
         </div>
+        }
       }
 
       @if (activeSection() === 'calendario') {
@@ -214,14 +234,14 @@
     <!-- ── Right Sidebar ── -->
     <aside class="pd-sidebar-right">
       <h3 class="pd-review-title">POR REVISAR</h3>
-      @for (item of pendientes; track item.titulo + item.grado) {
+      @for (item of pendientes(); track item.titulo + item.grado) {
         <div class="pd-review-item">
           <div class="pd-review-meta">{{ item.grado }} · {{ item.curso }}</div>
           <div class="pd-review-tarea">{{ item.titulo }}</div>
           <div class="pd-review-tema">{{ item.tema }}</div>
         </div>
       }
-      @if (pendientes.length === 0) {
+      @if (pendientes().length === 0) {
         <p class="pd-review-empty">Sin pendientes</p>
       }
     </aside>
