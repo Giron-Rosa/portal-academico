@@ -76,6 +76,10 @@
           }
         </button>
 
+        @if (error()) {
+          <p class="login-error">{{ error() }}</p>
+        }
+
       </form>
 
     </div>

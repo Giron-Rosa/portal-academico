@@ -10,4 +10,5 @@ public class LoginResponse {
     private String rol;
     private String codigo;
     private String email;
+    private String nombre;
 }

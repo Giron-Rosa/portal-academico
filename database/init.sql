@@ -7,8 +7,7 @@
 -- TIPOS ENUM
 -- ============================================================
 
-CREATE TYPE rol_usuario    AS ENUM ('alumno', 'padre', 'maestro', 'admin');
-CREATE TYPE parentesco_tipo AS ENUM ('padre', 'madre', 'tutor');
+-- Los roles y parentescos se manejan como VARCHAR para compatibilidad con Hibernate/JPA
 
 -- ============================================================
 -- TABLA: usuarios  (autenticación central)
@@ -24,7 +23,7 @@ CREATE TABLE usuarios (
     codigo          VARCHAR(30)  UNIQUE NOT NULL,
     email           VARCHAR(120) UNIQUE NOT NULL,
     contrasena_hash VARCHAR(255) NOT NULL,
-    rol             rol_usuario  NOT NULL,
+    rol             VARCHAR(20)  NOT NULL,
     activo          BOOLEAN      NOT NULL DEFAULT TRUE,
     ultimo_acceso   TIMESTAMP,
     fecha_creacion  TIMESTAMP    NOT NULL DEFAULT NOW()
@@ -79,7 +78,7 @@ CREATE TABLE padre_hijo (
     id         SERIAL PRIMARY KEY,
     id_padre   INT NOT NULL REFERENCES padres(id_padre)   ON DELETE CASCADE,
     id_alumno  INT NOT NULL REFERENCES alumnos(id_alumno) ON DELETE CASCADE,
-    parentesco parentesco_tipo NOT NULL,
+    parentesco VARCHAR(20) NOT NULL,
     UNIQUE (id_padre, id_alumno)
 );
 
@@ -101,15 +100,15 @@ CREATE TABLE padre_hijo (
 -- ------ usuarios ------
 INSERT INTO usuarios (codigo, email, contrasena_hash, rol) VALUES
     -- Maestro
-    ('OC16Mar26',      'oscar.castillo@sanagustin.edu.pe',  '$2a$10$7QZt2kQxRJvN3SyVwDpX9eHkLmPbFuWiYcNqA1oZ8dGrEjM0TsKuC', 'maestro'),
+    ('OC16Mar26',      'oscar.castillo@sanagustin.edu.pe',  'HASH_PENDIENTE', 'maestro'),
     -- Padre
-    ('PAD-2024-00142', 'marisol.martinez@gmail.com',        '$2a$10$7QZt2kQxRJvN3SyVwDpX9eHkLmPbFuWiYcNqA1oZ8dGrEjM0TsKuC', 'padre'),
+    ('PAD-2024-00142', 'marisol.martinez@gmail.com',        'HASH_PENDIENTE', 'padre'),
     -- Alumnos
-    ('5B111808',       'juan.martinez@alumnos.sanagustin.edu.pe',   '$2a$10$7QZt2kQxRJvN3SyVwDpX9eHkLmPbFuWiYcNqA1oZ8dGrEjM0TsKuC', 'alumno'),
-    ('5B111809',       'sofia.martinez@alumnos.sanagustin.edu.pe',  '$2a$10$7QZt2kQxRJvN3SyVwDpX9eHkLmPbFuWiYcNqA1oZ8dGrEjM0TsKuC', 'alumno'),
-    ('3A110045',       'diego.martinez@alumnos.sanagustin.edu.pe',  '$2a$10$7QZt2kQxRJvN3SyVwDpX9eHkLmPbFuWiYcNqA1oZ8dGrEjM0TsKuC', 'alumno'),
+    ('5B111808',       'juan.martinez@alumnos.sanagustin.edu.pe',   'HASH_PENDIENTE', 'alumno'),
+    ('5B111809',       'sofia.martinez@alumnos.sanagustin.edu.pe',  'HASH_PENDIENTE', 'alumno'),
+    ('3A110045',       'diego.martinez@alumnos.sanagustin.edu.pe',  'HASH_PENDIENTE', 'alumno'),
     -- Admin
-    ('ADM-001',        'admin@sanagustin.edu.pe',           '$2a$10$7QZt2kQxRJvN3SyVwDpX9eHkLmPbFuWiYcNqA1oZ8dGrEjM0TsKuC', 'admin');
+    ('ADM-001',        'admin@sanagustin.edu.pe',           'HASH_PENDIENTE', 'admin');
 
 -- ------ maestros ------
 INSERT INTO maestros (id_usuario, nombre, apellido, especialidad, dni, telefono) VALUES

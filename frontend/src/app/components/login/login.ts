@@ -1,7 +1,12 @@
 import { Component, inject, signal, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+
+interface LoginResp {
+  token: string; rol: string; codigo: string; email: string; nombre: string;
+}
 
 @Component({
   selector: 'app-login',
@@ -12,6 +17,9 @@ import { AuthService } from '../../services/auth.service';
 export class Login {
   private auth   = inject(AuthService);
   private router = inject(Router);
+  private http   = inject(HttpClient);
+
+  private readonly API = 'http://localhost:8080/api/auth/login';
 
   isOpen   = this.auth.isLoginOpen;
   codigo   = signal('');
@@ -37,35 +45,26 @@ export class Login {
     this.error.set('');
     this.loading.set(true);
 
-    // TODO: reemplazar con llamada HTTP al backend Spring Boot
-    setTimeout(() => {
-      this.loading.set(false);
-      const rol = this.mockResolveRol(this.codigo());
-      if (!rol) {
-        this.error.set('Código o contraseña incorrectos.');
-        return;
+    this.http.post<LoginResp>(this.API, {
+      identifier: this.codigo(),
+      contrasena: this.password()
+    }).subscribe({
+      next: (res) => {
+        this.loading.set(false);
+        this.auth.saveSession(res.token, res.rol, res.codigo, res.nombre, res.email);
+        this.auth.closeLogin();
+        this.router.navigate([this.auth.getPortalRoute()]);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.loading.set(false);
+        if (err.status === 0) {
+          this.error.set('No se pudo conectar al servidor.');
+        } else if (err.status === 401 || err.status === 403) {
+          this.error.set('Código o contraseña incorrectos.');
+        } else {
+          this.error.set('Error inesperado. Intenta de nuevo.');
+        }
       }
-      this.auth.saveSession('mock-token', rol, this.codigo(), this.mockNombre(rol), '');
-      this.auth.closeLogin();
-      this.router.navigate([this.auth.getPortalRoute()]);
-    }, 900);
-  }
-
-  private mockResolveRol(codigo: string): string | null {
-    if (codigo === 'OC16Mar26')    return 'maestro';
-    if (codigo.startsWith('PAD-')) return 'padre';
-    if (codigo.startsWith('ADM-')) return 'admin';
-    if (/^\d/.test(codigo))        return 'alumno';
-    return null;
-  }
-
-  private mockNombre(rol: string): string {
-    const nombres: Record<string, string> = {
-      maestro: 'Oscar Castillo',
-      padre:   'Marisol Martínez',
-      alumno:  'Juan Martínez',
-      admin:   'Administrador',
-    };
-    return nombres[rol] ?? 'Usuario';
+    });
   }
 }

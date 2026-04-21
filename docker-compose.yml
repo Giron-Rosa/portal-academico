@@ -40,6 +40,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/portal_academico
       SPRING_DATASOURCE_USERNAME: sa_admin
       SPRING_DATASOURCE_PASSWORD: Sa2025*Secure
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
     depends_on:
       - db
 

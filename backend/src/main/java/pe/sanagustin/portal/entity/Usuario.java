@@ -28,7 +28,7 @@ public class Usuario {
     private String contrasenaHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "rol_usuario", nullable = false)
+    @Column(nullable = false, length = 20)
     private RolUsuario rol;
 
     @Column(nullable = false)
