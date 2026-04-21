@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, HostListener } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
@@ -9,6 +10,18 @@ export interface Curso {
   color: string;
   iconType: string;
   badge: string;
+  horasSemana: number;
+  totalAlumnos: number;
+}
+
+interface CursoApi {
+  nombre: string;
+  grado: string;
+  seccion: string;
+  horasSemana: number;
+  turno: string;
+  periodo: string;
+  totalAlumnos: number;
 }
 
 export interface Pendiente {
@@ -17,6 +30,20 @@ export interface Pendiente {
   titulo: string;
   tema: string;
 }
+
+const CARD_COLORS = ['#dce8f7', '#fde8e8', '#d5e5f5', '#fdd8d8', '#e8f0fc', '#fce8e8', '#e8f7ec', '#fef9e0'];
+
+const ICON_MAP: Record<string, string> = {
+  'matemática':                    'algebra',
+  'comunicación':                  'comunica',
+  'ciencia y tecnología':          'trigo',
+  'historia, geografía y economía':'historia',
+  'inglés':                        'geo',
+  'arte y cultura':                'razon',
+  'educación física':              'trigo',
+  'personal social':               'historia',
+  'religión':                      'razon',
+};
 
 @Component({
   selector: 'app-portal-docente',
@@ -27,11 +54,14 @@ export interface Pendiente {
 export class PortalDocente {
   private router = inject(Router);
   private auth   = inject(AuthService);
+  private http   = inject(HttpClient);
 
   activeSection = signal('inicio');
   activeGrade   = signal('Todos');
   selectedYear  = signal('2026');
   dropdownOpen  = signal(false);
+  cargando      = signal(false);
+  errorCarga    = signal('');
 
   nombre    = this.auth.getNombre() ?? 'Docente';
   codigo    = this.auth.getCodigo() ?? '';
@@ -46,31 +76,62 @@ export class PortalDocente {
 
   years = ['2024', '2025', '2026'];
 
-  cursos: Curso[] = [
-    { nombre: 'Álgebra',                 grado: '1ro Secundaria', seccion: 'A', color: '#dce8f7', iconType: 'algebra',  badge: '1ro Sec' },
-    { nombre: 'Trigonometría',           grado: '3ro Secundaria', seccion: 'A', color: '#fde8e8', iconType: 'trigo',    badge: '3ro Sec' },
-    { nombre: 'Razonamiento Matemático', grado: '3ro Secundaria', seccion: 'C', color: '#d5e5f5', iconType: 'razon',    badge: '3ro Sec' },
-    { nombre: 'Historia del Perú',       grado: '4to Secundaria', seccion: 'A', color: '#fdd8d8', iconType: 'historia', badge: '4to Sec' },
-    { nombre: 'Comunicación',            grado: '5to Primaria',   seccion: 'A', color: '#e8f0fc', iconType: 'comunica', badge: '5to Prim'},
-    { nombre: 'Geografía',               grado: '5to Secundaria', seccion: 'B', color: '#fce8e8', iconType: 'geo',      badge: '5to Sec' },
-  ];
-
-  pendientes: Pendiente[] = [
-    { grado: '1ro Secundaria', curso: 'Álgebra',       titulo: 'Tarea semana 1', tema: 'Expresiones algebraicas' },
-    { grado: '3ro Secundaria', curso: 'Trigonometría', titulo: 'Tarea semana 1', tema: 'Ángulos y razones'       },
-    { grado: '4to Secundaria', curso: 'Historia del Perú', titulo: 'Actividad 3', tema: 'Independencia del Perú' },
-  ];
+  cursos       = signal<Curso[]>([]);
+  pendientes   = signal<Pendiente[]>([]);
 
   grades = computed(() => {
-    const base = ['Todos'];
-    const unique = [...new Set(this.cursos.map(c => c.grado))];
+    const base   = ['Todos'];
+    const unique = [...new Set(this.cursos().map(c => c.grado))];
     return [...base, ...unique];
   });
 
   filteredCursos = computed(() => {
-    if (this.activeGrade() === 'Todos') return this.cursos;
-    return this.cursos.filter(c => c.grado === this.activeGrade());
+    if (this.activeGrade() === 'Todos') return this.cursos();
+    return this.cursos().filter(c => c.grado === this.activeGrade());
   });
+
+  constructor() {
+    this.cargarCursos();
+  }
+
+  private cargarCursos() {
+    const token = this.auth.getToken();
+    if (!token) return;
+
+    this.cargando.set(true);
+    this.errorCarga.set('');
+
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http.get<CursoApi[]>('http://localhost:8080/api/portal/docente/mis-cursos', { headers })
+      .subscribe({
+        next: (data) => {
+          this.cursos.set(data.map((c, i) => this.mapCurso(c, i)));
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.errorCarga.set('No se pudieron cargar los cursos.');
+          this.cargando.set(false);
+        },
+      });
+  }
+
+  private mapCurso(c: CursoApi, idx: number): Curso {
+    const key      = c.nombre.toLowerCase();
+    const iconType = ICON_MAP[key] ?? 'algebra';
+    const color    = CARD_COLORS[idx % CARD_COLORS.length];
+    const gradoAbbr = c.grado.replace('Secundaria', 'Sec').replace('Primaria', 'Prim');
+    return {
+      nombre:       c.nombre,
+      grado:        c.grado,
+      seccion:      c.seccion,
+      color,
+      iconType,
+      badge:        gradoAbbr,
+      horasSemana:  c.horasSemana,
+      totalAlumnos: c.totalAlumnos,
+    };
+  }
 
   setSection(id: string)   { this.activeSection.set(id);   this.dropdownOpen.set(false); }
   setGrade(grado: string)  { this.activeGrade.set(grado);  }

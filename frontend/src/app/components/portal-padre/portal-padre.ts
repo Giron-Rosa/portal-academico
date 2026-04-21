@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
@@ -12,6 +13,7 @@ interface CursoDetalle {
   tareasEntregadas: number;
   totalTareas: number;
   puntualidad: number;
+  docente?: string;
 }
 
 interface Hijo {
@@ -30,6 +32,18 @@ interface Hijo {
   eventos: string[];
 }
 
+interface HijoApi {
+  nombre: string;
+  apellido: string;
+  codigo: string;
+  grado: string;
+  seccion: string;
+  turno: string;
+  periodo: string;
+  parentesco: string;
+  cursos: { nombre: string; area: string; horasSemana: number; docente: string }[];
+}
+
 @Component({
   selector: 'app-portal-padre',
   imports: [],
@@ -39,11 +53,14 @@ interface Hijo {
 export class PortalPadre {
   private auth   = inject(AuthService);
   private router = inject(Router);
+  private http   = inject(HttpClient);
 
   seccionActiva  = signal<Seccion>('inicio');
   vista          = signal<Vista>('dashboard');
   hijoIdx        = signal<number>(0);
   menuUsuario    = signal(false);
+  cargando       = signal(false);
+  errorCarga     = signal('');
 
   nombrePadre    = this.auth.getNombre() ?? 'Padre';
   codigoPadre    = this.auth.getCodigo() ?? '';
@@ -61,90 +78,62 @@ export class PortalPadre {
     { id: 'pagos',      label: 'Pagos',      icon: 'card'    },
   ];
 
-  hijos: Hijo[] = [
-    {
-      id: 1,
-      nombre: 'Carlos Fernando Martínez',
-      grado: '2° de Secundaria',
-      codigo: '5B111810',
-      estado: 'riesgo',
-      promedio: 13.5,
-      asistencia: 72,
-      cursosRiesgo: 3,
-      entregaTareas: 60,
-      descripcion: 'Requiere apoyo en varias materias. Se recomienda comunicación con los docentes.',
-      cursosMonitor: [
-        { nombre: 'Matemática', progreso: 45 },
-        { nombre: 'Comunicación', progreso: 60 },
-        { nombre: 'Ciencia', progreso: 40 },
-      ],
-      cursos: [
-        { nombre: 'Matemática',    progreso: 45, tareasEntregadas: 5,  totalTareas: 10, puntualidad: 60 },
-        { nombre: 'Comunicación',  progreso: 60, tareasEntregadas: 7,  totalTareas: 10, puntualidad: 70 },
-        { nombre: 'Ciencia',       progreso: 40, tareasEntregadas: 4,  totalTareas: 10, puntualidad: 55 },
-        { nombre: 'Historia',      progreso: 55, tareasEntregadas: 6,  totalTareas: 10, puntualidad: 65 },
-        { nombre: 'Inglés',        progreso: 50, tareasEntregadas: 5,  totalTareas: 10, puntualidad: 60 },
-        { nombre: 'Arte',          progreso: 70, tareasEntregadas: 8,  totalTareas: 10, puntualidad: 80 },
-      ],
-      eventos: ['Examen Matemática (5 abril)', 'Reunión padres (20 abril)', 'Recuperación Ciencia (22 abril)'],
-    },
-    {
-      id: 2,
-      nombre: 'Jesús Fernando Martínez',
-      grado: '5° de Secundaria',
-      codigo: '5B111809',
-      estado: 'observacion',
-      promedio: 16.8,
-      asistencia: 90,
-      cursosRiesgo: 1,
-      entregaTareas: 85,
-      descripcion: 'Desempeño satisfactorio. Un curso requiere atención adicional.',
-      cursosMonitor: [
-        { nombre: 'Matemática',   progreso: 70 },
-        { nombre: 'Comunicación', progreso: 85 },
-        { nombre: 'Ciencia',      progreso: 50 },
-      ],
-      cursos: [
-        { nombre: 'Matemática',    progreso: 70, tareasEntregadas: 8,  totalTareas: 10, puntualidad: 80 },
-        { nombre: 'Comunicación',  progreso: 85, tareasEntregadas: 9,  totalTareas: 10, puntualidad: 90 },
-        { nombre: 'Ciencia',       progreso: 50, tareasEntregadas: 6,  totalTareas: 10, puntualidad: 65 },
-        { nombre: 'Historia',      progreso: 80, tareasEntregadas: 9,  totalTareas: 10, puntualidad: 85 },
-        { nombre: 'Inglés',        progreso: 78, tareasEntregadas: 8,  totalTareas: 10, puntualidad: 88 },
-        { nombre: 'Arte',          progreso: 90, tareasEntregadas: 10, totalTareas: 10, puntualidad: 95 },
-      ],
-      eventos: ['Examen Comunicación (2 abril)', 'Reunión padres (20 abril)', 'Proyecto Ciencia (28 abril)'],
-    },
-    {
-      id: 3,
-      nombre: 'Diana Fernando Martínez',
-      grado: '3° de Secundaria',
-      codigo: '5B111808',
-      estado: 'bueno',
-      promedio: 18.2,
-      asistencia: 95,
-      cursosRiesgo: 0,
-      entregaTareas: 100,
-      descripcion: 'Desempeño académico sobresaliente en todos los cursos.',
-      cursosMonitor: [
-        { nombre: 'Matemática',   progreso: 88 },
-        { nombre: 'Comunicación', progreso: 90 },
-        { nombre: 'Ciencia',      progreso: 85 },
-      ],
-      cursos: [
-        { nombre: 'Matemática',    progreso: 88, tareasEntregadas: 10, totalTareas: 10, puntualidad: 100 },
-        { nombre: 'Comunicación',  progreso: 90, tareasEntregadas: 10, totalTareas: 10, puntualidad: 100 },
-        { nombre: 'Ciencia',       progreso: 85, tareasEntregadas: 8,  totalTareas: 8,  puntualidad: 100 },
-        { nombre: 'Historia del Perú', progreso: 92, tareasEntregadas: 9, totalTareas: 9, puntualidad: 100 },
-        { nombre: 'Inglés',        progreso: 87, tareasEntregadas: 10, totalTareas: 10, puntualidad: 100 },
-        { nombre: 'Arte',          progreso: 95, tareasEntregadas: 10, totalTareas: 10, puntualidad: 100 },
-      ],
-      eventos: ['Examen Comunicación (2 abril)', 'Reunión padres (20 abril)', 'Proyecto final Ciencia (28 abril)'],
-    },
-  ];
+  hijos = signal<Hijo[]>([]);
 
-  hijosEnRiesgo = computed(() => this.hijos.filter(h => h.estado === 'riesgo').length);
+  hijosEnRiesgo = computed(() => this.hijos().filter(h => h.estado === 'riesgo').length);
 
-  hijoActual = computed(() => this.hijos[this.hijoIdx()]);
+  hijoActual = computed(() => this.hijos()[this.hijoIdx()]);
+
+  constructor() {
+    this.cargarResumen();
+  }
+
+  private cargarResumen() {
+    const token = this.auth.getToken();
+    if (!token) return;
+
+    this.cargando.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http.get<HijoApi[]>('http://localhost:8080/api/portal/padre/resumen', { headers })
+      .subscribe({
+        next: (data) => {
+          this.hijos.set(data.map((h, i) => this.mapHijo(h, i)));
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.errorCarga.set('No se pudo cargar la información de los estudiantes.');
+          this.cargando.set(false);
+        },
+      });
+  }
+
+  private mapHijo(h: HijoApi, idx: number): Hijo {
+    const cursos: CursoDetalle[] = h.cursos.map(c => ({
+      nombre:           c.nombre,
+      progreso:         0,
+      tareasEntregadas: 0,
+      totalTareas:      0,
+      puntualidad:      0,
+      docente:          c.docente,
+    }));
+
+    return {
+      id:            idx + 1,
+      nombre:        `${h.nombre} ${h.apellido}`,
+      grado:         `${h.grado} · Sec. ${h.seccion}`,
+      codigo:        h.codigo,
+      estado:        'observacion',
+      promedio:      0,
+      asistencia:    0,
+      cursosRiesgo:  0,
+      entregaTareas: 0,
+      descripcion:   `Período ${h.periodo} · Turno ${h.turno}. Datos académicos próximamente.`,
+      cursosMonitor: cursos.slice(0, 3).map(c => ({ nombre: c.nombre, progreso: 0 })),
+      cursos,
+      eventos:       [],
+    };
+  }
 
   setSeccion(s: Seccion) {
     this.seccionActiva.set(s);
