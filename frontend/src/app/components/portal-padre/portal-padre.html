@@ -1,0 +1,433 @@
+<div class="portal-wrapper">
+
+  <!-- ===== NAVBAR SUPERIOR ===== -->
+  <header class="top-nav">
+    <div class="nav-brand">
+      <img src="/images/logo.png" alt="San Agustín" class="nav-logo" />
+      <div class="nav-brand-text">
+        <span class="nav-school">San Agustín Campus</span>
+        <span class="nav-portal">Portal del Padre</span>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="btn-notif" title="Notificaciones">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        @if (hijosEnRiesgo() > 0) {
+          <span class="notif-badge">{{ hijosEnRiesgo() }}</span>
+        }
+      </button>
+
+      <div class="nav-user" (click)="toggleMenuUsuario()">
+        <div class="user-info">
+          <span class="user-greeting">Hola {{ nombrePadre.split(' ')[0] === 'Marisol' ? 'Sra.' : 'Sr.' }} {{ nombrePadre.split(' ')[0] }}</span>
+          <span class="user-role">Padres</span>
+        </div>
+        <div class="user-avatar">{{ inicialesP }}</div>
+
+        @if (menuUsuario()) {
+          <div class="user-dropdown">
+            <div class="dropdown-info">
+              <span class="dropdown-name">{{ nombrePadre }}</span>
+              <span class="dropdown-code">{{ codigoPadre }}</span>
+            </div>
+            <hr class="dropdown-divider" />
+            <button class="dropdown-item danger" (click)="logout()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Cerrar sesión
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== LAYOUT PRINCIPAL ===== -->
+  <div class="main-layout">
+
+    <!-- SIDEBAR VERTICAL -->
+    <aside class="sidebar">
+      @for (item of navItems; track item.id) {
+        <button
+          class="sidebar-item"
+          [class.active]="seccionActiva() === item.id"
+          (click)="setSeccion(item.id)">
+
+          <!-- Iconos SVG por sección -->
+          @if (item.icon === 'home') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          }
+          @if (item.icon === 'book') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+          }
+          @if (item.icon === 'check') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 11 12 14 22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          }
+          @if (item.icon === 'message') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          }
+          @if (item.icon === 'calendar') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          }
+          @if (item.icon === 'card') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+              <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+          }
+
+          <span class="sidebar-label">{{ item.label }}</span>
+        </button>
+      }
+    </aside>
+
+    <!-- ===== ÁREA DE CONTENIDO DINÁMICO ===== -->
+    <main class="content-area">
+
+      <!-- ========== SECCIÓN: INICIO ========== -->
+      @if (seccionActiva() === 'inicio') {
+
+        <!-- Vista: DASHBOARD -->
+        @if (vista() === 'dashboard') {
+          <div class="seccion-inicio">
+            <h1 class="page-title">Progreso de tus hijos</h1>
+            <p class="page-subtitle">Visualiza el desempeño académico de cada uno de tus hijos en tiempo real</p>
+
+            @if (hijosEnRiesgo() > 0) {
+              <div class="alerta-riesgo">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <div>
+                  <strong>Acción requerida</strong>
+                  <p>{{ hijosEnRiesgo() }} hijo(s) requiere(n) atención inmediata</p>
+                </div>
+              </div>
+            }
+
+            <div class="hijos-grid">
+              @for (hijo of hijos; track hijo.id; let i = $index) {
+                <div class="hijo-card" [class]="'estado-' + hijo.estado">
+                  <div class="hijo-card-header">
+                    <div class="hijo-avatar">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="#0d1b2a" stroke="none">
+                        <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                      </svg>
+                    </div>
+                    <div class="hijo-info">
+                      <span class="hijo-nombre">{{ hijo.nombre }}</span>
+                      <span class="hijo-grado">{{ hijo.grado }}</span>
+                    </div>
+                    <span class="estado-badge badge-{{ hijo.estado }}">
+                      @if (hijo.estado === 'riesgo') {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+                          <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                      }
+                      @if (hijo.estado === 'observacion') {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                      }
+                      @if (hijo.estado === 'bueno') {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      }
+                      {{ getEstadoLabel(hijo.estado) }}
+                    </span>
+                  </div>
+
+                  <div class="hijo-metricas">
+                    <div class="metrica">
+                      <span class="metrica-val">{{ hijo.promedio }}</span>
+                      <span class="metrica-lbl">Promedio</span>
+                    </div>
+                    <div class="metrica">
+                      <span class="metrica-val">{{ hijo.asistencia }}%</span>
+                      <span class="metrica-lbl">Asistencia</span>
+                    </div>
+                    <div class="metrica">
+                      <span class="metrica-val" [class.val-riesgo]="hijo.cursosRiesgo > 0">{{ hijo.cursosRiesgo }}</span>
+                      <span class="metrica-lbl">En Riesgo</span>
+                    </div>
+                  </div>
+
+                  <div class="cursos-monitor">
+                    <span class="cursos-monitor-title">CURSOS A MONITOREAR</span>
+                    @for (curso of hijo.cursosMonitor; track curso.nombre) {
+                      <div class="curso-bar-row">
+                        <span class="curso-bar-nombre">{{ curso.nombre }}</span>
+                        <div class="curso-bar-track">
+                          <div class="curso-bar-fill"
+                               [style.width.%]="curso.progreso"
+                               [style.background]="getBarColor(curso.progreso)">
+                          </div>
+                        </div>
+                        <span class="curso-bar-pct">{{ curso.progreso }}%</span>
+                      </div>
+                    }
+                  </div>
+
+                  <button class="btn-detalles" (click)="verDetalle(i)">
+                    Ver detalles completos
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
+
+            <div class="leyenda">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+              </svg>
+              <strong>Cómo interpretar los datos</strong>
+              <div class="leyenda-items">
+                <span><span class="dot dot-verde"></span>Verde: Desempeño excelente (80%+)</span>
+                <span><span class="dot dot-amarillo"></span>Amarillo: Necesita mejorar (60-79%)</span>
+                <span><span class="dot dot-rojo"></span>Rojo: Requiere atención (menos de 60%)</span>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Vista: DETALLE HIJO -->
+        @if (vista() === 'detalle') {
+          <div class="seccion-detalle">
+            <button class="btn-volver" (click)="volverDashboard()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+              Volver al dashboard
+            </button>
+
+            <div class="detalle-header">
+              <div class="detalle-avatar">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="#0d1b2a" stroke="none">
+                  <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+              </div>
+              <div class="detalle-info">
+                <h2 class="detalle-nombre">{{ hijoActual().nombre }}</h2>
+                <span class="detalle-meta">{{ hijoActual().grado }} · Código: {{ hijoActual().codigo }}</span>
+              </div>
+              <span class="estado-badge badge-{{ hijoActual().estado }} badge-lg">
+                Estado: {{ getEstadoLabel(hijoActual().estado) }}
+              </span>
+            </div>
+
+            <div class="detalle-metricas-bar">
+              <div class="dmetrica">
+                <span class="dmetrica-val">{{ hijoActual().promedio }}</span>
+                <span class="dmetrica-lbl">Promedio General</span>
+                <span class="dmetrica-sub">{{ hijoActual().promedio >= 17 ? 'Excelente' : hijoActual().promedio >= 13 ? 'Aceptable' : 'Por mejorar' }}</span>
+              </div>
+              <div class="dmetrica">
+                <span class="dmetrica-val">{{ hijoActual().asistencia }}%</span>
+                <span class="dmetrica-lbl">Asistencia</span>
+                <span class="dmetrica-sub">{{ hijoActual().asistencia >= 90 ? 'Muy buena' : 'Regular' }}</span>
+              </div>
+              <div class="dmetrica">
+                <span class="dmetrica-val" [class.val-riesgo]="hijoActual().cursosRiesgo > 0">{{ hijoActual().cursosRiesgo }}</span>
+                <span class="dmetrica-lbl">Cursos en Riesgo</span>
+                <span class="dmetrica-sub">{{ hijoActual().cursosRiesgo === 0 ? 'Ninguno' : 'Requieren atención' }}</span>
+              </div>
+              <div class="dmetrica">
+                <span class="dmetrica-val">{{ hijoActual().entregaTareas }}%</span>
+                <span class="dmetrica-lbl">Entrega de Tareas</span>
+                <span class="dmetrica-sub">Puntualidad</span>
+              </div>
+            </div>
+
+            <div class="detalle-descripcion">
+              <p>{{ hijoActual().descripcion }}</p>
+            </div>
+
+            <div class="detalle-grid">
+              <!-- Próximos eventos -->
+              <div class="detalle-eventos">
+                <h3 class="detalle-section-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  Próximos Eventos
+                </h3>
+                <ul class="eventos-list">
+                  @for (evento of hijoActual().eventos; track evento) {
+                    <li>
+                      <span class="evento-dot"></span>
+                      {{ evento }}
+                    </li>
+                  }
+                </ul>
+              </div>
+            </div>
+
+            <!-- Progreso por cursos -->
+            <h3 class="detalle-section-title mt-lg">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+              </svg>
+              Progreso por Cursos
+            </h3>
+            <div class="cursos-detalle-grid">
+              @for (curso of hijoActual().cursos; track curso.nombre) {
+                <div class="curso-detalle-card">
+                  <div class="cdc-header">
+                    <span class="cdc-nombre">{{ curso.nombre }}</span>
+                    <span class="cdc-pct">{{ curso.progreso }}%</span>
+                  </div>
+                  <span class="cdc-label" [class]="'cdc-label-' + (curso.progreso >= 80 ? 'excelente' : curso.progreso >= 60 ? 'regular' : 'riesgo')">
+                    @if (curso.progreso >= 80) {
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    }
+                    {{ getDesempeno(curso.progreso) }}
+                  </span>
+                  <div class="cdc-bar-track">
+                    <div class="cdc-bar-fill"
+                         [style.width.%]="curso.progreso"
+                         [style.background]="getBarColor(curso.progreso)">
+                    </div>
+                  </div>
+                  <div class="cdc-footer">
+                    <div class="cdc-stat">
+                      <span class="cdc-stat-lbl">Tareas entregadas</span>
+                      <span class="cdc-stat-val">{{ curso.tareasEntregadas }}/{{ curso.totalTareas }}</span>
+                    </div>
+                    <div class="cdc-stat">
+                      <span class="cdc-stat-lbl">Puntualidad</span>
+                      <span class="cdc-stat-val" [class.val-verde]="curso.puntualidad >= 80">{{ curso.puntualidad }}%</span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- CTA mensajes -->
+            <div class="cta-mensaje">
+              <div class="cta-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <div class="cta-text">
+                <strong>¿Necesitas hablar con los profesores?</strong>
+                <p>Envía un mensaje directo a los docentes para discutir el progreso académico de tu hijo.</p>
+              </div>
+              <button class="btn-enviar-mensaje" (click)="setSeccion('mensajes')">
+                Enviar mensaje
+              </button>
+            </div>
+
+          </div>
+        }
+      }
+
+      <!-- ========== SECCIÓN: CURSOS ========== -->
+      @if (seccionActiva() === 'cursos') {
+        <div class="seccion-placeholder">
+          <div class="placeholder-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+          </div>
+          <h2>Cursos</h2>
+          <p>Aquí verás los cursos de cada hijo con detalle de calificaciones y tareas pendientes.</p>
+          <span class="badge-pronto">Próximamente</span>
+        </div>
+      }
+
+      <!-- ========== SECCIÓN: ASISTENCIA ========== -->
+      @if (seccionActiva() === 'asistencia') {
+        <div class="seccion-placeholder">
+          <div class="placeholder-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
+              <polyline points="9 11 12 14 22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          </div>
+          <h2>Asistencia</h2>
+          <p>Registro de asistencias, tardanzas y faltas justificadas de tus hijos.</p>
+          <span class="badge-pronto">Próximamente</span>
+        </div>
+      }
+
+      <!-- ========== SECCIÓN: MENSAJES ========== -->
+      @if (seccionActiva() === 'mensajes') {
+        <div class="seccion-placeholder">
+          <div class="placeholder-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h2>Mensajes</h2>
+          <p>Comunicación directa con docentes y dirección del colegio.</p>
+          <span class="badge-pronto">Próximamente</span>
+        </div>
+      }
+
+      <!-- ========== SECCIÓN: EVENTOS ========== -->
+      @if (seccionActiva() === 'eventos') {
+        <div class="seccion-placeholder">
+          <div class="placeholder-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <h2>Eventos</h2>
+          <p>Calendario de eventos escolares, reuniones de padres y actividades académicas.</p>
+          <span class="badge-pronto">Próximamente</span>
+        </div>
+      }
+
+      <!-- ========== SECCIÓN: PAGOS ========== -->
+      @if (seccionActiva() === 'pagos') {
+        <div class="seccion-placeholder">
+          <div class="placeholder-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+              <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+          </div>
+          <h2>Pagos</h2>
+          <p>Historial de pagos, cuotas pendientes y comprobantes de pago.</p>
+          <span class="badge-pronto">Próximamente</span>
+        </div>
+      }
+
+    </main>
+  </div>
+</div>
