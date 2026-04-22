@@ -1,0 +1,320 @@
+<div class="pa-wrapper">
+
+  <!-- ===== NAVBAR SUPERIOR ===== -->
+  <header class="pa-navbar">
+
+    <div class="pa-brand">
+      <img src="/images/logo.png" alt="San Agustín" class="pa-logo" />
+      <div class="pa-brand-text">
+        <span class="pa-school-name">San Agustín Campus</span>
+        <span class="pa-portal-label">Portal Alumno</span>
+      </div>
+    </div>
+
+    <div class="pa-nav-right">
+
+      <!-- Notificaciones -->
+      <button class="pa-notif-btn" title="Notificaciones">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        @if (pendientes() > 0) {
+          <span class="pa-notif-badge">{{ pendientes() }}</span>
+        }
+      </button>
+
+      <!-- Usuario -->
+      <div class="pa-avatar-wrapper" (click)="toggleDropdown()">
+        <div class="pa-user-info">
+          <span class="pa-greeting">Hola {{ nombre.split(' ')[0] }}</span>
+          <span class="pa-role">Estudiante</span>
+        </div>
+        <div class="pa-avatar">{{ iniciales }}</div>
+
+        @if (dropdownOpen()) {
+          <div class="pa-dropdown">
+            <div class="pa-dropdown-info">
+              <span class="pa-dropdown-name">{{ nombre }}</span>
+              <span class="pa-dropdown-code">{{ codigo }}</span>
+            </div>
+            <hr class="pa-dropdown-divider" />
+            <button class="pa-dropdown-item danger" (click)="logout()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Cerrar sesión
+            </button>
+          </div>
+        }
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===== LAYOUT PRINCIPAL ===== -->
+  <div class="pa-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="pa-sidebar">
+      @for (item of navItems; track item.id) {
+        <button
+          class="pa-nav-item"
+          [class.active]="seccionActiva() === item.id"
+          (click)="setSeccion(item.id)">
+
+          @if (item.icon === 'home') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          }
+          @if (item.icon === 'calendar') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          }
+          @if (item.icon === 'kanban') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="5" height="18" rx="1"/>
+              <rect x="10" y="3" width="5" height="12" rx="1"/>
+              <rect x="17" y="3" width="5" height="15" rx="1"/>
+            </svg>
+          }
+          @if (item.icon === 'refuerzo') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+          }
+          @if (item.icon === 'recursos') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+          }
+
+          <span class="pa-nav-label">{{ item.label }}</span>
+        </button>
+      }
+    </aside>
+
+    <!-- ÁREA DE CONTENIDO -->
+    <main class="pa-content">
+
+      <!-- ========== INICIO ========== -->
+      @if (seccionActiva() === 'inicio') {
+        <div class="pa-inicio">
+
+          <!-- Panel izquierdo: Mis cursos -->
+          <div class="pa-cursos-panel">
+
+            <div class="pa-cursos-header">
+              <h2 class="pa-cursos-title">Mis cursos</h2>
+              <div class="pa-filter">
+                <label class="pa-filter-label">Filtrar por</label>
+                <div class="pa-filter-select">
+                  <span>{{ periodo() }}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="pa-periodo-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              Período {{ periodo() }} · Actual
+            </div>
+
+            @if (cargando()) {
+              <div class="pa-loading">
+                <div class="pa-spinner"></div>
+                <span>Cargando tus cursos...</span>
+              </div>
+            }
+
+            @if (errorCarga()) {
+              <div class="pa-error">{{ errorCarga() }}</div>
+            }
+
+            <div class="pa-cursos-grid">
+              @for (curso of cursos(); track curso.nombre) {
+                <div class="pa-curso-card">
+
+                  <!-- Área de imagen / color -->
+                  <div class="pa-card-visual" [style.background]="curso.color">
+                    <!-- Ilustración SVG decorativa -->
+                    <svg class="pa-card-deco" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <ellipse cx="100" cy="110" rx="80" ry="18" fill="rgba(0,0,0,0.06)"/>
+                      <circle cx="70" cy="55" r="30" fill="rgba(255,255,255,0.35)"/>
+                      <circle cx="130" cy="45" r="22" fill="rgba(255,255,255,0.25)"/>
+                      <rect x="50" y="70" width="100" height="8" rx="4" fill="rgba(255,255,255,0.4)"/>
+                      <rect x="60" y="84" width="80" height="6" rx="3" fill="rgba(255,255,255,0.3)"/>
+                      <!-- Ícono central por área -->
+                      @if (curso.areaKey === 'mat') {
+                        <text x="95" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">∑</text>
+                      }
+                      @if (curso.areaKey === 'com') {
+                        <text x="88" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">Aa</text>
+                      }
+                      @if (curso.areaKey === 'cie') {
+                        <text x="88" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">⚗</text>
+                      }
+                      @if (curso.areaKey === 'his') {
+                        <text x="90" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">🌍</text>
+                      }
+                      @if (curso.areaKey === 'ing') {
+                        <text x="88" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">EN</text>
+                      }
+                      @if (curso.areaKey === 'art') {
+                        <text x="90" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">🎨</text>
+                      }
+                      @if (curso.areaKey === 'efi') {
+                        <text x="90" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">⚽</text>
+                      }
+                      @if (curso.areaKey === 'rel') {
+                        <text x="92" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">✝</text>
+                      }
+                    </svg>
+
+                    <!-- Badge horas/semana -->
+                    <div class="pa-horas-badge">
+                      {{ curso.horasSemana }} h/sem
+                    </div>
+                  </div>
+
+                  <!-- Información del curso -->
+                  <div class="pa-card-body">
+                    <h3 class="pa-card-nombre">{{ curso.nombre }}</h3>
+
+                    <div class="pa-card-meta-row">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                      </svg>
+                      <span>{{ curso.grado }} · Sección {{ curso.seccion }}</span>
+                    </div>
+
+                    <div class="pa-card-meta-row">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      <span>Turno {{ curso.turno }}</span>
+                    </div>
+
+                    <div class="pa-card-docente">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                      </svg>
+                      <span>{{ curso.docente }}</span>
+                    </div>
+                  </div>
+
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Panel derecho: Actividades semanales -->
+          <aside class="pa-actividades-panel">
+            <div class="pa-actividades-header">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/>
+                <line x1="3" y1="12" x2="3.01" y2="12"/>
+                <line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+              <h3>Actividades semanales</h3>
+            </div>
+
+            <div class="pa-actividades-list">
+              @for (act of actividades; track act.titulo) {
+                <div class="pa-actividad-item">
+                  <div class="pa-act-top">
+                    <div class="pa-act-tipo">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                      </svg>
+                      {{ act.tipo }}
+                    </div>
+                    <span class="pa-act-estado" [class]="'estado-' + act.estado">
+                      {{ act.estado === 'pendiente' ? 'Por entregar' : act.estado === 'vencido' ? 'Vencido' : 'Entregado' }}
+                    </span>
+                  </div>
+                  <p class="pa-act-titulo">{{ act.titulo }}</p>
+                  <p class="pa-act-curso">{{ act.curso }}</p>
+                  <p class="pa-act-vence">Vence: {{ act.vence }}</p>
+                </div>
+              }
+            </div>
+          </aside>
+
+        </div>
+      }
+
+      <!-- ========== CALENDARIO ========== -->
+      @if (seccionActiva() === 'calendario') {
+        <div class="pa-placeholder">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <h3>Calendario</h3>
+          <p>Vista de calendario académico próximamente</p>
+        </div>
+      }
+
+      <!-- ========== KANBAN ========== -->
+      @if (seccionActiva() === 'kanban') {
+        <div class="pa-placeholder">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+            <rect x="3" y="3" width="5" height="18" rx="1"/>
+            <rect x="10" y="3" width="5" height="12" rx="1"/>
+            <rect x="17" y="3" width="5" height="15" rx="1"/>
+          </svg>
+          <h3>Kanban</h3>
+          <p>Tablero de tareas y actividades próximamente</p>
+        </div>
+      }
+
+      <!-- ========== REFUERZO ========== -->
+      @if (seccionActiva() === 'refuerzo') {
+        <div class="pa-placeholder">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+          <h3>Refuerzo</h3>
+          <p>Material de refuerzo académico próximamente</p>
+        </div>
+      }
+
+      <!-- ========== RECURSOS ========== -->
+      @if (seccionActiva() === 'recursos') {
+        <div class="pa-placeholder">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <h3>Recursos</h3>
+          <p>Biblioteca de recursos educativos próximamente</p>
+        </div>
+      }
+
+    </main>
+  </div>
+</div>

@@ -1,0 +1,594 @@
+// ============================================================
+// VARIABLES
+// ============================================================
+$azul:      #0d1b2a;
+$azul-med:  #1b3a5c;
+$rojo:      #c1121f;
+$blanco:    #ffffff;
+$fondo:     #e8f0fb;
+$sidebar-w: 210px;
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+// ============================================================
+// WRAPPER GLOBAL
+// ============================================================
+.pa-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: $fondo;
+  overflow: hidden;
+}
+
+// ============================================================
+// NAVBAR SUPERIOR
+// ============================================================
+.pa-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: $azul;
+  padding: 0 1.5rem;
+  height: 60px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  z-index: 100;
+}
+
+.pa-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pa-logo {
+  height: 38px;
+  width: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: $blanco;
+}
+
+.pa-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.pa-school-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: $blanco;
+  letter-spacing: 0.3px;
+}
+
+.pa-portal-label {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.55);
+  font-weight: 400;
+}
+
+// Derecha navbar
+.pa-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pa-notif-btn {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255,255,255,0.75);
+  padding: 0.4rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s, background 0.2s;
+
+  &:hover { color: $blanco; background: rgba(255,255,255,0.1); }
+}
+
+.pa-notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: $rojo;
+  color: $blanco;
+  font-size: 0.6rem;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pa-avatar-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+
+  &:hover { background: rgba(255,255,255,0.08); }
+}
+
+.pa-user-info {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+  line-height: 1.2;
+}
+
+.pa-greeting {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: $blanco;
+}
+
+.pa-role {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.55);
+}
+
+.pa-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: $rojo;
+  color: $blanco;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+// Dropdown
+.pa-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: $blanco;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  min-width: 200px;
+  padding: 0.75rem 0;
+  animation: paFadeDown 0.18s ease;
+  z-index: 999;
+}
+
+.pa-dropdown-info {
+  padding: 0 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pa-dropdown-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: $azul;
+}
+
+.pa-dropdown-code {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.pa-dropdown-divider {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 0.25rem 0;
+}
+
+.pa-dropdown-item {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.82rem;
+  color: #334155;
+  transition: background 0.15s;
+
+  &:hover { background: #f1f5f9; }
+  &.danger { color: $rojo; &:hover { background: #fff0f0; } }
+}
+
+@keyframes paFadeDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ============================================================
+// LAYOUT PRINCIPAL
+// ============================================================
+.pa-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+.pa-sidebar {
+  width: $sidebar-w;
+  background: $blanco;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 0.75rem;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.pa-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.18s, color 0.18s;
+  text-align: left;
+
+  svg { flex-shrink: 0; }
+
+  &:hover {
+    background: #f1f5f9;
+    color: $azul;
+  }
+
+  &.active {
+    background: $azul;
+    color: $blanco;
+    font-weight: 600;
+  }
+}
+
+.pa-nav-label { white-space: nowrap; }
+
+// ============================================================
+// ÁREA DE CONTENIDO
+// ============================================================
+.pa-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+// ============================================================
+// SECCIÓN INICIO
+// ============================================================
+.pa-inicio {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+// ── Panel cursos ─────────────────────────────────────────────
+.pa-cursos-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pa-cursos-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pa-cursos-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: $azul;
+}
+
+.pa-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pa-filter-label {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.pa-filter-select {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+  color: $azul;
+  background: $blanco;
+  cursor: pointer;
+  font-weight: 500;
+  min-width: 140px;
+  justify-content: space-between;
+
+  &:hover { border-color: $azul-med; }
+}
+
+.pa-periodo-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $azul-med;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid $azul;
+}
+
+// ── Grid de tarjetas ─────────────────────────────────────────
+.pa-cursos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.1rem;
+}
+
+.pa-curso-card {
+  background: $blanco;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  }
+}
+
+// Visual / imagen de la tarjeta
+.pa-card-visual {
+  position: relative;
+  height: 130px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pa-card-deco {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+// Badge de progreso
+.pa-horas-badge {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: $azul;
+  color: $blanco;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  letter-spacing: 0.3px;
+  z-index: 2;
+}
+
+.pa-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem 0;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.pa-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #e2e8f0;
+  border-top-color: $azul;
+  border-radius: 50%;
+  animation: paSpin 0.7s linear infinite;
+}
+
+@keyframes paSpin { to { transform: rotate(360deg); } }
+
+.pa-error {
+  background: #fff0f0;
+  border: 1px solid #fecaca;
+  border-left: 4px solid $rojo;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: $rojo;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+// Cuerpo de la tarjeta
+.pa-card-body {
+  padding: 0.9rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pa-card-nombre {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: $azul;
+  line-height: 1.3;
+}
+
+.pa-card-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: #64748b;
+
+  svg { flex-shrink: 0; opacity: 0.7; }
+}
+
+.pa-card-docente {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: $azul-med;
+  font-weight: 600;
+  margin-top: 0.2rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid #f1f5f9;
+
+  svg { flex-shrink: 0; }
+}
+
+// ============================================================
+// PANEL ACTIVIDADES SEMANALES
+// ============================================================
+.pa-actividades-panel {
+  background: $azul;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  position: sticky;
+  top: 0;
+}
+
+.pa-actividades-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem;
+  color: $blanco;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+
+  h3 { font-size: 0.9rem; font-weight: 700; }
+  svg { opacity: 0.85; }
+}
+
+.pa-actividades-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0;
+}
+
+.pa-actividad-item {
+  padding: 0.8rem 1.1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  &:last-child { border-bottom: none; }
+}
+
+.pa-act-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pa-act-tipo {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.65);
+
+  svg { opacity: 0.7; }
+}
+
+.pa-act-estado {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+
+  &.estado-pendiente { background: #eab308; color: #1a1200;  }
+  &.estado-entregado { background: #22c55e; color: #052e0f;  }
+  &.estado-vencido   { background: $rojo;   color: $blanco;  }
+}
+
+.pa-act-titulo {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: $blanco;
+}
+
+.pa-act-curso {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.75);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.pa-act-vence {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.5);
+}
+
+// ============================================================
+// PLACEHOLDER secciones sin contenido
+// ============================================================
+.pa-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  height: 50vh;
+  color: #94a3b8;
+  text-align: center;
+
+  h3 { font-size: 1.1rem; font-weight: 600; color: #64748b; }
+  p  { font-size: 0.85rem; }
+}
+
+// ============================================================
+// RESPONSIVE
+// ============================================================
+@media (max-width: 1024px) {
+  .pa-inicio { grid-template-columns: 1fr; }
+  .pa-actividades-panel { position: static; }
+}
+
+@media (max-width: 768px) {
+  .pa-sidebar { width: 60px; .pa-nav-label { display: none; } }
+  .pa-cursos-grid { grid-template-columns: 1fr; }
+  .pa-user-info { display: none; }
+}
