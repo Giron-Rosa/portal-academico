@@ -352,8 +352,122 @@ INSERT INTO docente_asignaciones (id_aula_curso, id_maestro, fecha_asignacion, a
     -- Personal Social – Patricia (solo 1ro Prim A)
     (19, 6, '2026-03-01', TRUE);
 
--- ------ matriculas ------
+-- ------ matriculas (alumnos iniciales) ------
 INSERT INTO matriculas (id_alumno, id_aula, fecha_matricula, estado) VALUES
     (1, 1, '2026-03-01', 'activa'),  -- Juan   → 5to Sec B
     (2, 2, '2026-03-01', 'activa'),  -- Sofía  → 3ro Sec A
     (3, 3, '2026-03-01', 'activa');  -- Diego  → 1ro Prim A
+
+-- ============================================================
+-- EXPANSIÓN: Aulas para todos los grados (sección A, 2026-I)
+-- Un alumno de prueba por grado. Contraseña: Test1234!
+-- ============================================================
+
+-- ------ aulas adicionales ------
+-- aula  4: 2do Primaria A  (grado=2,  sec=1, per=1)
+-- aula  5: 3ro Primaria A  (grado=3,  sec=1, per=1)
+-- aula  6: 4to Primaria A  (grado=4,  sec=1, per=1)
+-- aula  7: 5to Primaria A  (grado=5,  sec=1, per=1)
+-- aula  8: 6to Primaria A  (grado=6,  sec=1, per=1)
+-- aula  9: 1ro Secundaria A(grado=7,  sec=1, per=1)
+-- aula 10: 2do Secundaria A(grado=8,  sec=1, per=1)
+-- aula 11: 4to Secundaria A(grado=10, sec=1, per=1)
+-- aula 12: 5to Secundaria A(grado=11, sec=1, per=1)
+INSERT INTO aulas (id_grado, id_seccion, id_periodo, turno) VALUES
+    ( 2, 1, 1, 'mañana'),
+    ( 3, 1, 1, 'mañana'),
+    ( 4, 1, 1, 'mañana'),
+    ( 5, 1, 1, 'mañana'),
+    ( 6, 1, 1, 'mañana'),
+    ( 7, 1, 1, 'mañana'),
+    ( 8, 1, 1, 'mañana'),
+    (10, 1, 1, 'mañana'),
+    (11, 1, 1, 'mañana');
+
+-- ------ aula_cursos para nuevas aulas ------
+-- cursos: Mat=1 Com=2 Cie=3 His=4 Ing=5 Art=6 EFi=7 PSo=8 Rel=9
+-- 2do Primaria A (aula 4): 6 cursos
+INSERT INTO aula_cursos (id_aula, id_curso, horas_semana) VALUES
+    (4,1,5),(4,2,6),(4,8,4),(4,6,2),(4,7,2),(4,9,2);
+-- 3ro-6to Primaria A (aulas 5-8): 7 cursos (agrega Ciencia y Tecnología)
+INSERT INTO aula_cursos (id_aula, id_curso, horas_semana) VALUES
+    (5,1,5),(5,2,6),(5,3,4),(5,8,4),(5,6,2),(5,7,2),(5,9,2),
+    (6,1,5),(6,2,6),(6,3,4),(6,8,4),(6,6,2),(6,7,2),(6,9,2),
+    (7,1,5),(7,2,6),(7,3,4),(7,8,4),(7,6,2),(7,7,2),(7,9,2),
+    (8,1,5),(8,2,6),(8,3,4),(8,8,4),(8,6,2),(8,7,2),(8,9,2);
+-- 1ro-2do-4to-5to Secundaria A (aulas 9-12): 8 cursos
+INSERT INTO aula_cursos (id_aula, id_curso, horas_semana) VALUES
+    ( 9,1,5),( 9,2,5),( 9,3,4),( 9,4,4),( 9,5,4),( 9,6,2),( 9,7,2),( 9,9,2),
+    (10,1,5),(10,2,5),(10,3,4),(10,4,4),(10,5,4),(10,6,2),(10,7,2),(10,9,2),
+    (11,1,5),(11,2,5),(11,3,4),(11,4,4),(11,5,4),(11,6,2),(11,7,2),(11,9,2),
+    (12,1,5),(12,2,5),(12,3,4),(12,4,4),(12,5,4),(12,6,2),(12,7,2),(12,9,2);
+
+-- ------ docente_asignaciones para nuevas aulas ------
+-- maestros (fresh install, IDs consecutivos 1-6):
+--   Oscar=1 Maria=2 Carlos=3 Ana=4 Luis=5 Patricia=6
+-- Oscar → Matematica (todas las nuevas aulas)
+INSERT INTO docente_asignaciones (id_aula_curso, id_maestro, fecha_asignacion, activo)
+SELECT ac.id_aula_curso, 1, '2026-03-01', TRUE
+FROM aula_cursos ac WHERE ac.id_aula IN (4,5,6,7,8,9,10,11,12) AND ac.id_curso = 1;
+-- Maria → Comunicacion (todas las nuevas aulas)
+INSERT INTO docente_asignaciones (id_aula_curso, id_maestro, fecha_asignacion, activo)
+SELECT ac.id_aula_curso, 2, '2026-03-01', TRUE
+FROM aula_cursos ac WHERE ac.id_aula IN (4,5,6,7,8,9,10,11,12) AND ac.id_curso = 2;
+-- Carlos → Ciencia y Tecnologia (3ro Prim - 5to Sec) + Historia GE (secundaria)
+INSERT INTO docente_asignaciones (id_aula_curso, id_maestro, fecha_asignacion, activo)
+SELECT ac.id_aula_curso, 3, '2026-03-01', TRUE
+FROM aula_cursos ac WHERE ac.id_aula IN (5,6,7,8,9,10,11,12) AND ac.id_curso = 3;
+INSERT INTO docente_asignaciones (id_aula_curso, id_maestro, fecha_asignacion, activo)
+SELECT ac.id_aula_curso, 3, '2026-03-01', TRUE
+FROM aula_cursos ac WHERE ac.id_aula IN (9,10,11,12) AND ac.id_curso = 4;
+-- Ana → Ingles (secundaria)
+INSERT INTO docente_asignaciones (id_aula_curso, id_maestro, fecha_asignacion, activo)
+SELECT ac.id_aula_curso, 4, '2026-03-01', TRUE
+FROM aula_cursos ac WHERE ac.id_aula IN (9,10,11,12) AND ac.id_curso = 5;
+-- Patricia → Arte y Cultura (todas) + Personal Social (primaria)
+INSERT INTO docente_asignaciones (id_aula_curso, id_maestro, fecha_asignacion, activo)
+SELECT ac.id_aula_curso, 6, '2026-03-01', TRUE
+FROM aula_cursos ac WHERE ac.id_aula IN (4,5,6,7,8,9,10,11,12) AND ac.id_curso = 6;
+INSERT INTO docente_asignaciones (id_aula_curso, id_maestro, fecha_asignacion, activo)
+SELECT ac.id_aula_curso, 6, '2026-03-01', TRUE
+FROM aula_cursos ac WHERE ac.id_aula IN (4,5,6,7,8) AND ac.id_curso = 8;
+-- Luis → Educacion Fisica + Religion (todas las nuevas aulas)
+INSERT INTO docente_asignaciones (id_aula_curso, id_maestro, fecha_asignacion, activo)
+SELECT ac.id_aula_curso, 5, '2026-03-01', TRUE
+FROM aula_cursos ac WHERE ac.id_aula IN (4,5,6,7,8,9,10,11,12) AND ac.id_curso IN (7,9);
+
+-- ------ usuarios adicionales: alumnos de prueba ------
+INSERT INTO usuarios (codigo, email, contrasena_hash, rol, activo) VALUES
+    ('2A261001', 'carlos.huanca@alumnos.sanagustin.edu.pe',   'HASH_PENDIENTE', 'alumno', TRUE),
+    ('3A261002', 'lucia.quispe@alumnos.sanagustin.edu.pe',    'HASH_PENDIENTE', 'alumno', TRUE),
+    ('4A261003', 'miguel.torres@alumnos.sanagustin.edu.pe',   'HASH_PENDIENTE', 'alumno', TRUE),
+    ('5A261004', 'andrea.silva@alumnos.sanagustin.edu.pe',    'HASH_PENDIENTE', 'alumno', TRUE),
+    ('6A261005', 'kevin.paredes@alumnos.sanagustin.edu.pe',   'HASH_PENDIENTE', 'alumno', TRUE),
+    ('1S261006', 'camila.rojas@alumnos.sanagustin.edu.pe',    'HASH_PENDIENTE', 'alumno', TRUE),
+    ('2S261007', 'renzo.mendez@alumnos.sanagustin.edu.pe',    'HASH_PENDIENTE', 'alumno', TRUE),
+    ('4S261008', 'valeria.castro@alumnos.sanagustin.edu.pe',  'HASH_PENDIENTE', 'alumno', TRUE),
+    ('5S261009', 'fabian.gutierrez@alumnos.sanagustin.edu.pe','HASH_PENDIENTE', 'alumno', TRUE);
+
+-- ------ alumnos adicionales ------
+INSERT INTO alumnos (id_usuario, nombre, apellido, grado, seccion, fecha_nacimiento) VALUES
+    ((SELECT id_usuario FROM usuarios WHERE codigo='2A261001'), 'Carlos',  'Huanca',    '2do Primaria',   'A', '2016-05-12'),
+    ((SELECT id_usuario FROM usuarios WHERE codigo='3A261002'), 'Lucia',   'Quispe',    '3ro Primaria',   'A', '2015-08-20'),
+    ((SELECT id_usuario FROM usuarios WHERE codigo='4A261003'), 'Miguel',  'Torres',    '4to Primaria',   'A', '2014-03-07'),
+    ((SELECT id_usuario FROM usuarios WHERE codigo='5A261004'), 'Andrea',  'Silva',     '5to Primaria',   'A', '2013-11-30'),
+    ((SELECT id_usuario FROM usuarios WHERE codigo='6A261005'), 'Kevin',   'Paredes',   '6to Primaria',   'A', '2012-02-18'),
+    ((SELECT id_usuario FROM usuarios WHERE codigo='1S261006'), 'Camila',  'Rojas',     '1ro Secundaria', 'A', '2011-09-25'),
+    ((SELECT id_usuario FROM usuarios WHERE codigo='2S261007'), 'Renzo',   'Mendez',    '2do Secundaria', 'A', '2010-04-14'),
+    ((SELECT id_usuario FROM usuarios WHERE codigo='4S261008'), 'Valeria', 'Castro',    '4to Secundaria', 'A', '2008-07-03'),
+    ((SELECT id_usuario FROM usuarios WHERE codigo='5S261009'), 'Fabian',  'Gutierrez', '5to Secundaria', 'A', '2007-12-22');
+
+-- ------ matriculas adicionales ------
+INSERT INTO matriculas (id_alumno, id_aula, fecha_matricula, estado)
+SELECT al.id_alumno, a.id_aula, '2026-03-01', 'activa'
+FROM alumnos al
+JOIN usuarios u   ON u.id_usuario  = al.id_usuario
+JOIN grados g     ON g.nombre      = al.grado
+JOIN secciones s  ON s.nombre      = al.seccion
+JOIN periodos_academicos p ON p.nombre = '2026-I'
+JOIN aulas a ON a.id_grado = g.id_grado AND a.id_seccion = s.id_seccion AND a.id_periodo = p.id_periodo
+WHERE u.codigo IN ('2A261001','3A261002','4A261003','5A261004','6A261005',
+                   '1S261006','2S261007','4S261008','5S261009');
