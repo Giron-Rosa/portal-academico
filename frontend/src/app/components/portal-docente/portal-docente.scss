@@ -2320,6 +2320,98 @@ a.cd-mat-titulo {
   font-size: 0.82rem;
 }
 
+/* ═══════════════════════════════════════════
+   TAB: EXÁMENES  (complementos sobre Tareas)
+═══════════════════════════════════════════ */
+
+/* Header del formulario — tono naranja/ámbar */
+.ex-form-header {
+  background: #fffbeb;
+  border-bottom-color: #fde68a;
+  color: #b45309;
+}
+
+/* Botón submit específico de exámenes */
+.ex-btn-submit {
+  padding: 0.45rem 1.25rem;
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover:not(:disabled) { background: #b45309; }
+  &:disabled { background: #9ca3af; cursor: not-allowed; }
+}
+
+/* Badge del número de examen — ámbar */
+.ex-num {
+  color: #b45309 !important;
+  background: #fffbeb !important;
+}
+
+/* Header del acordeón — borde ámbar sutil al hover */
+.ex-header {
+  &:hover { background: #fffbeb !important; }
+}
+
+/* Badge de tipo de examen */
+.ex-tipo-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: #f3f4f6;
+  color: #374151;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Badge duración */
+.ex-duracion-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+/* Badge stat "calificados" */
+.ex-stat-cal { background: #fef3c7; color: #d97706; }
+
+/* Tarjeta stat "calificados" */
+.ex-sc-cal {
+  background: #fffbeb;
+  .tr-sc-num   { color: #d97706; }
+  .tr-sc-label { color: #fcd34d; }
+}
+
+/* Fila asistió / ausente */
+.ex-row-asistio { background: #f0fdf4 !important; }
+.ex-row-ausente { background: #fafafa !important; }
+
+/* Label "Ausente" en columna nota */
+.ex-ausente-label {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Enlace de material de apoyo */
+.ex-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: #2563eb;
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
 /* ── Estado vacío (administrador no ha cargado horarios) ── */
 .cal-empty {
   display: flex;

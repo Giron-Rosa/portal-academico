@@ -687,18 +687,344 @@
 
         }<!-- /tareas -->
 
-        <!-- ─── Tab: EXÁMENES (placeholder) ─── -->
+        <!-- ─── Tab: EXÁMENES ─── -->
         @if (activeSubTab() === 'examenes') {
-          <div class="cd-placeholder-tab">
-            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
-              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-              <line x1="9" y1="7" x2="15" y2="7"/>
-              <line x1="9" y1="11" x2="15" y2="11"/>
-              <line x1="9" y1="15" x2="13" y2="15"/>
-            </svg>
-            <p>Exámenes — próximamente</p>
+
+          <!-- Cabecera -->
+          <div class="cd-section-header">
+            <h3 class="cd-section-title">Exámenes</h3>
+            @if (!mostrarFormExamen()) {
+              <button class="cd-btn-subir" (click)="toggleFormExamen(true)">+ Nuevo Examen</button>
+            }
           </div>
-        }
+
+          <!-- ── Formulario de creación ── -->
+          @if (mostrarFormExamen()) {
+            <div class="tr-form-panel">
+              <div class="tr-form-header ex-form-header">
+                <span>Nuevo Examen</span>
+                <button class="cd-modal-close" (click)="toggleFormExamen(false)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="tr-form-grid">
+                <!-- Fila 1: Semana / Clase / N° Examen / Fecha -->
+                <div class="tr-field">
+                  <label class="cd-modal-label">Semana</label>
+                  <div class="cd-stepper">
+                    <button (click)="stepperExamen('semana', -1)">−</button>
+                    <span>{{ formExamen().semana }}</span>
+                    <button (click)="stepperExamen('semana', +1)">+</button>
+                  </div>
+                </div>
+                <div class="tr-field">
+                  <label class="cd-modal-label">Clase</label>
+                  <div class="cd-stepper">
+                    <button (click)="stepperExamen('clase', -1)">−</button>
+                    <span>{{ formExamen().clase }}</span>
+                    <button (click)="stepperExamen('clase', +1)">+</button>
+                  </div>
+                </div>
+                <div class="tr-field">
+                  <label class="cd-modal-label">N° Examen</label>
+                  <div class="cd-stepper">
+                    <button (click)="stepperExamen('numeroExamen', -1)">−</button>
+                    <span>{{ formExamen().numeroExamen }}</span>
+                    <button (click)="stepperExamen('numeroExamen', +1)">+</button>
+                  </div>
+                </div>
+                <div class="tr-field">
+                  <label class="cd-modal-label">Fecha del Examen</label>
+                  <input class="cd-modal-input" type="date"
+                         [ngModel]="formExamen().fechaExamen"
+                         (ngModelChange)="setFormExamen('fechaExamen', $event)"/>
+                </div>
+
+                <!-- Título -->
+                <div class="tr-field tr-full">
+                  <label class="cd-modal-label">Título *</label>
+                  <input class="cd-modal-input" type="text"
+                         placeholder="Ej: Examen Bimestral I — Números Enteros"
+                         maxlength="200"
+                         [ngModel]="formExamen().titulo"
+                         (ngModelChange)="setFormExamen('titulo', $event)"/>
+                </div>
+
+                <!-- Descripción -->
+                <div class="tr-field tr-full">
+                  <label class="cd-modal-label">Descripción / Temas</label>
+                  <textarea class="tr-textarea" rows="3"
+                            placeholder="Temas que abarca el examen..."
+                            [ngModel]="formExamen().descripcion"
+                            (ngModelChange)="setFormExamen('descripcion', $event)"></textarea>
+                </div>
+
+                <!-- Tipo / Duración / Nota máxima / URL -->
+                <div class="tr-field tr-span2">
+                  <label class="cd-modal-label">Tipo de Examen</label>
+                  <select class="cd-modal-input"
+                          [ngModel]="formExamen().tipo"
+                          (ngModelChange)="setFormExamen('tipo', $event)">
+                    <option value="escrito">Escrito</option>
+                    <option value="oral">Oral</option>
+                    <option value="online">Online</option>
+                    <option value="practico">Práctico</option>
+                  </select>
+                </div>
+                <div class="tr-field">
+                  <label class="cd-modal-label">Duración (min)</label>
+                  <div class="cd-stepper">
+                    <button (click)="stepperExamen('duracionMinutos', -15)">−</button>
+                    <span>{{ formExamen().duracionMinutos }}</span>
+                    <button (click)="stepperExamen('duracionMinutos', +15)">+</button>
+                  </div>
+                </div>
+                <div class="tr-field">
+                  <label class="cd-modal-label">Nota Máxima</label>
+                  <div class="cd-stepper">
+                    <button (click)="stepperExamen('notaMaxima', -1)">−</button>
+                    <span>{{ formExamen().notaMaxima }}</span>
+                    <button (click)="stepperExamen('notaMaxima', +1)">+</button>
+                  </div>
+                </div>
+                <div class="tr-field tr-full">
+                  <label class="cd-modal-label">URL de Referencia</label>
+                  <input class="cd-modal-input" type="url"
+                         placeholder="https://..."
+                         [ngModel]="formExamen().url"
+                         (ngModelChange)="setFormExamen('url', $event)"/>
+                </div>
+              </div>
+
+              <div class="tr-form-actions">
+                <button class="cd-modal-cancel" (click)="toggleFormExamen(false)">Cancelar</button>
+                <button class="ex-btn-submit"
+                        (click)="enviarExamen()"
+                        [disabled]="!formExamen().titulo.trim() || enviandoExamen()">
+                  @if (enviandoExamen()) { Creando… } @else { Crear Examen }
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Estado de carga -->
+          @if (cargandoExamenes()) {
+            <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando exámenes...</span></div>
+          }
+
+          <!-- Estado vacío -->
+          @if (!cargandoExamenes() && examenes().length === 0) {
+            <div class="cd-empty">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                <line x1="9" y1="7" x2="15" y2="7"/>
+                <line x1="9" y1="11" x2="15" y2="11"/>
+                <line x1="9" y1="15" x2="13" y2="15"/>
+              </svg>
+              <p>No hay exámenes registrados. Usa "+ Nuevo Examen" para agregar el primero.</p>
+            </div>
+          }
+
+          <!-- ── Lista de Exámenes ── -->
+          @for (examen of examenes(); track examen.id) {
+            <div class="tr-tarea-block ex-block">
+
+              <!-- Header del examen (acordeón) -->
+              <button class="tr-tarea-header ex-header" (click)="toggleExamen(examen.id)">
+                <div class="tr-tarea-header-left">
+                  <span class="tr-tarea-num ex-num">Examen {{ examen.numeroExamen }}</span>
+                  <span class="ex-tipo-badge">{{ labelTipoExamen(examen.tipo) }}</span>
+                  <span class="tr-tarea-titulo">{{ examen.titulo }}</span>
+                  @if (examen.fechaExamen) {
+                    <span class="tr-fecha-badge">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
+                      {{ examen.fechaExamen }}
+                    </span>
+                  }
+                  @if (examen.duracionMinutos) {
+                    <span class="ex-duracion-badge">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      {{ examen.duracionMinutos }} min
+                    </span>
+                  }
+                </div>
+                <div class="tr-tarea-header-right">
+                  <span class="tr-stat-badge tr-stat-ok" title="Asistieron">{{ examen.asistieron }}</span>
+                  <span class="tr-stat-badge tr-stat-no" title="No asistieron">{{ examen.noAsistieron }}</span>
+                  <span class="tr-stat-badge ex-stat-cal" title="Calificados">{{ examen.calificados }}</span>
+                  <span class="tr-stat-badge tr-stat-total" title="Total">{{ examen.totalAlumnos }}</span>
+                  <button class="cd-mat-delete" (click)="$event.stopPropagation(); eliminarExamen(examen.id)" title="Eliminar examen">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                      <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                    </svg>
+                  </button>
+                  <svg class="cd-chevron" [class.open]="examenesExpandidos().has(examen.id)"
+                       width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="18 15 12 9 6 15"/>
+                  </svg>
+                </div>
+              </button>
+
+              <!-- Detalle expandido -->
+              @if (examenesExpandidos().has(examen.id)) {
+                <div class="tr-tarea-detail">
+
+                  <!-- Descripción / URL -->
+                  @if (examen.descripcion || examen.url) {
+                    <div class="tr-meta-row">
+                      @if (examen.descripcion) {
+                        <div class="tr-meta-item">
+                          <span class="tr-meta-label">Descripción / Temas</span>
+                          <span class="tr-meta-value">{{ examen.descripcion }}</span>
+                        </div>
+                      }
+                      @if (examen.url) {
+                        <div class="tr-meta-item">
+                          <span class="tr-meta-label">Material de apoyo</span>
+                          <a [href]="examen.url" target="_blank" class="ex-link">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                              <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                            </svg>
+                            Ver enlace
+                          </a>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Stats de asistencia y calificación -->
+                  <div class="tr-stats-row">
+                    <div class="tr-stat-card tr-sc-ok">
+                      <span class="tr-sc-num">{{ examen.asistieron }}</span>
+                      <span class="tr-sc-label">Asistieron</span>
+                    </div>
+                    <div class="tr-stat-card tr-sc-no">
+                      <span class="tr-sc-num">{{ examen.noAsistieron }}</span>
+                      <span class="tr-sc-label">No Asistieron</span>
+                    </div>
+                    <div class="tr-stat-card ex-sc-cal">
+                      <span class="tr-sc-num">{{ examen.calificados }}</span>
+                      <span class="tr-sc-label">Calificados</span>
+                    </div>
+                    <div class="tr-stat-card tr-sc-total">
+                      <span class="tr-sc-num">{{ examen.totalAlumnos }}</span>
+                      <span class="tr-sc-label">Total Alumnos</span>
+                    </div>
+                    <div class="tr-stat-card tr-sc-nota">
+                      <span class="tr-sc-num">/ {{ examen.notaMaxima }}</span>
+                      <span class="tr-sc-label">Nota Máx.</span>
+                    </div>
+                  </div>
+
+                  <!-- Tabla de notas -->
+                  @if (notasPorExamen().get(examen.id); as notas) {
+                    <div class="tr-tabla-wrap">
+                      <table class="tr-tabla">
+                        <thead>
+                          <tr>
+                            <th>Código</th>
+                            <th>Nombres y Apellidos</th>
+                            <th class="tr-th-center">Asistió</th>
+                            <th class="tr-th-center">Nota</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (ne of notas; track ne.idNotaExamen) {
+                            <tr [class.ex-row-asistio]="ne.asistio"
+                                [class.ex-row-ausente]="!ne.asistio">
+
+                              <td class="tr-td-codigo">{{ ne.codigo }}</td>
+                              <td class="tr-td-nombre">{{ ne.nombres }}</td>
+
+                              <!-- Toggle asistencia -->
+                              <td class="tr-td-center">
+                                <button class="tr-toggle-entregado"
+                                        [class.activo]="ne.asistio"
+                                        (click)="toggleAsistio(ne.idNotaExamen, examen.id, ne.asistio)"
+                                        [title]="ne.asistio ? 'Marcar como ausente' : 'Marcar como asistente'">
+                                  @if (ne.asistio) {
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                      <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                  } @else {
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                  }
+                                </button>
+                              </td>
+
+                              <!-- Nota editable inline -->
+                              <td class="tr-td-center">
+                                @if (!ne.asistio) {
+                                  <span class="ex-ausente-label">Ausente</span>
+                                } @else if (editandoNotaEx().has(ne.idNotaExamen)) {
+                                  <div class="tr-nota-edit">
+                                    <input class="tr-nota-input"
+                                           type="number" min="0" [max]="examen.notaMaxima" step="0.5"
+                                           [ngModel]="editandoNotaEx().get(ne.idNotaExamen)"
+                                           (ngModelChange)="setEditNotaEx(ne.idNotaExamen, $event)"
+                                           (keydown.enter)="guardarNotaExamen(ne.idNotaExamen, examen.id)"
+                                           (keydown.escape)="cancelarEditNotaEx(ne.idNotaExamen)"
+                                           autofocus/>
+                                    <span class="tr-nota-max">/{{ examen.notaMaxima }}</span>
+                                    <button class="tr-nota-ok"
+                                            [disabled]="guardandoNotaEx().has(ne.idNotaExamen)"
+                                            (click)="guardarNotaExamen(ne.idNotaExamen, examen.id)">
+                                      @if (guardandoNotaEx().has(ne.idNotaExamen)) { … } @else {
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                          <polyline points="20 6 9 17 4 12"/>
+                                        </svg>
+                                      }
+                                    </button>
+                                    <button class="tr-nota-cancel" (click)="cancelarEditNotaEx(ne.idNotaExamen)">
+                                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                      </svg>
+                                    </button>
+                                  </div>
+                                } @else {
+                                  <button class="tr-nota-display"
+                                          (click)="iniciarEditNotaEx(ne.idNotaExamen, ne.nota)"
+                                          title="Haz clic para calificar">
+                                    <span [class.tr-nota-vacia]="ne.nota === null">
+                                      {{ ne.nota !== null ? ne.nota : '—' }}
+                                    </span>
+                                    <span class="tr-nota-max">/{{ examen.notaMaxima }}</span>
+                                  </button>
+                                }
+                              </td>
+
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  } @else {
+                    <div class="tr-loading-notas">
+                      <div class="pd-spinner" style="width:18px;height:18px;border-width:2px"></div>
+                      <span>Cargando alumnos...</span>
+                    </div>
+                  }
+
+                </div>
+              }
+
+            </div>
+          }
+
+        }<!-- /examenes -->
 
         <!-- ─── Tab: REPORTES (placeholder) ─── -->
         @if (activeSubTab() === 'reportes') {

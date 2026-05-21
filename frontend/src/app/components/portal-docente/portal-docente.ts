@@ -176,6 +176,49 @@ export interface FormTarea {
   url: string;
 }
 
+/* ── Interfaces de Exámenes ── */
+
+export interface Examen {
+  id: number;
+  numeroExamen: number;
+  semana: number;
+  clase: number;
+  titulo: string;
+  descripcion: string | null;
+  tipo: string;              // escrito | oral | online | practico
+  fechaExamen: string | null;
+  duracionMinutos: number | null;
+  notaMaxima: number;
+  url: string | null;
+  fechaCreacion: string;
+  totalAlumnos: number;
+  asistieron: number;
+  noAsistieron: number;
+  calificados: number;
+}
+
+export interface NotaExamen {
+  idNotaExamen: number;
+  idAlumno: number;
+  codigo: string;
+  nombres: string;
+  asistio: boolean;
+  nota: number | null;
+}
+
+export interface FormExamen {
+  semana: number;
+  clase: number;
+  numeroExamen: number;
+  titulo: string;
+  descripcion: string;
+  tipo: string;
+  fechaExamen: string;
+  duracionMinutos: number;
+  notaMaxima: number;
+  url: string;
+}
+
 /* ── Interfaces de comunicados (Refuerzos) ── */
 
 /** Aula del docente: id + grado + sección, para el selector del formulario */
@@ -345,6 +388,22 @@ export class PortalDocente {
   /** Estado de edición de nota: Map<idNota, string> (valor temporal) */
   editandoNota       = signal<Map<number, string>>(new Map());
   guardandoNota      = signal<Set<number>>(new Set());
+
+  /* ── Signals de Exámenes ── */
+
+  examenes             = signal<Examen[]>([]);
+  cargandoExamenes     = signal(false);
+  mostrarFormExamen    = signal(false);
+  enviandoExamen       = signal(false);
+  formExamen = signal<FormExamen>({
+    semana: 1, clase: 1, numeroExamen: 1,
+    titulo: '', descripcion: '', tipo: 'escrito',
+    fechaExamen: '', duracionMinutos: 90, notaMaxima: 20, url: ''
+  });
+  examenesExpandidos   = signal<Set<number>>(new Set());
+  notasPorExamen       = signal<Map<number, NotaExamen[]>>(new Map());
+  editandoNotaEx       = signal<Map<number, string>>(new Map());
+  guardandoNotaEx      = signal<Set<number>>(new Set());
 
   /* ── Signals de comunicados (Refuerzos) ── */
 
@@ -810,6 +869,7 @@ export class PortalDocente {
     this.clasesAbiertas.set(new Set(['1-1']));
     this.cargarMateriales(curso.idAulaCurso);
     this.cargarTareas(curso.idAulaCurso);
+    this.cargarExamenes(curso.idAulaCurso);
   }
 
   /** Vuelve a la sección inicio y limpia el estado del curso activo */
@@ -820,6 +880,10 @@ export class PortalDocente {
     this.tareasExpandidas.set(new Set());
     this.notasPorTarea.set(new Map());
     this.mostrarFormTarea.set(false);
+    this.examenes.set([]);
+    this.examenesExpandidos.set(new Set());
+    this.notasPorExamen.set(new Map());
+    this.mostrarFormExamen.set(false);
     this.activeSection.set('inicio');
   }
 
@@ -1138,6 +1202,197 @@ export class PortalDocente {
       `http://localhost:8080/api/portal/docente/tareas/notas/${idNota}`,
       { entregado: !entregadoActual }, { headers }
     ).subscribe({ error: () => this.cargarNotasTarea(idTarea) });
+  }
+
+  /* ── Métodos de Exámenes ── */
+
+  cargarExamenes(idAulaCurso: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoExamenes.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Examen[]>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/examenes`,
+      { headers }
+    ).subscribe({
+      next: data => { this.examenes.set(data); this.cargandoExamenes.set(false); },
+      error: ()   => this.cargandoExamenes.set(false),
+    });
+  }
+
+  setFormExamen(campo: keyof FormExamen, valor: string | number) {
+    this.formExamen.update(f => ({ ...f, [campo]: valor }));
+  }
+
+  stepperExamen(campo: 'semana' | 'clase' | 'numeroExamen' | 'notaMaxima' | 'duracionMinutos', delta: number) {
+    this.formExamen.update(f => ({
+      ...f,
+      [campo]: Math.max(1, f[campo] + delta)
+    }));
+  }
+
+  toggleFormExamen(abrir: boolean) {
+    if (abrir) {
+      this.formExamen.set({
+        semana: 1, clase: 1, numeroExamen: this.examenes().length + 1,
+        titulo: '', descripcion: '', tipo: 'escrito',
+        fechaExamen: '', duracionMinutos: 90, notaMaxima: 20, url: ''
+      });
+    }
+    this.mostrarFormExamen.set(abrir);
+  }
+
+  enviarExamen() {
+    const f = this.formExamen();
+    if (!f.titulo.trim()) return;
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoExamen.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      semana:           f.semana,
+      clase:            f.clase,
+      numeroExamen:     f.numeroExamen,
+      titulo:           f.titulo.trim(),
+      descripcion:      f.descripcion?.trim() || null,
+      tipo:             f.tipo,
+      fechaExamen:      f.fechaExamen || null,
+      duracionMinutos:  f.duracionMinutos || null,
+      notaMaxima:       f.notaMaxima,
+      url:              f.url?.trim() || null,
+    };
+    this.http.post<Examen>(
+      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/examenes`,
+      body, { headers }
+    ).subscribe({
+      next: () => {
+        this.mostrarFormExamen.set(false);
+        this.enviandoExamen.set(false);
+        this.cargarExamenes(curso.idAulaCurso);
+      },
+      error: () => this.enviandoExamen.set(false),
+    });
+  }
+
+  eliminarExamen(id: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const curso = this.cursoActivo();
+    this.examenes.update(list => list.filter(e => e.id !== id));
+    this.examenesExpandidos.update(s => { const n = new Set(s); n.delete(id); return n; });
+    this.notasPorExamen.update(m => { const n = new Map(m); n.delete(id); return n; });
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.delete(
+      `http://localhost:8080/api/portal/docente/examenes/${id}`, { headers }
+    ).subscribe({ error: () => curso && this.cargarExamenes(curso.idAulaCurso) });
+  }
+
+  toggleExamen(id: number) {
+    this.examenesExpandidos.update(set => {
+      const next = new Set(set);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        if (!this.notasPorExamen().has(id)) this.cargarNotasExamen(id);
+      }
+      return next;
+    });
+  }
+
+  cargarNotasExamen(idExamen: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<NotaExamen[]>(
+      `http://localhost:8080/api/portal/docente/examenes/${idExamen}/notas`,
+      { headers }
+    ).subscribe({
+      next: data => this.notasPorExamen.update(m => new Map(m).set(idExamen, data)),
+    });
+  }
+
+  iniciarEditNotaEx(idNota: number, notaActual: number | null) {
+    this.editandoNotaEx.update(m => new Map(m).set(idNota, notaActual?.toString() ?? ''));
+  }
+
+  cancelarEditNotaEx(idNota: number) {
+    this.editandoNotaEx.update(m => { const n = new Map(m); n.delete(idNota); return n; });
+  }
+
+  setEditNotaEx(idNota: number, valor: string) {
+    this.editandoNotaEx.update(m => new Map(m).set(idNota, valor));
+  }
+
+  guardarNotaExamen(idNota: number, idExamen: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const notaStr = this.editandoNotaEx().get(idNota);
+    const nota = notaStr !== undefined && notaStr !== '' ? parseFloat(notaStr) : null;
+    if (nota !== null && isNaN(nota)) return;
+
+    this.guardandoNotaEx.update(s => new Set(s).add(idNota));
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body: Record<string, unknown> = {};
+    if (nota !== null) body['nota'] = nota;
+
+    this.http.patch<NotaExamen>(
+      `http://localhost:8080/api/portal/docente/examenes/notas/${idNota}`,
+      body, { headers }
+    ).subscribe({
+      next: updated => {
+        this.notasPorExamen.update(m => {
+          const notas = m.get(idExamen) ?? [];
+          return new Map(m).set(idExamen, notas.map(n => n.idNotaExamen === idNota ? updated : n));
+        });
+        this.examenes.update(list => list.map(e => {
+          if (e.id !== idExamen) return e;
+          const all = this.notasPorExamen().get(idExamen) ?? [];
+          return { ...e, calificados: all.filter(n => n.nota !== null).length };
+        }));
+        this.guardandoNotaEx.update(s => { const n = new Set(s); n.delete(idNota); return n; });
+        this.cancelarEditNotaEx(idNota);
+      },
+      error: () => this.guardandoNotaEx.update(s => { const n = new Set(s); n.delete(idNota); return n; }),
+    });
+  }
+
+  toggleAsistio(idNota: number, idExamen: number, asistioActual: boolean) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    this.notasPorExamen.update(m => {
+      const notas = m.get(idExamen) ?? [];
+      return new Map(m).set(idExamen,
+        notas.map(n => n.idNotaExamen === idNota ? { ...n, asistio: !asistioActual } : n));
+    });
+    this.http.patch<NotaExamen>(
+      `http://localhost:8080/api/portal/docente/examenes/notas/${idNota}`,
+      { asistio: !asistioActual }, { headers }
+    ).subscribe({
+      next: updated => {
+        this.notasPorExamen.update(m => {
+          const notas = m.get(idExamen) ?? [];
+          return new Map(m).set(idExamen, notas.map(n => n.idNotaExamen === idNota ? updated : n));
+        });
+        this.examenes.update(list => list.map(e => {
+          if (e.id !== idExamen) return e;
+          const all = this.notasPorExamen().get(idExamen) ?? [];
+          return { ...e,
+            asistieron:   all.filter(n => n.asistio).length,
+            noAsistieron: all.filter(n => !n.asistio).length,
+          };
+        }));
+      },
+      error: () => this.cargarNotasExamen(idExamen),
+    });
+  }
+
+  /** Etiqueta legible del tipo de examen */
+  labelTipoExamen(tipo: string): string {
+    return ({ escrito: 'Escrito', oral: 'Oral', online: 'Online', practico: 'Práctico' } as Record<string, string>)[tipo] ?? tipo;
   }
 
   setSection(id: string)   { this.activeSection.set(id);   this.dropdownOpen.set(false); }
