@@ -1418,6 +1418,506 @@
   .com-form-full { grid-column: 1; }
 }
 
+/* ═══════════════════════════════════════════
+   DETALLE DE CURSO
+   Breadcrumb + tabs + contenido + modal
+═══════════════════════════════════════════ */
+
+/* Hacer las cards de cursos clickables */
+.pd-course-card {
+  cursor: pointer;
+  &:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+/* ── Breadcrumb ── */
+.cd-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.cd-btn-volver {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #374151;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  &:hover { color: #0d1b2a; }
+}
+
+.cd-sep {
+  color: #d1d5db;
+  font-size: 0.9rem;
+}
+
+.cd-breadcrumb-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cd-breadcrumb-grado {
+  font-weight: 400;
+  color: #6b7280;
+  font-size: 0.82rem;
+}
+
+/* ── Tab bar del curso ── */
+.cd-tabs {
+  display: flex;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 1.25rem;
+  gap: 0;
+  overflow-x: auto;
+}
+
+.cd-tab {
+  padding: 0.65rem 1.1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover  { color: #374151; }
+  &.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 700; }
+}
+
+/* ── Cabecera de sección (título + botón) ── */
+.cd-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cd-section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.cd-btn-subir {
+  padding: 0.45rem 1rem;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: #1d4ed8; }
+}
+
+/* ── Estado vacío del contenido ── */
+.cd-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 3rem 1rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ── Bloque de Semana (acordeón externo) ── */
+.cd-semana-block {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  background: #fff;
+}
+
+.cd-semana-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  background: #f9fafb;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #111827;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+
+  &:hover { background: #f3f4f6; }
+}
+
+/* Chevron que rota al abrir */
+.cd-chevron {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  &.open { transform: rotate(180deg); }
+}
+
+.cd-semana-content {
+  padding: 0.5rem 0;
+}
+
+/* ── Bloque de Clase (acordeón interno) ── */
+.cd-clase-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1.25rem;
+  background: none;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+
+  &:hover { background: #f9fafb; }
+}
+
+/* ── Lista de materiales de una clase ── */
+.cd-materiales-list {
+  padding: 0 1rem 0.4rem;
+}
+
+.cd-material-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  border-radius: 6px;
+  transition: background 0.1s;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: #f9fafb; }
+}
+
+/* Icono cuadrado con color de fondo */
+.cd-mat-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Nombre del material + sub-tipo */
+.cd-mat-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cd-mat-titulo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111827;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+a.cd-mat-titulo {
+  color: #2563eb;
+  &:hover { text-decoration: underline; }
+}
+
+.cd-mat-tipo {
+  font-size: 0.68rem;
+  color: #9ca3af;
+}
+
+/* Fecha de creación */
+.cd-mat-fecha {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Botón eliminar material */
+.cd-mat-delete {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fee2e2;
+  border-radius: 6px;
+  background: #fff;
+  color: #b91c1c;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  flex-shrink: 0;
+
+  &:hover { background: #fee2e2; }
+}
+
+.cd-material-row:hover .cd-mat-delete { opacity: 1; }
+
+/* ── Placeholder de tabs no implementados ── */
+.cd-placeholder-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 4rem 1rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════
+   MODAL: SUBIR MATERIAL
+═══════════════════════════════════════════ */
+
+.cd-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.cd-modal {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  animation: modalIn 0.2s ease;
+  overflow: hidden;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.cd-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.cd-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.cd-modal-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+  &:hover { background: #f3f4f6; color: #111827; }
+}
+
+.cd-modal-body {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* Fila de steppers Semana / Clase */
+.cd-stepper-row {
+  display: flex;
+  gap: 2rem;
+}
+
+.cd-stepper-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cd-stepper-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.cd-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+  width: fit-content;
+
+  button {
+    width: 32px;
+    height: 32px;
+    background: #f9fafb;
+    border: none;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.1s;
+    &:hover { background: #e5e7eb; }
+  }
+
+  span {
+    min-width: 36px;
+    text-align: center;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #111827;
+    padding: 0 4px;
+    border-left: 1px solid #d1d5db;
+    border-right: 1px solid #d1d5db;
+    line-height: 32px;
+  }
+}
+
+/* Campo de formulario del modal */
+.cd-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cd-modal-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.cd-modal-input,
+.cd-modal-select {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.83rem;
+  font-family: inherit;
+  color: #1f2937;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+  &:focus { border-color: #2563eb; }
+}
+
+/* Fila select + tick */
+.cd-select-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+
+  .cd-modal-select { flex: 1; }
+}
+
+/* Área drag-and-drop de archivo */
+.cd-upload-area {
+  border: 2px dashed #d1d5db;
+  border-radius: 10px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  &:hover { border-color: #2563eb; background: #eff6ff; }
+}
+
+.cd-upload-text {
+  font-size: 0.82rem;
+  color: #374151;
+  font-weight: 500;
+  margin: 0;
+}
+
+.cd-upload-hint {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Footer del modal */
+.cd-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.cd-modal-cancel {
+  padding: 0.45rem 1rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: #e5e7eb; }
+}
+
+.cd-modal-submit {
+  padding: 0.45rem 1.25rem;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover:not(:disabled) { background: #1d4ed8; }
+  &:disabled { background: #9ca3af; cursor: not-allowed; }
+}
+
 /* ── Estado vacío (administrador no ha cargado horarios) ── */
 .cal-empty {
   display: flex;

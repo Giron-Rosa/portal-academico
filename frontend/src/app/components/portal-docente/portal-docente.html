@@ -124,7 +124,9 @@
         @if (!cargando()) {
         <div class="pd-courses-grid">
           @for (curso of filteredCursos(); track curso.nombre) {
-            <div class="pd-course-card" [style.background-color]="curso.color">
+            <div class="pd-course-card" [style.background-color]="curso.color"
+                 (click)="abrirCurso(curso)" role="button" tabindex="0"
+                 (keydown.enter)="abrirCurso(curso)">
               <div class="pd-card-badge">{{ curso.badge }}</div>
 
               <div class="pd-card-icon">
@@ -201,6 +203,336 @@
         </div>
         }
       }
+
+      <!-- ═══ SECCIÓN: DETALLE DE CURSO ═══ -->
+      @if (activeSection() === 'curso-detalle' && cursoActivo()) {
+
+        <!-- Breadcrumb / navegación de retorno -->
+        <div class="cd-breadcrumb">
+          <button class="cd-btn-volver" (click)="volverAlInicio()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Volver
+          </button>
+          <span class="cd-sep">|</span>
+          <span class="cd-breadcrumb-label">
+            {{ cursoActivo()!.nombre }}
+            <span class="cd-breadcrumb-grado">
+              · {{ cursoActivo()!.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ cursoActivo()!.seccion }}
+            </span>
+          </span>
+        </div>
+
+        <!-- Tab bar del curso -->
+        <div class="cd-tabs">
+          @for (tab of [
+            {id:'asistencia', label:'Asistencia'},
+            {id:'contenido',  label:'Contenido'},
+            {id:'tareas',     label:'Tareas'},
+            {id:'examenes',   label:'Exámenes'},
+            {id:'reportes',   label:'Reportes'}
+          ]; track tab.id) {
+            <button class="cd-tab" [class.active]="activeSubTab() === tab.id"
+                    (click)="activeSubTab.set(tab.id)">
+              {{ tab.label }}
+            </button>
+          }
+        </div>
+
+        <!-- ─── Tab: CONTENIDO ─── -->
+        @if (activeSubTab() === 'contenido') {
+          <div class="cd-section-header">
+            <h3 class="cd-section-title">Contenido</h3>
+            <button class="cd-btn-subir" (click)="toggleModalMaterial(true)">
+              Subir Material
+            </button>
+          </div>
+
+          <!-- Estado de carga -->
+          @if (cargandoMat()) {
+            <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando materiales...</span></div>
+          }
+
+          <!-- Estado vacío -->
+          @if (!cargandoMat() && contenidoArbol().length === 0) {
+            <div class="cd-empty">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <p>No hay material cargado. Usa "Subir Material" para agregar el primero.</p>
+            </div>
+          }
+
+          <!-- Árbol: Semanas > Clases > Materiales -->
+          @for (sn of contenidoArbol(); track sn.semana) {
+            <div class="cd-semana-block">
+
+              <!-- Header de semana (acordeón) -->
+              <button class="cd-semana-header"
+                      (click)="toggleSemana(sn.semana)">
+                <span>Semana {{ sn.semana }}</span>
+                <svg class="cd-chevron"
+                     [class.open]="semanasAbiertas().has(sn.semana)"
+                     width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5">
+                  <polyline points="18 15 12 9 6 15"/>
+                </svg>
+              </button>
+
+              <!-- Contenido de la semana (colapsable) -->
+              @if (semanasAbiertas().has(sn.semana)) {
+                <div class="cd-semana-content">
+                  @for (cn of sn.clases; track cn.clase) {
+
+                    <!-- Header de clase (acordeón) -->
+                    <button class="cd-clase-header"
+                            (click)="toggleClase(sn.semana, cn.clase)">
+                      <span>Clase {{ cn.clase }}</span>
+                      <svg class="cd-chevron"
+                           [class.open]="clasesAbiertas().has(sn.semana + '-' + cn.clase)"
+                           width="14" height="14" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2.5">
+                        <polyline points="18 15 12 9 6 15"/>
+                      </svg>
+                    </button>
+
+                    <!-- Lista de materiales de la clase -->
+                    @if (clasesAbiertas().has(sn.semana + '-' + cn.clase)) {
+                      <div class="cd-materiales-list">
+                        @for (m of cn.items; track m.id) {
+                          <div class="cd-material-row">
+
+                            <!-- Icono de tipo -->
+                            <div class="cd-mat-icon"
+                                 [style.background]="colorMaterial(m.tipo) + '20'">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                   [style.stroke]="colorMaterial(m.tipo)" stroke-width="2">
+                                @if (m.tipo === 'youtube') {
+                                  <polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/>
+                                } @else if (m.tipo === 'url') {
+                                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                                } @else {
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                  <polyline points="14 2 14 8 20 8"/>
+                                }
+                              </svg>
+                            </div>
+
+                            <!-- Nombre + tipo -->
+                            <div class="cd-mat-info">
+                              @if (m.url) {
+                                <a class="cd-mat-titulo" [href]="m.url" target="_blank" rel="noopener">
+                                  {{ m.titulo }}
+                                </a>
+                              } @else {
+                                <span class="cd-mat-titulo">{{ m.titulo }}</span>
+                              }
+                              <span class="cd-mat-tipo">{{ labelMaterial(m.tipo) }}</span>
+                            </div>
+
+                            <!-- Fecha + eliminar -->
+                            <span class="cd-mat-fecha">{{ m.fechaCreacion }}</span>
+                            <button class="cd-mat-delete" (click)="eliminarMaterial(m.id)"
+                                    title="Eliminar material">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                   stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6l-1 14H6L5 6"/>
+                                <path d="M10 11v6"/><path d="M14 11v6"/>
+                                <path d="M9 6V4h6v2"/>
+                              </svg>
+                            </button>
+
+                          </div>
+                        }
+                      </div>
+                    }
+
+                  }
+                </div>
+              }
+
+            </div>
+          }
+        }
+
+        <!-- ─── Tab: ASISTENCIA (placeholder) ─── -->
+        @if (activeSubTab() === 'asistencia') {
+          <div class="cd-placeholder-tab">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <p>Asistencia — próximamente</p>
+          </div>
+        }
+
+        <!-- ─── Tab: TAREAS (placeholder) ─── -->
+        @if (activeSubTab() === 'tareas') {
+          <div class="cd-placeholder-tab">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            <p>Tareas — próximamente</p>
+          </div>
+        }
+
+        <!-- ─── Tab: EXÁMENES (placeholder) ─── -->
+        @if (activeSubTab() === 'examenes') {
+          <div class="cd-placeholder-tab">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+              <line x1="9" y1="7" x2="15" y2="7"/>
+              <line x1="9" y1="11" x2="15" y2="11"/>
+              <line x1="9" y1="15" x2="13" y2="15"/>
+            </svg>
+            <p>Exámenes — próximamente</p>
+          </div>
+        }
+
+        <!-- ─── Tab: REPORTES (placeholder) ─── -->
+        @if (activeSubTab() === 'reportes') {
+          <div class="cd-placeholder-tab">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6"  y1="20" x2="6"  y2="14"/>
+            </svg>
+            <p>Reportes — próximamente</p>
+          </div>
+        }
+
+      }<!-- /curso-detalle -->
+
+      <!-- ────── MODAL: SUBIR MATERIAL ────── -->
+      @if (modalMaterial()) {
+        <div class="cd-modal-backdrop" (click)="toggleModalMaterial(false)">
+          <div class="cd-modal" (click)="$event.stopPropagation()">
+
+            <!-- Header del modal -->
+            <div class="cd-modal-header">
+              <h3 class="cd-modal-title">Subir Material</h3>
+              <button class="cd-modal-close" (click)="toggleModalMaterial(false)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6"  y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Cuerpo del modal -->
+            <div class="cd-modal-body">
+
+              <!-- Steppers: Semana / Clase -->
+              <div class="cd-stepper-row">
+                <div class="cd-stepper-group">
+                  <span class="cd-stepper-label">Semana</span>
+                  <div class="cd-stepper">
+                    <button (click)="stepperMat('semana', -1)">−</button>
+                    <span>{{ formMaterial().semana }}</span>
+                    <button (click)="stepperMat('semana', +1)">+</button>
+                  </div>
+                </div>
+                <div class="cd-stepper-group">
+                  <span class="cd-stepper-label">Clase</span>
+                  <div class="cd-stepper">
+                    <button (click)="stepperMat('clase', -1)">−</button>
+                    <span>{{ formMaterial().clase }}</span>
+                    <button (click)="stepperMat('clase', +1)">+</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Título -->
+              <div class="cd-modal-field">
+                <label class="cd-modal-label">Título</label>
+                <input class="cd-modal-input" type="text"
+                       placeholder="Ej: Funciones Trigonométricas"
+                       [ngModel]="formMaterial().titulo"
+                       (ngModelChange)="setFormMat('titulo', $event)"
+                       maxlength="200"/>
+              </div>
+
+              <!-- Tipo de Material -->
+              <div class="cd-modal-field">
+                <label class="cd-modal-label">Tipo de Material</label>
+                <div class="cd-select-row">
+                  <select class="cd-modal-select"
+                          [ngModel]="formMaterial().tipo"
+                          (ngModelChange)="setFormMat('tipo', $event)">
+                    <option value="pdf">PDF</option>
+                    <option value="word">Word</option>
+                    <option value="video">Video</option>
+                    <option value="url">URL</option>
+                    <option value="youtube">YouTube</option>
+                  </select>
+                  <!-- Tick de validación -->
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Upload area para pdf/word/video -->
+              @if (['pdf','word','video'].includes(formMaterial().tipo)) {
+                <div class="cd-modal-field">
+                  <label class="cd-modal-label">Archivo</label>
+                  <div class="cd-upload-area">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <p class="cd-upload-text">Arrastra un archivo o haz clic</p>
+                    <p class="cd-upload-hint">PDF, Word, Video</p>
+                  </div>
+                </div>
+              }
+
+              <!-- Campo URL cuando tipo = url -->
+              @if (formMaterial().tipo === 'url') {
+                <div class="cd-modal-field">
+                  <label class="cd-modal-label">Enlace URL</label>
+                  <input class="cd-modal-input" type="url"
+                         placeholder="https://ejemplo.com/recurso"
+                         [ngModel]="formMaterial().url"
+                         (ngModelChange)="setFormMat('url', $event)"/>
+                </div>
+              }
+
+              <!-- Campo YouTube cuando tipo = youtube -->
+              @if (formMaterial().tipo === 'youtube') {
+                <div class="cd-modal-field">
+                  <label class="cd-modal-label">Enlace de YouTube</label>
+                  <input class="cd-modal-input" type="url"
+                         placeholder="https://www.youtube.com/watch?v=..."
+                         [ngModel]="formMaterial().url"
+                         (ngModelChange)="setFormMat('url', $event)"/>
+                </div>
+              }
+
+            </div><!-- /modal-body -->
+
+            <!-- Footer del modal -->
+            <div class="cd-modal-footer">
+              <button class="cd-modal-cancel" (click)="toggleModalMaterial(false)">Cancelar</button>
+              <button class="cd-modal-submit"
+                      (click)="enviarMaterial()"
+                      [disabled]="!formMaterial().titulo.trim() || enviandoMat()">
+                @if (enviandoMat()) { Subiendo… } @else { Subir }
+              </button>
+            </div>
+
+          </div>
+        </div>
+      }<!-- /modal -->
 
       <!-- ═══ SECCIÓN: CALENDARIO ═══ -->
       @if (activeSection() === 'calendario') {

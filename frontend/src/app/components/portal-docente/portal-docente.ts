@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 export interface Curso {
+  idAulaCurso: number;
   nombre: string;
   grado: string;
   seccion: string;
@@ -17,6 +18,7 @@ export interface Curso {
 }
 
 interface CursoApi {
+  idAulaCurso: number;
   nombre: string;
   grado: string;
   seccion: string;
@@ -96,6 +98,40 @@ export interface Pendiente {
   curso: string;
   titulo: string;
   tema: string;
+}
+
+/* ── Interfaces de detalle de curso ── */
+
+/** Material didáctico de una semana/clase */
+export interface Material {
+  id: number;
+  semana: number;
+  clase: number;
+  titulo: string;
+  tipo: string;          // 'pdf' | 'word' | 'video' | 'url' | 'youtube'
+  url: string | null;
+  fechaCreacion: string; // "DD/MM/YYYY"
+}
+
+/** Nodo de clase con sus materiales (para el árbol de contenido) */
+export interface ClaseNodo {
+  clase: number;
+  items: Material[];
+}
+
+/** Nodo de semana con sus clases (para el árbol de contenido) */
+export interface SemanaNodo {
+  semana: number;
+  clases: ClaseNodo[];
+}
+
+/** Estado del formulario del modal Subir Material */
+export interface FormMaterial {
+  semana: number;
+  clase: number;
+  titulo: string;
+  tipo: string;   // 'pdf' | 'word' | 'video' | 'url' | 'youtube'
+  url: string;
 }
 
 /* ── Interfaces de comunicados (Refuerzos) ── */
@@ -208,6 +244,46 @@ export class PortalDocente {
 
   /** Cantidad de mensajes no leídos (para el badge del sidebar) */
   noLeidos = computed(() => this.mensajes().filter(m => !m.leido).length);
+
+  /* ── Signals de detalle de curso ── */
+
+  /** Curso activo cuando el docente hace click en una card */
+  cursoActivo      = signal<Curso | null>(null);
+  /** Pestaña activa dentro del detalle del curso */
+  activeSubTab     = signal('contenido');  // 'asistencia' | 'contenido' | 'tareas' | 'examenes' | 'reportes'
+  /** Lista de materiales del curso activo */
+  materiales       = signal<Material[]>([]);
+  cargandoMat      = signal(false);
+  /** Controla si el modal Subir Material está abierto */
+  modalMaterial    = signal(false);
+  enviandoMat      = signal(false);
+  /** Estado del formulario del modal */
+  formMaterial = signal<FormMaterial>({
+    semana: 1, clase: 1, titulo: '', tipo: 'pdf', url: ''
+  });
+  /** Semanas/Clases abiertas en el acordeón de contenido */
+  semanasAbiertas  = signal<Set<number>>(new Set([1]));
+  clasesAbiertas   = signal<Set<string>>(new Set(['1-1']));
+
+  /** Materiales agrupados por semana > clase para el árbol de contenido */
+  contenidoArbol = computed<SemanaNodo[]>(() => {
+    const mats = this.materiales();
+    const map = new Map<number, Map<number, Material[]>>();
+    for (const m of mats) {
+      if (!map.has(m.semana)) map.set(m.semana, new Map());
+      const clases = map.get(m.semana)!;
+      if (!clases.has(m.clase)) clases.set(m.clase, []);
+      clases.get(m.clase)!.push(m);
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([semana, clases]) => ({
+        semana,
+        clases: Array.from(clases.entries())
+          .sort(([a], [b]) => a - b)
+          .map(([clase, items]) => ({ clase, items }))
+      }));
+  });
 
   /* ── Signals de comunicados (Refuerzos) ── */
 
@@ -650,6 +726,7 @@ export class PortalDocente {
     const color    = CARD_COLORS[idx % CARD_COLORS.length];
     const gradoAbbr = c.grado.replace('Secundaria', 'Sec').replace('Primaria', 'Prim');
     return {
+      idAulaCurso:  c.idAulaCurso,
       nombre:       c.nombre,
       grado:        c.grado,
       seccion:      c.seccion,
@@ -659,6 +736,148 @@ export class PortalDocente {
       horasSemana:  c.horasSemana,
       totalAlumnos: c.totalAlumnos,
     };
+  }
+
+  /* ── Navegación al detalle de curso ── */
+
+  /** Abre el detalle de un curso y carga sus materiales */
+  abrirCurso(curso: Curso) {
+    this.cursoActivo.set(curso);
+    this.activeSection.set('curso-detalle');
+    this.activeSubTab.set('contenido');
+    this.semanasAbiertas.set(new Set([1]));
+    this.clasesAbiertas.set(new Set(['1-1']));
+    this.cargarMateriales(curso.idAulaCurso);
+  }
+
+  /** Vuelve a la sección inicio y limpia el estado del curso activo */
+  volverAlInicio() {
+    this.cursoActivo.set(null);
+    this.materiales.set([]);
+    this.activeSection.set('inicio');
+  }
+
+  /** Alterna si una semana está expandida en el acordeón */
+  toggleSemana(s: number) {
+    this.semanasAbiertas.update(set => {
+      const next = new Set(set);
+      next.has(s) ? next.delete(s) : next.add(s);
+      return next;
+    });
+  }
+
+  /** Alterna si una clase está expandida en el acordeón */
+  toggleClase(s: number, c: number) {
+    const key = `${s}-${c}`;
+    this.clasesAbiertas.update(set => {
+      const next = new Set(set);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }
+
+  /** Carga los materiales del aula_curso dado */
+  cargarMateriales(idAulaCurso: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoMat.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Material[]>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/materiales`,
+      { headers }
+    ).subscribe({
+      next: data => { this.materiales.set(data); this.cargandoMat.set(false); },
+      error: ()   => this.cargandoMat.set(false),
+    });
+  }
+
+  /** Abre/cierra el modal y resetea el formulario al abrir */
+  toggleModalMaterial(abrir: boolean) {
+    if (abrir) {
+      this.formMaterial.set({ semana: 1, clase: 1, titulo: '', tipo: 'pdf', url: '' });
+    }
+    this.modalMaterial.set(abrir);
+  }
+
+  /** Actualiza un campo del formulario de material */
+  setFormMat(campo: keyof FormMaterial, valor: string | number) {
+    this.formMaterial.update(f => ({ ...f, [campo]: valor }));
+  }
+
+  /** Incrementa/decrementa el stepper de semana o clase */
+  stepperMat(campo: 'semana' | 'clase', delta: number) {
+    this.formMaterial.update(f => ({
+      ...f,
+      [campo]: Math.max(1, f[campo] + delta)
+    }));
+  }
+
+  /** Envía el formulario del modal al backend */
+  enviarMaterial() {
+    const f = this.formMaterial();
+    if (!f.titulo.trim()) return;
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoMat.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      semana: f.semana,
+      clase:  f.clase,
+      titulo: f.titulo.trim(),
+      tipo:   f.tipo,
+      url:    f.url?.trim() || null,
+    };
+    this.http.post<Material>(
+      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/materiales`,
+      body, { headers }
+    ).subscribe({
+      next: () => {
+        this.modalMaterial.set(false);
+        this.enviandoMat.set(false);
+        this.cargarMateriales(curso.idAulaCurso);
+        /* Expandir la semana/clase recién creada */
+        this.semanasAbiertas.update(s => { const n = new Set(s); n.add(f.semana); return n; });
+        this.clasesAbiertas.update(s => { const n = new Set(s); n.add(`${f.semana}-${f.clase}`); return n; });
+      },
+      error: () => this.enviandoMat.set(false),
+    });
+  }
+
+  /** Elimina un material con optimistic update */
+  eliminarMaterial(id: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const curso = this.cursoActivo();
+    this.materiales.update(list => list.filter(m => m.id !== id));
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.delete(
+      `http://localhost:8080/api/portal/docente/cursos/materiales/${id}`,
+      { headers }
+    ).subscribe({ error: () => curso && this.cargarMateriales(curso.idAulaCurso) });
+  }
+
+  /** Devuelve el icono del tipo de material */
+  iconoMaterial(tipo: string): string {
+    const map: Record<string, string> = {
+      pdf:     'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z',
+      word:    'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z',
+      video:   'M15 10l4.553-2.277A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      url:     'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71',
+      youtube: 'M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z',
+    };
+    return map[tipo] ?? map['pdf'];
+  }
+
+  /** Devuelve el color del icono según tipo */
+  colorMaterial(tipo: string): string {
+    return ({ pdf: '#ef4444', word: '#3b82f6', video: '#8b5cf6', url: '#10b981', youtube: '#ef4444' } as Record<string, string>)[tipo] ?? '#6b7280';
+  }
+
+  /** Devuelve el label legible del tipo de material */
+  labelMaterial(tipo: string): string {
+    return ({ pdf: 'Material · pdf', word: 'Material · word', video: 'Material · video', url: 'Enlace · url', youtube: 'YouTube · video' } as Record<string, string>)[tipo] ?? tipo;
   }
 
   setSection(id: string)   { this.activeSection.set(id);   this.dropdownOpen.set(false); }

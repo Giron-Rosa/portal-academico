@@ -16,7 +16,8 @@ public class DocenteService {
 
     public List<CursoDocenteDto> getMisCursos(String codigoDocente) {
         String sql = """
-                SELECT c.nombre,
+                SELECT ac.id_aula_curso,
+                       c.nombre,
                        g.nombre        AS grado,
                        s.nombre        AS seccion,
                        ac.horas_semana,
@@ -46,13 +47,14 @@ public class DocenteService {
 
         return rows.stream()
                 .map(r -> new CursoDocenteDto(
-                        (String)  r[0],
+                        ((Number) r[0]).longValue(),
                         (String)  r[1],
                         (String)  r[2],
-                        (Integer) r[3],
-                        (String)  r[4],
+                        (String)  r[3],
+                        (Integer) r[4],
                         (String)  r[5],
-                        ((Number) r[6]).longValue()
+                        (String)  r[6],
+                        ((Number) r[7]).longValue()
                 ))
                 .toList();
     }
