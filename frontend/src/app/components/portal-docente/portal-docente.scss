@@ -2815,6 +2815,382 @@ a.cd-mat-titulo {
 }
 .rp-tipo-otro-border { border-left-color: #9ca3af !important; background: #fafafa !important; }
 
+/* ═══════════════════════════════════════════
+   TAB: ASISTENCIA
+═══════════════════════════════════════════ */
+
+/* ── Barra de control de fecha ── */
+.as-control-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 0.9rem;
+}
+
+.as-fecha-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.as-fecha-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.as-fecha-input {
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.82rem;
+  color: #111827;
+  background: #fff;
+  cursor: pointer;
+  &:focus { outline: none; border-color: #6366f1; }
+}
+
+.as-fecha-display {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #4f46e5;
+  white-space: nowrap;
+}
+
+/* Chips de historial de sesiones */
+.as-historial {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.as-historial-label {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.as-hist-chip {
+  padding: 3px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+  &:hover { border-color: #6366f1; color: #4f46e5; }
+  &.as-hist-activa {
+    background: #eef2ff;
+    border-color: #6366f1;
+    color: #4f46e5;
+  }
+}
+
+/* Indicador de cambios sin guardar */
+.as-sin-guardar {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #d97706;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ── Barra de estadísticas ── */
+.as-stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+}
+
+.as-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 52px;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+}
+
+.as-stat-num {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.as-stat-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.as-stat-presente   { background: #f0fdf4; .as-stat-num { color: #15803d; } .as-stat-label { color: #86efac; } }
+.as-stat-falta      { background: #fef2f2; .as-stat-num { color: #dc2626; } .as-stat-label { color: #fca5a5; } }
+.as-stat-tardanza   { background: #fffbeb; .as-stat-num { color: #d97706; } .as-stat-label { color: #fcd34d; } }
+.as-stat-justificado{ background: #eff6ff; .as-stat-num { color: #2563eb; } .as-stat-label { color: #93c5fd; } }
+
+.as-stat-progress {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.as-progress-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: #f3f4f6;
+  display: flex;
+  overflow: hidden;
+}
+
+.as-progress-presente   { background: #4ade80; transition: width 0.4s ease; }
+.as-progress-tardanza   { background: #fbbf24; transition: width 0.4s ease; }
+.as-progress-justificado{ background: #60a5fa; transition: width 0.4s ease; }
+.as-progress-falta      { background: #f87171; transition: width 0.4s ease; }
+
+.as-progress-pct {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #374151;
+  text-align: right;
+}
+
+/* ── Fila de acciones rápidas ── */
+.as-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.as-btn-todos {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.4rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.12s;
+  &:hover:not(:disabled) { border-color: #4ade80; color: #15803d; background: #f0fdf4; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.as-btn-guardar {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.4rem 1.1rem;
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s;
+  &:hover:not(:disabled) { background: #4338ca; }
+  &:disabled { background: #9ca3af; cursor: not-allowed; }
+}
+
+.as-btn-guardar-lg {
+  width: 100%;
+  justify-content: center;
+  padding: 0.7rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* ── Lista de alumnos ── */
+.as-alumno-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.as-alumno-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: #fafafa;
+  transition: background 0.12s;
+  flex-wrap: wrap;
+
+  /* Colores por estado */
+  &.as-row-presente   { background: #f0fdf4; border-color: #bbf7d0; }
+  &.as-row-falta      { background: #fef2f2; border-color: #fecaca; }
+  &.as-row-tardanza   { background: #fffbeb; border-color: #fde68a; }
+  &.as-row-justificado{ background: #eff6ff; border-color: #bfdbfe; }
+}
+
+.as-alumno-id {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 200px;
+  flex: 1;
+}
+
+.as-alumno-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.as-alumno-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.as-alumno-nombre {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+}
+
+.as-alumno-codigo {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  font-family: monospace;
+}
+
+/* Botones de estado */
+.as-estado-btns {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.as-btn-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+  user-select: none;
+
+  span { display: none; }
+  @media (min-width: 640px) { span { display: inline; } }
+}
+
+/* Estado activo por tipo */
+.as-btn-presente {
+  &:hover, &.as-activo {
+    border-color: #4ade80;
+    background: #f0fdf4;
+    color: #15803d;
+  }
+  &.as-activo { background: #dcfce7; font-weight: 800; }
+}
+
+.as-btn-tardanza {
+  &:hover, &.as-activo {
+    border-color: #fbbf24;
+    background: #fffbeb;
+    color: #d97706;
+  }
+  &.as-activo { background: #fef3c7; font-weight: 800; }
+}
+
+.as-btn-falta {
+  &:hover, &.as-activo {
+    border-color: #f87171;
+    background: #fef2f2;
+    color: #dc2626;
+  }
+  &.as-activo { background: #fee2e2; font-weight: 800; }
+}
+
+.as-btn-justificado {
+  &:hover, &.as-activo {
+    border-color: #60a5fa;
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  &.as-activo { background: #dbeafe; font-weight: 800; }
+}
+
+/* Campo de justificante */
+.as-justificante-wrap {
+  width: 100%;
+  padding-left: calc(200px + 1.35rem);
+
+  @media (max-width: 640px) { padding-left: 0; }
+}
+
+.as-justificante-input {
+  width: 100%;
+  max-width: 480px;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+  color: #1e40af;
+  background: #fff;
+  &:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
+  &::placeholder { color: #93c5fd; }
+}
+
+/* Footer de acciones (al final de la lista) */
+.as-footer-actions {
+  margin-top: 0.85rem;
+}
+
+/* Spinner de carga */
+.as-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 /* ── Estado vacío (administrador no ha cargado horarios) ── */
 .cal-empty {
   display: flex;

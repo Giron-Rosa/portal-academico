@@ -248,6 +248,26 @@ export interface FormReporte {
   visiblePadre: boolean;
 }
 
+/* ── Interfaces de Asistencia ── */
+
+export interface AsistenciaAlumno {
+  idAsistencia: number | null;
+  idAlumno:     number;
+  codigo:       string;
+  nombres:      string;
+  estado:       string;    // presente | falta | tardanza | justificado
+  justificante: string | null;
+}
+
+export interface SesionAsistencia {
+  fecha:             string;
+  totalPresentes:    number;
+  totalFaltas:       number;
+  totalTardanzas:    number;
+  totalJustificados: number;
+  alumnos:           AsistenciaAlumno[];
+}
+
 /* ── Interfaces de comunicados (Refuerzos) ── */
 
 /** Aula del docente: id + grado + sección, para el selector del formulario */
@@ -445,6 +465,17 @@ export class PortalDocente {
     idAlumno: null, tipo: 'anotacion',
     titulo: '', descripcion: '', fecha: '', visiblePadre: true
   });
+
+  /* ── Signals de Asistencia ── */
+
+  sesionAsistencia    = signal<SesionAsistencia | null>(null);
+  cargandoAsistencia  = signal(false);
+  guardandoAsistencia = signal(false);
+  asistenciaModificada = signal(false);
+  fechaAsistencia     = signal<string>('');
+  fechasSesiones      = signal<string[]>([]);
+  /** Copia local editable de alumnos — se modifica antes de guardar */
+  asistenciaLocal     = signal<AsistenciaAlumno[]>([]);
 
   /* ── Signals de comunicados (Refuerzos) ── */
 
@@ -912,6 +943,9 @@ export class PortalDocente {
     this.cargarTareas(curso.idAulaCurso);
     this.cargarExamenes(curso.idAulaCurso);
     this.cargarReportes(curso.idAulaCurso);
+    this.fechaAsistencia.set(this.hoy());
+    this.cargarSesionAsistencia(curso.idAulaCurso);
+    this.cargarFechasSesiones(curso.idAulaCurso);
   }
 
   /** Vuelve a la sección inicio y limpia el estado del curso activo */
@@ -929,6 +963,10 @@ export class PortalDocente {
     this.reportesAlumnos.set([]);
     this.alumnosExpandidos.set(new Set());
     this.mostrarFormReporte.set(false);
+    this.sesionAsistencia.set(null);
+    this.asistenciaLocal.set([]);
+    this.fechasSesiones.set([]);
+    this.asistenciaModificada.set(false);
     this.activeSection.set('inicio');
   }
 
@@ -1568,6 +1606,125 @@ export class PortalDocente {
         if (curso) this.cargarReportes(curso.idAulaCurso);
       }
     });
+  }
+
+  /* ── Métodos de Asistencia ── */
+
+  /** Obtiene la fecha actual en formato YYYY-MM-DD */
+  private hoy(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  cargarSesionAsistencia(idAulaCurso: number, fecha?: string) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const f = fecha ?? (this.fechaAsistencia() || this.hoy());
+    this.fechaAsistencia.set(f);
+    this.cargandoAsistencia.set(true);
+    this.asistenciaModificada.set(false);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<SesionAsistencia>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/asistencia?fecha=${f}`,
+      { headers }
+    ).subscribe({
+      next: data => {
+        this.sesionAsistencia.set(data);
+        this.asistenciaLocal.set(data.alumnos.map(a => ({ ...a })));
+        this.cargandoAsistencia.set(false);
+      },
+      error: () => this.cargandoAsistencia.set(false),
+    });
+  }
+
+  cargarFechasSesiones(idAulaCurso: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<string[]>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/asistencia/fechas`,
+      { headers }
+    ).subscribe({ next: data => this.fechasSesiones.set(data) });
+  }
+
+  cambiarFechaAsistencia(fecha: string) {
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    if (this.asistenciaModificada()) {
+      if (!confirm('Hay cambios sin guardar. ¿Deseas descartarlos?')) return;
+    }
+    this.cargarSesionAsistencia(curso.idAulaCurso, fecha);
+  }
+
+  setEstadoAsistencia(idAlumno: number, estado: string) {
+    this.asistenciaModificada.set(true);
+    this.asistenciaLocal.update(list =>
+      list.map(a => a.idAlumno === idAlumno
+        ? { ...a, estado, justificante: estado !== 'justificado' ? null : a.justificante }
+        : a
+      )
+    );
+  }
+
+  setJustificanteAsistencia(idAlumno: number, justificante: string) {
+    this.asistenciaModificada.set(true);
+    this.asistenciaLocal.update(list =>
+      list.map(a => a.idAlumno === idAlumno ? { ...a, justificante } : a)
+    );
+  }
+
+  marcarTodosPresentes() {
+    this.asistenciaModificada.set(true);
+    this.asistenciaLocal.update(list =>
+      list.map(a => ({ ...a, estado: 'presente', justificante: null }))
+    );
+  }
+
+  guardarAsistencia() {
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.guardandoAsistencia.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      fecha:   this.fechaAsistencia(),
+      alumnos: this.asistenciaLocal().map(a => ({
+        idAlumno:     a.idAlumno,
+        estado:       a.estado,
+        justificante: a.justificante || null,
+      })),
+    };
+    this.http.post<SesionAsistencia>(
+      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/asistencia`,
+      body, { headers }
+    ).subscribe({
+      next: data => {
+        this.sesionAsistencia.set(data);
+        this.asistenciaLocal.set(data.alumnos.map(a => ({ ...a })));
+        this.guardandoAsistencia.set(false);
+        this.asistenciaModificada.set(false);
+        this.cargarFechasSesiones(curso.idAulaCurso);
+      },
+      error: () => this.guardandoAsistencia.set(false),
+    });
+  }
+
+  /** Helpers para stats locales (calculados sobre asistenciaLocal) */
+  asistenciaStats() {
+    const list = this.asistenciaLocal();
+    return {
+      presentes:    list.filter(a => a.estado === 'presente').length,
+      faltas:       list.filter(a => a.estado === 'falta').length,
+      tardanzas:    list.filter(a => a.estado === 'tardanza').length,
+      justificados: list.filter(a => a.estado === 'justificado').length,
+    };
+  }
+
+  /** Formato legible de fecha YYYY-MM-DD → "Mié 21 May" */
+  formatFechaCorta(fechaStr: string): string {
+    if (!fechaStr) return '';
+    const d = new Date(fechaStr + 'T12:00:00');
+    return d.toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric', month: 'short' });
   }
 
   /** Cuenta cuántos reportes de un tipo tiene un alumno */
