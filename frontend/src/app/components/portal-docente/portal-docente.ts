@@ -134,6 +134,48 @@ export interface FormMaterial {
   url: string;
 }
 
+/* ── Interfaces de Tareas ── */
+
+export interface Tarea {
+  id: number;
+  numeroTarea: number;
+  semana: number;
+  clase: number;
+  titulo: string;
+  descripcion: string | null;
+  tipoEntregable: string | null;
+  fechaEntrega: string | null;   // "DD/MM/YYYY"
+  notaMaxima: number;
+  intentos: number;
+  url: string | null;
+  fechaCreacion: string;
+  totalAlumnos: number;
+  entregadas: number;
+  noEntregadas: number;
+}
+
+export interface NotaTarea {
+  idNota: number;
+  idAlumno: number;
+  codigo: string;
+  nombres: string;
+  entregado: boolean;
+  nota: number | null;
+}
+
+export interface FormTarea {
+  semana: number;
+  clase: number;
+  numeroTarea: number;
+  titulo: string;
+  descripcion: string;
+  tipoEntregable: string;
+  fechaEntrega: string;   // 'YYYY-MM-DD'
+  notaMaxima: number;
+  intentos: number;
+  url: string;
+}
+
 /* ── Interfaces de comunicados (Refuerzos) ── */
 
 /** Aula del docente: id + grado + sección, para el selector del formulario */
@@ -284,6 +326,25 @@ export class PortalDocente {
           .map(([clase, items]) => ({ clase, items }))
       }));
   });
+
+  /* ── Signals de Tareas ── */
+
+  tareas             = signal<Tarea[]>([]);
+  cargandoTareas     = signal(false);
+  mostrarFormTarea   = signal(false);
+  enviandoTarea      = signal(false);
+  formTarea = signal<FormTarea>({
+    semana: 1, clase: 1, numeroTarea: 1,
+    titulo: '', descripcion: '', tipoEntregable: '',
+    fechaEntrega: '', notaMaxima: 20, intentos: 1, url: ''
+  });
+  /** Tareas expandidas en el acordeón: Set de ids */
+  tareasExpandidas   = signal<Set<number>>(new Set());
+  /** Notas cargadas por tarea: Map<idTarea, NotaTarea[]> */
+  notasPorTarea      = signal<Map<number, NotaTarea[]>>(new Map());
+  /** Estado de edición de nota: Map<idNota, string> (valor temporal) */
+  editandoNota       = signal<Map<number, string>>(new Map());
+  guardandoNota      = signal<Set<number>>(new Set());
 
   /* ── Signals de comunicados (Refuerzos) ── */
 
@@ -740,7 +801,7 @@ export class PortalDocente {
 
   /* ── Navegación al detalle de curso ── */
 
-  /** Abre el detalle de un curso y carga sus materiales */
+  /** Abre el detalle de un curso y carga sus materiales y tareas */
   abrirCurso(curso: Curso) {
     this.cursoActivo.set(curso);
     this.activeSection.set('curso-detalle');
@@ -748,12 +809,17 @@ export class PortalDocente {
     this.semanasAbiertas.set(new Set([1]));
     this.clasesAbiertas.set(new Set(['1-1']));
     this.cargarMateriales(curso.idAulaCurso);
+    this.cargarTareas(curso.idAulaCurso);
   }
 
   /** Vuelve a la sección inicio y limpia el estado del curso activo */
   volverAlInicio() {
     this.cursoActivo.set(null);
     this.materiales.set([]);
+    this.tareas.set([]);
+    this.tareasExpandidas.set(new Set());
+    this.notasPorTarea.set(new Map());
+    this.mostrarFormTarea.set(false);
     this.activeSection.set('inicio');
   }
 
@@ -878,6 +944,200 @@ export class PortalDocente {
   /** Devuelve el label legible del tipo de material */
   labelMaterial(tipo: string): string {
     return ({ pdf: 'Material · pdf', word: 'Material · word', video: 'Material · video', url: 'Enlace · url', youtube: 'YouTube · video' } as Record<string, string>)[tipo] ?? tipo;
+  }
+
+  /* ── Métodos de Tareas ── */
+
+  /** Carga las tareas del aula_curso activo */
+  cargarTareas(idAulaCurso: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoTareas.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Tarea[]>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/tareas`,
+      { headers }
+    ).subscribe({
+      next: data => { this.tareas.set(data); this.cargandoTareas.set(false); },
+      error: ()   => this.cargandoTareas.set(false),
+    });
+  }
+
+  /** Actualiza un campo del formulario de nueva tarea */
+  setFormTarea(campo: keyof FormTarea, valor: string | number) {
+    this.formTarea.update(f => ({ ...f, [campo]: valor }));
+  }
+
+  /** Stepper de campos numéricos del formulario de tarea */
+  stepperTarea(campo: 'semana' | 'clase' | 'numeroTarea' | 'notaMaxima' | 'intentos', delta: number) {
+    this.formTarea.update(f => ({
+      ...f,
+      [campo]: Math.max(1, f[campo] + delta)
+    }));
+  }
+
+  /** Muestra/oculta el formulario de nueva tarea */
+  toggleFormTarea(abrir: boolean) {
+    if (abrir) {
+      const nextNum = this.tareas().length + 1;
+      this.formTarea.set({
+        semana: 1, clase: 1, numeroTarea: nextNum,
+        titulo: '', descripcion: '', tipoEntregable: '',
+        fechaEntrega: '', notaMaxima: 20, intentos: 1, url: ''
+      });
+    }
+    this.mostrarFormTarea.set(abrir);
+  }
+
+  /** Envía el formulario de nueva tarea al backend */
+  enviarTarea() {
+    const f = this.formTarea();
+    if (!f.titulo.trim()) return;
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoTarea.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      semana:         f.semana,
+      clase:          f.clase,
+      numeroTarea:    f.numeroTarea,
+      titulo:         f.titulo.trim(),
+      descripcion:    f.descripcion?.trim() || null,
+      tipoEntregable: f.tipoEntregable?.trim() || null,
+      fechaEntrega:   f.fechaEntrega || null,
+      notaMaxima:     f.notaMaxima,
+      intentos:       f.intentos,
+      url:            f.url?.trim() || null,
+    };
+    this.http.post<Tarea>(
+      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/tareas`,
+      body, { headers }
+    ).subscribe({
+      next: () => {
+        this.mostrarFormTarea.set(false);
+        this.enviandoTarea.set(false);
+        this.cargarTareas(curso.idAulaCurso);
+      },
+      error: () => this.enviandoTarea.set(false),
+    });
+  }
+
+  /** Elimina una tarea con optimistic update */
+  eliminarTarea(id: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const curso = this.cursoActivo();
+    this.tareas.update(list => list.filter(t => t.id !== id));
+    /* Limpiar notas y estado de expansión */
+    this.tareasExpandidas.update(s => { const n = new Set(s); n.delete(id); return n; });
+    this.notasPorTarea.update(m => { const n = new Map(m); n.delete(id); return n; });
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.delete(
+      `http://localhost:8080/api/portal/docente/tareas/${id}`, { headers }
+    ).subscribe({ error: () => curso && this.cargarTareas(curso.idAulaCurso) });
+  }
+
+  /** Expande/colapsa una tarea y carga sus notas si no las tiene */
+  toggleTarea(id: number) {
+    this.tareasExpandidas.update(set => {
+      const next = new Set(set);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        if (!this.notasPorTarea().has(id)) this.cargarNotasTarea(id);
+      }
+      return next;
+    });
+  }
+
+  /** Carga las notas de una tarea específica */
+  cargarNotasTarea(idTarea: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<NotaTarea[]>(
+      `http://localhost:8080/api/portal/docente/tareas/${idTarea}/notas`,
+      { headers }
+    ).subscribe({
+      next: data => this.notasPorTarea.update(m => new Map(m).set(idTarea, data)),
+    });
+  }
+
+  /** Inicia la edición inline de la nota de un alumno */
+  iniciarEditNota(idNota: number, notaActual: number | null) {
+    this.editandoNota.update(m => new Map(m).set(idNota, notaActual?.toString() ?? ''));
+  }
+
+  /** Cancela la edición inline de una nota */
+  cancelarEditNota(idNota: number) {
+    this.editandoNota.update(m => { const n = new Map(m); n.delete(idNota); return n; });
+  }
+
+  /** Actualiza el valor temporal de la nota que se está editando */
+  setEditNota(idNota: number, valor: string) {
+    this.editandoNota.update(m => new Map(m).set(idNota, valor));
+  }
+
+  /** Guarda la nota en el backend y actualiza el signal localmente */
+  guardarNotaAlumno(idNota: number, idTarea: number, entregado?: boolean) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const editMap = this.editandoNota();
+    const notaStr = editMap.get(idNota);
+    const nota = notaStr !== undefined && notaStr !== '' ? parseFloat(notaStr) : null;
+    if (nota !== null && isNaN(nota)) return;
+
+    this.guardandoNota.update(s => new Set(s).add(idNota));
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body: Record<string, unknown> = {};
+    if (nota !== null) body['nota'] = nota;
+    if (entregado !== undefined) body['entregado'] = entregado;
+
+    this.http.patch<NotaTarea>(
+      `http://localhost:8080/api/portal/docente/tareas/notas/${idNota}`,
+      body, { headers }
+    ).subscribe({
+      next: updated => {
+        /* Actualizar la nota en notasPorTarea */
+        this.notasPorTarea.update(m => {
+          const notas = m.get(idTarea) ?? [];
+          return new Map(m).set(idTarea,
+            notas.map(n => n.idNota === idNota ? updated : n));
+        });
+        /* Actualizar stats de la tarea */
+        this.tareas.update(list => list.map(t => {
+          if (t.id !== idTarea) return t;
+          const allNotas = this.notasPorTarea().get(idTarea) ?? [];
+          return { ...t,
+            entregadas:    allNotas.filter(n => n.entregado).length,
+            noEntregadas:  allNotas.filter(n => !n.entregado).length,
+          };
+        }));
+        this.guardandoNota.update(s => { const n = new Set(s); n.delete(idNota); return n; });
+        this.cancelarEditNota(idNota);
+      },
+      error: () => this.guardandoNota.update(s => { const n = new Set(s); n.delete(idNota); return n; }),
+    });
+  }
+
+  /** Toggle rápido de entregado sin abrir edición */
+  toggleEntregado(idNota: number, idTarea: number, entregadoActual: boolean) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    /* Optimistic update */
+    this.notasPorTarea.update(m => {
+      const notas = m.get(idTarea) ?? [];
+      return new Map(m).set(idTarea,
+        notas.map(n => n.idNota === idNota ? { ...n, entregado: !entregadoActual } : n));
+    });
+    this.http.patch<NotaTarea>(
+      `http://localhost:8080/api/portal/docente/tareas/notas/${idNota}`,
+      { entregado: !entregadoActual }, { headers }
+    ).subscribe({ error: () => this.cargarNotasTarea(idTarea) });
   }
 
   setSection(id: string)   { this.activeSection.set(id);   this.dropdownOpen.set(false); }

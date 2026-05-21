@@ -372,16 +372,320 @@
           </div>
         }
 
-        <!-- ─── Tab: TAREAS (placeholder) ─── -->
+        <!-- ─── Tab: TAREAS ─── -->
         @if (activeSubTab() === 'tareas') {
-          <div class="cd-placeholder-tab">
-            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
-              <path d="M9 11l3 3L22 4"/>
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-            </svg>
-            <p>Tareas — próximamente</p>
+
+          <!-- Cabecera: título + botón Nueva Tarea -->
+          <div class="cd-section-header">
+            <h3 class="cd-section-title">Tareas</h3>
+            @if (!mostrarFormTarea()) {
+              <button class="cd-btn-subir" (click)="toggleFormTarea(true)">+ Nueva Tarea</button>
+            }
           </div>
-        }
+
+          <!-- ── Formulario de creación (colapsable) ── -->
+          @if (mostrarFormTarea()) {
+            <div class="tr-form-panel">
+              <div class="tr-form-header">
+                <span>Nueva Tarea</span>
+                <button class="cd-modal-close" (click)="toggleFormTarea(false)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="tr-form-grid">
+                <!-- Fila 1: Semana / Clase / N° Tarea / Fecha entrega -->
+                <div class="tr-field">
+                  <label class="cd-modal-label">Semana</label>
+                  <div class="cd-stepper">
+                    <button (click)="stepperTarea('semana', -1)">−</button>
+                    <span>{{ formTarea().semana }}</span>
+                    <button (click)="stepperTarea('semana', +1)">+</button>
+                  </div>
+                </div>
+                <div class="tr-field">
+                  <label class="cd-modal-label">Clase</label>
+                  <div class="cd-stepper">
+                    <button (click)="stepperTarea('clase', -1)">−</button>
+                    <span>{{ formTarea().clase }}</span>
+                    <button (click)="stepperTarea('clase', +1)">+</button>
+                  </div>
+                </div>
+                <div class="tr-field">
+                  <label class="cd-modal-label">N° Tarea</label>
+                  <div class="cd-stepper">
+                    <button (click)="stepperTarea('numeroTarea', -1)">−</button>
+                    <span>{{ formTarea().numeroTarea }}</span>
+                    <button (click)="stepperTarea('numeroTarea', +1)">+</button>
+                  </div>
+                </div>
+                <div class="tr-field">
+                  <label class="cd-modal-label">Fecha de Entrega</label>
+                  <input class="cd-modal-input" type="date"
+                         [ngModel]="formTarea().fechaEntrega"
+                         (ngModelChange)="setFormTarea('fechaEntrega', $event)"/>
+                </div>
+
+                <!-- Fila 2: Título (full width) -->
+                <div class="tr-field tr-full">
+                  <label class="cd-modal-label">Título *</label>
+                  <input class="cd-modal-input" type="text"
+                         placeholder="Ej: Ejercicio de Fracciones N°3"
+                         maxlength="200"
+                         [ngModel]="formTarea().titulo"
+                         (ngModelChange)="setFormTarea('titulo', $event)"/>
+                </div>
+
+                <!-- Descripción -->
+                <div class="tr-field tr-full">
+                  <label class="cd-modal-label">Descripción</label>
+                  <textarea class="tr-textarea" rows="3"
+                            placeholder="Instrucciones para los alumnos..."
+                            [ngModel]="formTarea().descripcion"
+                            (ngModelChange)="setFormTarea('descripcion', $event)"></textarea>
+                </div>
+
+                <!-- Tipo de Entregable -->
+                <div class="tr-field tr-full">
+                  <label class="cd-modal-label">Tipo de Entregable</label>
+                  <input class="cd-modal-input" type="text"
+                         placeholder="Ej: Hoja resuelta escaneada, PDF, Video..."
+                         [ngModel]="formTarea().tipoEntregable"
+                         (ngModelChange)="setFormTarea('tipoEntregable', $event)"/>
+                </div>
+
+                <!-- Fila 3: Nota máxima / Intentos / URL -->
+                <div class="tr-field">
+                  <label class="cd-modal-label">Nota Máxima</label>
+                  <div class="cd-stepper">
+                    <button (click)="stepperTarea('notaMaxima', -1)">−</button>
+                    <span>{{ formTarea().notaMaxima }}</span>
+                    <button (click)="stepperTarea('notaMaxima', +1)">+</button>
+                  </div>
+                </div>
+                <div class="tr-field">
+                  <label class="cd-modal-label">Intentos</label>
+                  <div class="cd-stepper">
+                    <button (click)="stepperTarea('intentos', -1)">−</button>
+                    <span>{{ formTarea().intentos }}</span>
+                    <button (click)="stepperTarea('intentos', +1)">+</button>
+                  </div>
+                </div>
+                <div class="tr-field tr-span2">
+                  <label class="cd-modal-label">URL de Referencia</label>
+                  <input class="cd-modal-input" type="url"
+                         placeholder="https://..."
+                         [ngModel]="formTarea().url"
+                         (ngModelChange)="setFormTarea('url', $event)"/>
+                </div>
+              </div>
+
+              <!-- Acciones del formulario -->
+              <div class="tr-form-actions">
+                <button class="cd-modal-cancel" (click)="toggleFormTarea(false)">Cancelar</button>
+                <button class="cd-modal-submit"
+                        (click)="enviarTarea()"
+                        [disabled]="!formTarea().titulo.trim() || enviandoTarea()">
+                  @if (enviandoTarea()) { Creando… } @else { Crear Tarea }
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Estado de carga -->
+          @if (cargandoTareas()) {
+            <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando tareas...</span></div>
+          }
+
+          <!-- Estado vacío -->
+          @if (!cargandoTareas() && tareas().length === 0) {
+            <div class="cd-empty">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
+              <p>No hay tareas creadas. Usa "+ Nueva Tarea" para agregar la primera.</p>
+            </div>
+          }
+
+          <!-- ── Lista de Tareas ── -->
+          @for (tarea of tareas(); track tarea.id) {
+            <div class="tr-tarea-block">
+
+              <!-- Header de la tarea (acordeón) -->
+              <button class="tr-tarea-header" (click)="toggleTarea(tarea.id)">
+                <div class="tr-tarea-header-left">
+                  <span class="tr-tarea-num">Tarea {{ tarea.numeroTarea }}</span>
+                  <span class="tr-tarea-titulo">{{ tarea.titulo }}</span>
+                  @if (tarea.fechaEntrega) {
+                    <span class="tr-fecha-badge">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
+                      {{ tarea.fechaEntrega }}
+                    </span>
+                  }
+                </div>
+                <div class="tr-tarea-header-right">
+                  <!-- Stats compactos -->
+                  <span class="tr-stat-badge tr-stat-ok" title="Entregadas">{{ tarea.entregadas }}</span>
+                  <span class="tr-stat-badge tr-stat-no" title="No entregadas">{{ tarea.noEntregadas }}</span>
+                  <span class="tr-stat-badge tr-stat-total" title="Total alumnos">{{ tarea.totalAlumnos }}</span>
+                  <!-- Eliminar -->
+                  <button class="cd-mat-delete" (click)="$event.stopPropagation(); eliminarTarea(tarea.id)" title="Eliminar tarea">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6l-1 14H6L5 6"/>
+                      <path d="M10 11v6"/><path d="M14 11v6"/>
+                      <path d="M9 6V4h6v2"/>
+                    </svg>
+                  </button>
+                  <svg class="cd-chevron" [class.open]="tareasExpandidas().has(tarea.id)"
+                       width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="18 15 12 9 6 15"/>
+                  </svg>
+                </div>
+              </button>
+
+              <!-- Detalle expandido de la tarea -->
+              @if (tareasExpandidas().has(tarea.id)) {
+                <div class="tr-tarea-detail">
+
+                  <!-- Datos de la tarea -->
+                  @if (tarea.descripcion || tarea.tipoEntregable) {
+                    <div class="tr-meta-row">
+                      @if (tarea.descripcion) {
+                        <div class="tr-meta-item">
+                          <span class="tr-meta-label">Descripción</span>
+                          <span class="tr-meta-value">{{ tarea.descripcion }}</span>
+                        </div>
+                      }
+                      @if (tarea.tipoEntregable) {
+                        <div class="tr-meta-item">
+                          <span class="tr-meta-label">Entregable</span>
+                          <span class="tr-meta-value">{{ tarea.tipoEntregable }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Stats de entrega -->
+                  <div class="tr-stats-row">
+                    <div class="tr-stat-card tr-sc-ok">
+                      <span class="tr-sc-num">{{ tarea.entregadas }}</span>
+                      <span class="tr-sc-label">Entregadas</span>
+                    </div>
+                    <div class="tr-stat-card tr-sc-no">
+                      <span class="tr-sc-num">{{ tarea.noEntregadas }}</span>
+                      <span class="tr-sc-label">No Entregadas</span>
+                    </div>
+                    <div class="tr-stat-card tr-sc-total">
+                      <span class="tr-sc-num">{{ tarea.totalAlumnos }}</span>
+                      <span class="tr-sc-label">Total Alumnos</span>
+                    </div>
+                    <div class="tr-stat-card tr-sc-nota">
+                      <span class="tr-sc-num">/ {{ tarea.notaMaxima }}</span>
+                      <span class="tr-sc-label">Nota Máx.</span>
+                    </div>
+                  </div>
+
+                  <!-- Tabla de calificaciones -->
+                  @if (notasPorTarea().get(tarea.id); as notas) {
+                    <div class="tr-tabla-wrap">
+                      <table class="tr-tabla">
+                        <thead>
+                          <tr>
+                            <th>Código</th>
+                            <th>Nombres y Apellidos</th>
+                            <th class="tr-th-center">Entregado</th>
+                            <th class="tr-th-center">Nota</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (nt of notas; track nt.idNota) {
+                            <tr [class.tr-row-entregado]="nt.entregado">
+                              <td class="tr-td-codigo">{{ nt.codigo }}</td>
+                              <td class="tr-td-nombre">{{ nt.nombres }}</td>
+
+                              <!-- Toggle entregado -->
+                              <td class="tr-td-center">
+                                <button class="tr-toggle-entregado"
+                                        [class.activo]="nt.entregado"
+                                        (click)="toggleEntregado(nt.idNota, tarea.id, nt.entregado)"
+                                        [title]="nt.entregado ? 'Marcar como no entregado' : 'Marcar como entregado'">
+                                  @if (nt.entregado) {
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                      <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                  } @else {
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                  }
+                                </button>
+                              </td>
+
+                              <!-- Nota editable inline -->
+                              <td class="tr-td-center">
+                                @if (editandoNota().has(nt.idNota)) {
+                                  <div class="tr-nota-edit">
+                                    <input class="tr-nota-input"
+                                           type="number" min="0" [max]="tarea.notaMaxima" step="0.5"
+                                           [ngModel]="editandoNota().get(nt.idNota)"
+                                           (ngModelChange)="setEditNota(nt.idNota, $event)"
+                                           (keydown.enter)="guardarNotaAlumno(nt.idNota, tarea.id)"
+                                           (keydown.escape)="cancelarEditNota(nt.idNota)"
+                                           autofocus/>
+                                    <span class="tr-nota-max">/{{ tarea.notaMaxima }}</span>
+                                    <button class="tr-nota-ok"
+                                            [disabled]="guardandoNota().has(nt.idNota)"
+                                            (click)="guardarNotaAlumno(nt.idNota, tarea.id)">
+                                      @if (guardandoNota().has(nt.idNota)) { … } @else {
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                          <polyline points="20 6 9 17 4 12"/>
+                                        </svg>
+                                      }
+                                    </button>
+                                    <button class="tr-nota-cancel" (click)="cancelarEditNota(nt.idNota)">
+                                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                      </svg>
+                                    </button>
+                                  </div>
+                                } @else {
+                                  <button class="tr-nota-display"
+                                          (click)="iniciarEditNota(nt.idNota, nt.nota)"
+                                          title="Haz clic para calificar">
+                                    <span [class.tr-nota-vacia]="nt.nota === null">
+                                      {{ nt.nota !== null ? nt.nota : '—' }}
+                                    </span>
+                                    <span class="tr-nota-max">/{{ tarea.notaMaxima }}</span>
+                                  </button>
+                                }
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  } @else {
+                    <div class="tr-loading-notas">
+                      <div class="pd-spinner" style="width:18px;height:18px;border-width:2px"></div>
+                      <span>Cargando alumnos...</span>
+                    </div>
+                  }
+
+                </div>
+              }
+
+            </div>
+          }
+
+        }<!-- /tareas -->
 
         <!-- ─── Tab: EXÁMENES (placeholder) ─── -->
         @if (activeSubTab() === 'examenes') {

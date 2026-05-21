@@ -1918,6 +1918,408 @@ a.cd-mat-titulo {
   &:disabled { background: #9ca3af; cursor: not-allowed; }
 }
 
+/* ═══════════════════════════════════════════
+   TAB: TAREAS
+═══════════════════════════════════════════ */
+
+/* ── Panel de formulario Nueva Tarea ── */
+.tr-form-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.tr-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  background: #f0fdf4;
+  border-bottom: 1px solid #bbf7d0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #15803d;
+}
+
+/* Grid 4 columnas para el formulario */
+.tr-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem 1.25rem;
+  padding: 1rem 1.25rem;
+
+  @media (max-width: 768px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}
+
+/* Campo del formulario */
+.tr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tr-full  { grid-column: 1 / -1; }
+.tr-span2 { grid-column: span 2; }
+
+/* Textarea del formulario */
+.tr-textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.83rem;
+  font-family: inherit;
+  color: #1f2937;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  &:focus { border-color: #2563eb; }
+}
+
+/* Acciones del formulario */
+.tr-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* ── Bloque de cada Tarea (acordeón) ── */
+.tr-tarea-block {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  background: #fff;
+}
+
+.tr-tarea-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  text-align: left;
+  gap: 0.5rem;
+  transition: background 0.15s;
+
+  &:hover { background: #f3f4f6; }
+}
+
+.tr-tarea-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.tr-tarea-num {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.tr-tarea-titulo {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.tr-fecha-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.tr-tarea-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+/* Badges de stats compactos en el header */
+.tr-stat-badge {
+  min-width: 22px;
+  height: 22px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+}
+
+.tr-stat-ok    { background: #dcfce7; color: #16a34a; }
+.tr-stat-no    { background: #fee2e2; color: #dc2626; }
+.tr-stat-total { background: #e0f2fe; color: #0284c7; }
+
+/* ── Detalle expandido de la tarea ── */
+.tr-tarea-detail {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Fila de metadatos (descripción, tipo entregable) */
+.tr-meta-row {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.tr-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.tr-meta-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tr-meta-value {
+  font-size: 0.83rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+/* Stats de entrega (tarjetas) */
+.tr-stats-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.tr-stat-card {
+  flex: 1;
+  min-width: 90px;
+  max-width: 140px;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.tr-sc-num {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.tr-sc-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tr-sc-ok    { background: #f0fdf4; .tr-sc-num { color: #16a34a; } .tr-sc-label { color: #4ade80; } }
+.tr-sc-no    { background: #fef2f2; .tr-sc-num { color: #dc2626; } .tr-sc-label { color: #f87171; } }
+.tr-sc-total { background: #eff6ff; .tr-sc-num { color: #2563eb; } .tr-sc-label { color: #93c5fd; } }
+.tr-sc-nota  { background: #fefce8; .tr-sc-num { color: #d97706; } .tr-sc-label { color: #fcd34d; } }
+
+/* ── Tabla de calificaciones ── */
+.tr-tabla-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.tr-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+
+  thead tr {
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  th {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: left;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.1s;
+    &:last-child { border-bottom: none; }
+    &:hover { background: #f9fafb; }
+  }
+
+  td { padding: 0.45rem 0.75rem; }
+}
+
+.tr-th-center { text-align: center !important; }
+.tr-td-center { text-align: center; }
+
+.tr-td-codigo {
+  font-size: 0.72rem;
+  color: #6b7280;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.tr-td-nombre {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Fila con entregado marcado */
+.tr-row-entregado { background: #f0fdf4 !important; }
+
+/* ── Toggle Entregado ── */
+.tr-toggle-entregado {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  background: #fff;
+  color: #9ca3af;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover { border-color: #6b7280; color: #374151; }
+
+  &.activo {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #fff;
+    &:hover { background: #15803d; border-color: #15803d; }
+  }
+}
+
+/* ── Nota display / edición inline ── */
+.tr-nota-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #111827;
+  transition: border-color 0.15s, background 0.15s;
+
+  &:hover { border-color: #2563eb; background: #eff6ff; }
+}
+
+.tr-nota-vacia { color: #9ca3af; font-weight: 400; }
+
+.tr-nota-max {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* Modo edición inline */
+.tr-nota-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.tr-nota-input {
+  width: 52px;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+  outline: none;
+
+  /* Quitar flechas del input number */
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.tr-nota-ok {
+  width: 22px;
+  height: 22px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+  &:hover:not(:disabled) { background: #15803d; }
+  &:disabled { background: #9ca3af; cursor: not-allowed; }
+}
+
+.tr-nota-cancel {
+  width: 22px;
+  height: 22px;
+  background: #f3f4f6;
+  color: #6b7280;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+  &:hover { background: #fee2e2; color: #dc2626; }
+}
+
+/* Loading de notas */
+.tr-loading-notas {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  color: #6b7280;
+  font-size: 0.82rem;
+}
+
 /* ── Estado vacío (administrador no ha cargado horarios) ── */
 .cal-empty {
   display: flex;
