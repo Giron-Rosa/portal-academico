@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 export interface Curso {
+  idAulaCurso: number;
   nombre: string;
   grado: string;
   seccion: string;
@@ -17,6 +18,7 @@ export interface Curso {
 }
 
 interface CursoApi {
+  idAulaCurso: number;
   nombre: string;
   grado: string;
   seccion: string;
@@ -92,10 +94,182 @@ const CAL_HORA_FIN    = 15;
 const CAL_PX_POR_HORA = 64;
 
 export interface Pendiente {
-  grado: string;
-  curso: string;
+  idAulaCurso:  number;
+  tipo:         string;    // 'tarea' | 'examen'
+  grado:        string;
+  seccion:      string;
+  curso:        string;
+  titulo:       string;
+  sinCalificar: number;
+  totalAlumnos: number;
+}
+
+/* ── Interfaces de detalle de curso ── */
+
+/** Material didáctico de una semana/clase */
+export interface Material {
+  id: number;
+  semana: number;
+  clase: number;
   titulo: string;
-  tema: string;
+  tipo: string;          // 'pdf' | 'word' | 'video' | 'url' | 'youtube'
+  url: string | null;
+  fechaCreacion: string; // "DD/MM/YYYY"
+}
+
+/** Nodo de clase con sus materiales (para el árbol de contenido) */
+export interface ClaseNodo {
+  clase: number;
+  items: Material[];
+}
+
+/** Nodo de semana con sus clases (para el árbol de contenido) */
+export interface SemanaNodo {
+  semana: number;
+  clases: ClaseNodo[];
+}
+
+/** Estado del formulario del modal Subir Material */
+export interface FormMaterial {
+  semana: number;
+  clase: number;
+  titulo: string;
+  tipo: string;   // 'pdf' | 'word' | 'video' | 'url' | 'youtube'
+  url: string;
+}
+
+/* ── Interfaces de Tareas ── */
+
+export interface Tarea {
+  id: number;
+  numeroTarea: number;
+  semana: number;
+  clase: number;
+  titulo: string;
+  descripcion: string | null;
+  tipoEntregable: string | null;
+  fechaEntrega: string | null;   // "DD/MM/YYYY"
+  notaMaxima: number;
+  intentos: number;
+  url: string | null;
+  fechaCreacion: string;
+  totalAlumnos: number;
+  entregadas: number;
+  noEntregadas: number;
+}
+
+export interface NotaTarea {
+  idNota: number;
+  idAlumno: number;
+  codigo: string;
+  nombres: string;
+  entregado: boolean;
+  nota: number | null;
+}
+
+export interface FormTarea {
+  semana: number;
+  clase: number;
+  numeroTarea: number;
+  titulo: string;
+  descripcion: string;
+  tipoEntregable: string;
+  fechaEntrega: string;   // 'YYYY-MM-DD'
+  notaMaxima: number;
+  intentos: number;
+  url: string;
+}
+
+/* ── Interfaces de Exámenes ── */
+
+export interface Examen {
+  id: number;
+  numeroExamen: number;
+  semana: number;
+  clase: number;
+  titulo: string;
+  descripcion: string | null;
+  tipo: string;              // escrito | oral | online | practico
+  fechaExamen: string | null;
+  duracionMinutos: number | null;
+  notaMaxima: number;
+  url: string | null;
+  fechaCreacion: string;
+  totalAlumnos: number;
+  asistieron: number;
+  noAsistieron: number;
+  calificados: number;
+}
+
+export interface NotaExamen {
+  idNotaExamen: number;
+  idAlumno: number;
+  codigo: string;
+  nombres: string;
+  asistio: boolean;
+  nota: number | null;
+}
+
+export interface FormExamen {
+  semana: number;
+  clase: number;
+  numeroExamen: number;
+  titulo: string;
+  descripcion: string;
+  tipo: string;
+  fechaExamen: string;
+  duracionMinutos: number;
+  notaMaxima: number;
+  url: string;
+}
+
+/* ── Interfaces de Reportes ── */
+
+export interface Reporte {
+  id: number;
+  tipo: string;          // pendiente | anotacion | llamada_atencion | felicitacion | otro
+  titulo: string;
+  descripcion: string | null;
+  fecha: string;
+  visiblePadre: boolean;
+  fechaCreacion: string;
+}
+
+export interface AlumnoReportes {
+  idAlumno: number;
+  codigo: string;
+  nombres: string;
+  totalReportes: number;
+  reportes: Reporte[];
+}
+
+export interface FormReporte {
+  idAlumno: number | null;
+  tipo: string;
+  titulo: string;
+  descripcion: string;
+  fecha: string;
+  visiblePadre: boolean;
+}
+
+/* ── Interfaces de Asistencia ── */
+
+export interface AsistenciaAlumno {
+  idAsistencia: number | null;
+  idAlumno:     number;
+  codigo:       string;
+  nombres:      string;
+  estado:       string;    // presente | falta | tardanza | justificado
+  justificante: string | null;
+}
+
+export interface SesionAsistencia {
+  fecha:             string;
+  totalPresentes:    number;
+  totalFaltas:       number;
+  totalTardanzas:    number;
+  totalJustificados: number;
+  alumnos:           AsistenciaAlumno[];
 }
 
 /* ── Interfaces de comunicados (Refuerzos) ── */
@@ -209,6 +383,104 @@ export class PortalDocente {
   /** Cantidad de mensajes no leídos (para el badge del sidebar) */
   noLeidos = computed(() => this.mensajes().filter(m => !m.leido).length);
 
+  /* ── Signals de detalle de curso ── */
+
+  /** Curso activo cuando el docente hace click en una card */
+  cursoActivo      = signal<Curso | null>(null);
+  /** Pestaña activa dentro del detalle del curso */
+  activeSubTab     = signal('contenido');  // 'asistencia' | 'contenido' | 'tareas' | 'examenes' | 'reportes'
+  /** Lista de materiales del curso activo */
+  materiales       = signal<Material[]>([]);
+  cargandoMat      = signal(false);
+  /** Controla si el modal Subir Material está abierto */
+  modalMaterial    = signal(false);
+  enviandoMat      = signal(false);
+  /** Estado del formulario del modal */
+  formMaterial = signal<FormMaterial>({
+    semana: 1, clase: 1, titulo: '', tipo: 'pdf', url: ''
+  });
+  /** Semanas/Clases abiertas en el acordeón de contenido */
+  semanasAbiertas  = signal<Set<number>>(new Set([1]));
+  clasesAbiertas   = signal<Set<string>>(new Set(['1-1']));
+
+  /** Materiales agrupados por semana > clase para el árbol de contenido */
+  contenidoArbol = computed<SemanaNodo[]>(() => {
+    const mats = this.materiales();
+    const map = new Map<number, Map<number, Material[]>>();
+    for (const m of mats) {
+      if (!map.has(m.semana)) map.set(m.semana, new Map());
+      const clases = map.get(m.semana)!;
+      if (!clases.has(m.clase)) clases.set(m.clase, []);
+      clases.get(m.clase)!.push(m);
+    }
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([semana, clases]) => ({
+        semana,
+        clases: Array.from(clases.entries())
+          .sort(([a], [b]) => a - b)
+          .map(([clase, items]) => ({ clase, items }))
+      }));
+  });
+
+  /* ── Signals de Tareas ── */
+
+  tareas             = signal<Tarea[]>([]);
+  cargandoTareas     = signal(false);
+  mostrarFormTarea   = signal(false);
+  enviandoTarea      = signal(false);
+  formTarea = signal<FormTarea>({
+    semana: 1, clase: 1, numeroTarea: 1,
+    titulo: '', descripcion: '', tipoEntregable: '',
+    fechaEntrega: '', notaMaxima: 20, intentos: 1, url: ''
+  });
+  /** Tareas expandidas en el acordeón: Set de ids */
+  tareasExpandidas   = signal<Set<number>>(new Set());
+  /** Notas cargadas por tarea: Map<idTarea, NotaTarea[]> */
+  notasPorTarea      = signal<Map<number, NotaTarea[]>>(new Map());
+  /** Estado de edición de nota: Map<idNota, string> (valor temporal) */
+  editandoNota       = signal<Map<number, string>>(new Map());
+  guardandoNota      = signal<Set<number>>(new Set());
+
+  /* ── Signals de Exámenes ── */
+
+  examenes             = signal<Examen[]>([]);
+  cargandoExamenes     = signal(false);
+  mostrarFormExamen    = signal(false);
+  enviandoExamen       = signal(false);
+  formExamen = signal<FormExamen>({
+    semana: 1, clase: 1, numeroExamen: 1,
+    titulo: '', descripcion: '', tipo: 'escrito',
+    fechaExamen: '', duracionMinutos: 90, notaMaxima: 20, url: ''
+  });
+  examenesExpandidos   = signal<Set<number>>(new Set());
+  notasPorExamen       = signal<Map<number, NotaExamen[]>>(new Map());
+  editandoNotaEx       = signal<Map<number, string>>(new Map());
+  guardandoNotaEx      = signal<Set<number>>(new Set());
+
+  /* ── Signals de Reportes ── */
+
+  reportesAlumnos      = signal<AlumnoReportes[]>([]);
+  cargandoReportes     = signal(false);
+  mostrarFormReporte   = signal(false);
+  enviandoReporte      = signal(false);
+  alumnosExpandidos    = signal<Set<number>>(new Set());
+  formReporte = signal<FormReporte>({
+    idAlumno: null, tipo: 'anotacion',
+    titulo: '', descripcion: '', fecha: '', visiblePadre: true
+  });
+
+  /* ── Signals de Asistencia ── */
+
+  sesionAsistencia    = signal<SesionAsistencia | null>(null);
+  cargandoAsistencia  = signal(false);
+  guardandoAsistencia = signal(false);
+  asistenciaModificada = signal(false);
+  fechaAsistencia     = signal<string>('');
+  fechasSesiones      = signal<string[]>([]);
+  /** Copia local editable de alumnos — se modifica antes de guardar */
+  asistenciaLocal     = signal<AsistenciaAlumno[]>([]);
+
   /* ── Signals de comunicados (Refuerzos) ── */
 
   /** Lista completa de comunicados del docente */
@@ -314,6 +586,7 @@ export class PortalDocente {
     this.cargarMensajes();
     this.cargarComunicados();
     this.cargarMisAulas();
+    this.cargarPendientes();
   }
 
   /* ══════════════════════════════════════════
@@ -650,6 +923,7 @@ export class PortalDocente {
     const color    = CARD_COLORS[idx % CARD_COLORS.length];
     const gradoAbbr = c.grado.replace('Secundaria', 'Sec').replace('Primaria', 'Prim');
     return {
+      idAulaCurso:  c.idAulaCurso,
       nombre:       c.nombre,
       grado:        c.grado,
       seccion:      c.seccion,
@@ -659,6 +933,844 @@ export class PortalDocente {
       horasSemana:  c.horasSemana,
       totalAlumnos: c.totalAlumnos,
     };
+  }
+
+  /* ── Navegación al detalle de curso ── */
+
+  /** Abre el detalle de un curso y carga sus materiales y tareas */
+  abrirCurso(curso: Curso) {
+    this.cursoActivo.set(curso);
+    this.activeSection.set('curso-detalle');
+    this.activeSubTab.set('contenido');
+    this.semanasAbiertas.set(new Set([1]));
+    this.clasesAbiertas.set(new Set(['1-1']));
+    this.cargarMateriales(curso.idAulaCurso);
+    this.cargarTareas(curso.idAulaCurso);
+    this.cargarExamenes(curso.idAulaCurso);
+    this.cargarReportes(curso.idAulaCurso);
+    this.fechaAsistencia.set(this.hoy());
+    this.cargarSesionAsistencia(curso.idAulaCurso);
+    this.cargarFechasSesiones(curso.idAulaCurso);
+  }
+
+  /** Vuelve a la sección inicio y limpia el estado del curso activo */
+  volverAlInicio() {
+    this.cursoActivo.set(null);
+    this.materiales.set([]);
+    this.tareas.set([]);
+    this.tareasExpandidas.set(new Set());
+    this.notasPorTarea.set(new Map());
+    this.mostrarFormTarea.set(false);
+    this.examenes.set([]);
+    this.examenesExpandidos.set(new Set());
+    this.notasPorExamen.set(new Map());
+    this.mostrarFormExamen.set(false);
+    this.reportesAlumnos.set([]);
+    this.alumnosExpandidos.set(new Set());
+    this.mostrarFormReporte.set(false);
+    this.sesionAsistencia.set(null);
+    this.asistenciaLocal.set([]);
+    this.fechasSesiones.set([]);
+    this.asistenciaModificada.set(false);
+    this.activeSection.set('inicio');
+  }
+
+  /** Alterna si una semana está expandida en el acordeón */
+  toggleSemana(s: number) {
+    this.semanasAbiertas.update(set => {
+      const next = new Set(set);
+      next.has(s) ? next.delete(s) : next.add(s);
+      return next;
+    });
+  }
+
+  /** Alterna si una clase está expandida en el acordeón */
+  toggleClase(s: number, c: number) {
+    const key = `${s}-${c}`;
+    this.clasesAbiertas.update(set => {
+      const next = new Set(set);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }
+
+  /** Carga los materiales del aula_curso dado */
+  cargarMateriales(idAulaCurso: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoMat.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Material[]>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/materiales`,
+      { headers }
+    ).subscribe({
+      next: data => { this.materiales.set(data); this.cargandoMat.set(false); },
+      error: ()   => this.cargandoMat.set(false),
+    });
+  }
+
+  /** Abre/cierra el modal y resetea el formulario al abrir */
+  toggleModalMaterial(abrir: boolean) {
+    if (abrir) {
+      this.formMaterial.set({ semana: 1, clase: 1, titulo: '', tipo: 'pdf', url: '' });
+    }
+    this.modalMaterial.set(abrir);
+  }
+
+  /** Actualiza un campo del formulario de material */
+  setFormMat(campo: keyof FormMaterial, valor: string | number) {
+    this.formMaterial.update(f => ({ ...f, [campo]: valor }));
+  }
+
+  /** Incrementa/decrementa el stepper de semana o clase */
+  stepperMat(campo: 'semana' | 'clase', delta: number) {
+    this.formMaterial.update(f => ({
+      ...f,
+      [campo]: Math.max(1, f[campo] + delta)
+    }));
+  }
+
+  /** Envía el formulario del modal al backend */
+  enviarMaterial() {
+    const f = this.formMaterial();
+    if (!f.titulo.trim()) return;
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoMat.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      semana: f.semana,
+      clase:  f.clase,
+      titulo: f.titulo.trim(),
+      tipo:   f.tipo,
+      url:    f.url?.trim() || null,
+    };
+    this.http.post<Material>(
+      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/materiales`,
+      body, { headers }
+    ).subscribe({
+      next: () => {
+        this.modalMaterial.set(false);
+        this.enviandoMat.set(false);
+        this.cargarMateriales(curso.idAulaCurso);
+        /* Expandir la semana/clase recién creada */
+        this.semanasAbiertas.update(s => { const n = new Set(s); n.add(f.semana); return n; });
+        this.clasesAbiertas.update(s => { const n = new Set(s); n.add(`${f.semana}-${f.clase}`); return n; });
+      },
+      error: () => this.enviandoMat.set(false),
+    });
+  }
+
+  /** Elimina un material con optimistic update */
+  eliminarMaterial(id: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const curso = this.cursoActivo();
+    this.materiales.update(list => list.filter(m => m.id !== id));
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.delete(
+      `http://localhost:8080/api/portal/docente/cursos/materiales/${id}`,
+      { headers }
+    ).subscribe({ error: () => curso && this.cargarMateriales(curso.idAulaCurso) });
+  }
+
+  /** Devuelve el icono del tipo de material */
+  iconoMaterial(tipo: string): string {
+    const map: Record<string, string> = {
+      pdf:     'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z',
+      word:    'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z',
+      video:   'M15 10l4.553-2.277A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      url:     'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71',
+      youtube: 'M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z',
+    };
+    return map[tipo] ?? map['pdf'];
+  }
+
+  /** Devuelve el color del icono según tipo */
+  colorMaterial(tipo: string): string {
+    return ({ pdf: '#ef4444', word: '#3b82f6', video: '#8b5cf6', url: '#10b981', youtube: '#ef4444' } as Record<string, string>)[tipo] ?? '#6b7280';
+  }
+
+  /** Devuelve el label legible del tipo de material */
+  labelMaterial(tipo: string): string {
+    return ({ pdf: 'Material · pdf', word: 'Material · word', video: 'Material · video', url: 'Enlace · url', youtube: 'YouTube · video' } as Record<string, string>)[tipo] ?? tipo;
+  }
+
+  /* ── Métodos de Tareas ── */
+
+  /** Carga las tareas del aula_curso activo */
+  cargarTareas(idAulaCurso: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoTareas.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Tarea[]>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/tareas`,
+      { headers }
+    ).subscribe({
+      next: data => { this.tareas.set(data); this.cargandoTareas.set(false); },
+      error: ()   => this.cargandoTareas.set(false),
+    });
+  }
+
+  /** Actualiza un campo del formulario de nueva tarea */
+  setFormTarea(campo: keyof FormTarea, valor: string | number) {
+    this.formTarea.update(f => ({ ...f, [campo]: valor }));
+  }
+
+  /** Stepper de campos numéricos del formulario de tarea */
+  stepperTarea(campo: 'semana' | 'clase' | 'numeroTarea' | 'notaMaxima' | 'intentos', delta: number) {
+    this.formTarea.update(f => ({
+      ...f,
+      [campo]: Math.max(1, f[campo] + delta)
+    }));
+  }
+
+  /** Muestra/oculta el formulario de nueva tarea */
+  toggleFormTarea(abrir: boolean) {
+    if (abrir) {
+      const nextNum = this.tareas().length + 1;
+      this.formTarea.set({
+        semana: 1, clase: 1, numeroTarea: nextNum,
+        titulo: '', descripcion: '', tipoEntregable: '',
+        fechaEntrega: '', notaMaxima: 20, intentos: 1, url: ''
+      });
+    }
+    this.mostrarFormTarea.set(abrir);
+  }
+
+  /** Envía el formulario de nueva tarea al backend */
+  enviarTarea() {
+    const f = this.formTarea();
+    if (!f.titulo.trim()) return;
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoTarea.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      semana:         f.semana,
+      clase:          f.clase,
+      numeroTarea:    f.numeroTarea,
+      titulo:         f.titulo.trim(),
+      descripcion:    f.descripcion?.trim() || null,
+      tipoEntregable: f.tipoEntregable?.trim() || null,
+      fechaEntrega:   f.fechaEntrega || null,
+      notaMaxima:     f.notaMaxima,
+      intentos:       f.intentos,
+      url:            f.url?.trim() || null,
+    };
+    this.http.post<Tarea>(
+      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/tareas`,
+      body, { headers }
+    ).subscribe({
+      next: () => {
+        this.mostrarFormTarea.set(false);
+        this.enviandoTarea.set(false);
+        this.cargarTareas(curso.idAulaCurso);
+      },
+      error: () => this.enviandoTarea.set(false),
+    });
+  }
+
+  /** Elimina una tarea con optimistic update */
+  eliminarTarea(id: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const curso = this.cursoActivo();
+    this.tareas.update(list => list.filter(t => t.id !== id));
+    /* Limpiar notas y estado de expansión */
+    this.tareasExpandidas.update(s => { const n = new Set(s); n.delete(id); return n; });
+    this.notasPorTarea.update(m => { const n = new Map(m); n.delete(id); return n; });
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.delete(
+      `http://localhost:8080/api/portal/docente/tareas/${id}`, { headers }
+    ).subscribe({ error: () => curso && this.cargarTareas(curso.idAulaCurso) });
+  }
+
+  /** Expande/colapsa una tarea y carga sus notas si no las tiene */
+  toggleTarea(id: number) {
+    this.tareasExpandidas.update(set => {
+      const next = new Set(set);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        if (!this.notasPorTarea().has(id)) this.cargarNotasTarea(id);
+      }
+      return next;
+    });
+  }
+
+  /** Carga las notas de una tarea específica */
+  cargarNotasTarea(idTarea: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<NotaTarea[]>(
+      `http://localhost:8080/api/portal/docente/tareas/${idTarea}/notas`,
+      { headers }
+    ).subscribe({
+      next: data => this.notasPorTarea.update(m => new Map(m).set(idTarea, data)),
+    });
+  }
+
+  /** Inicia la edición inline de la nota de un alumno */
+  iniciarEditNota(idNota: number, notaActual: number | null) {
+    this.editandoNota.update(m => new Map(m).set(idNota, notaActual?.toString() ?? ''));
+  }
+
+  /** Cancela la edición inline de una nota */
+  cancelarEditNota(idNota: number) {
+    this.editandoNota.update(m => { const n = new Map(m); n.delete(idNota); return n; });
+  }
+
+  /** Actualiza el valor temporal de la nota que se está editando */
+  setEditNota(idNota: number, valor: string) {
+    this.editandoNota.update(m => new Map(m).set(idNota, valor));
+  }
+
+  /** Guarda la nota en el backend y actualiza el signal localmente */
+  guardarNotaAlumno(idNota: number, idTarea: number, entregado?: boolean) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const editMap = this.editandoNota();
+    const notaStr = editMap.get(idNota);
+    const nota = notaStr !== undefined && notaStr !== '' ? parseFloat(notaStr) : null;
+    if (nota !== null && isNaN(nota)) return;
+
+    this.guardandoNota.update(s => new Set(s).add(idNota));
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body: Record<string, unknown> = {};
+    if (nota !== null) body['nota'] = nota;
+    if (entregado !== undefined) body['entregado'] = entregado;
+
+    this.http.patch<NotaTarea>(
+      `http://localhost:8080/api/portal/docente/tareas/notas/${idNota}`,
+      body, { headers }
+    ).subscribe({
+      next: updated => {
+        /* Actualizar la nota en notasPorTarea */
+        this.notasPorTarea.update(m => {
+          const notas = m.get(idTarea) ?? [];
+          return new Map(m).set(idTarea,
+            notas.map(n => n.idNota === idNota ? updated : n));
+        });
+        /* Actualizar stats de la tarea */
+        this.tareas.update(list => list.map(t => {
+          if (t.id !== idTarea) return t;
+          const allNotas = this.notasPorTarea().get(idTarea) ?? [];
+          return { ...t,
+            entregadas:    allNotas.filter(n => n.entregado).length,
+            noEntregadas:  allNotas.filter(n => !n.entregado).length,
+          };
+        }));
+        this.guardandoNota.update(s => { const n = new Set(s); n.delete(idNota); return n; });
+        this.cancelarEditNota(idNota);
+      },
+      error: () => this.guardandoNota.update(s => { const n = new Set(s); n.delete(idNota); return n; }),
+    });
+  }
+
+  /** Toggle rápido de entregado sin abrir edición */
+  toggleEntregado(idNota: number, idTarea: number, entregadoActual: boolean) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    /* Optimistic update */
+    this.notasPorTarea.update(m => {
+      const notas = m.get(idTarea) ?? [];
+      return new Map(m).set(idTarea,
+        notas.map(n => n.idNota === idNota ? { ...n, entregado: !entregadoActual } : n));
+    });
+    this.http.patch<NotaTarea>(
+      `http://localhost:8080/api/portal/docente/tareas/notas/${idNota}`,
+      { entregado: !entregadoActual }, { headers }
+    ).subscribe({ error: () => this.cargarNotasTarea(idTarea) });
+  }
+
+  /* ── Métodos de Exámenes ── */
+
+  cargarExamenes(idAulaCurso: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoExamenes.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Examen[]>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/examenes`,
+      { headers }
+    ).subscribe({
+      next: data => { this.examenes.set(data); this.cargandoExamenes.set(false); },
+      error: ()   => this.cargandoExamenes.set(false),
+    });
+  }
+
+  setFormExamen(campo: keyof FormExamen, valor: string | number) {
+    this.formExamen.update(f => ({ ...f, [campo]: valor }));
+  }
+
+  stepperExamen(campo: 'semana' | 'clase' | 'numeroExamen' | 'notaMaxima' | 'duracionMinutos', delta: number) {
+    this.formExamen.update(f => ({
+      ...f,
+      [campo]: Math.max(1, f[campo] + delta)
+    }));
+  }
+
+  toggleFormExamen(abrir: boolean) {
+    if (abrir) {
+      this.formExamen.set({
+        semana: 1, clase: 1, numeroExamen: this.examenes().length + 1,
+        titulo: '', descripcion: '', tipo: 'escrito',
+        fechaExamen: '', duracionMinutos: 90, notaMaxima: 20, url: ''
+      });
+    }
+    this.mostrarFormExamen.set(abrir);
+  }
+
+  enviarExamen() {
+    const f = this.formExamen();
+    if (!f.titulo.trim()) return;
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoExamen.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      semana:           f.semana,
+      clase:            f.clase,
+      numeroExamen:     f.numeroExamen,
+      titulo:           f.titulo.trim(),
+      descripcion:      f.descripcion?.trim() || null,
+      tipo:             f.tipo,
+      fechaExamen:      f.fechaExamen || null,
+      duracionMinutos:  f.duracionMinutos || null,
+      notaMaxima:       f.notaMaxima,
+      url:              f.url?.trim() || null,
+    };
+    this.http.post<Examen>(
+      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/examenes`,
+      body, { headers }
+    ).subscribe({
+      next: () => {
+        this.mostrarFormExamen.set(false);
+        this.enviandoExamen.set(false);
+        this.cargarExamenes(curso.idAulaCurso);
+      },
+      error: () => this.enviandoExamen.set(false),
+    });
+  }
+
+  eliminarExamen(id: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const curso = this.cursoActivo();
+    this.examenes.update(list => list.filter(e => e.id !== id));
+    this.examenesExpandidos.update(s => { const n = new Set(s); n.delete(id); return n; });
+    this.notasPorExamen.update(m => { const n = new Map(m); n.delete(id); return n; });
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.delete(
+      `http://localhost:8080/api/portal/docente/examenes/${id}`, { headers }
+    ).subscribe({ error: () => curso && this.cargarExamenes(curso.idAulaCurso) });
+  }
+
+  toggleExamen(id: number) {
+    this.examenesExpandidos.update(set => {
+      const next = new Set(set);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        if (!this.notasPorExamen().has(id)) this.cargarNotasExamen(id);
+      }
+      return next;
+    });
+  }
+
+  cargarNotasExamen(idExamen: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<NotaExamen[]>(
+      `http://localhost:8080/api/portal/docente/examenes/${idExamen}/notas`,
+      { headers }
+    ).subscribe({
+      next: data => this.notasPorExamen.update(m => new Map(m).set(idExamen, data)),
+    });
+  }
+
+  iniciarEditNotaEx(idNota: number, notaActual: number | null) {
+    this.editandoNotaEx.update(m => new Map(m).set(idNota, notaActual?.toString() ?? ''));
+  }
+
+  cancelarEditNotaEx(idNota: number) {
+    this.editandoNotaEx.update(m => { const n = new Map(m); n.delete(idNota); return n; });
+  }
+
+  setEditNotaEx(idNota: number, valor: string) {
+    this.editandoNotaEx.update(m => new Map(m).set(idNota, valor));
+  }
+
+  guardarNotaExamen(idNota: number, idExamen: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const notaStr = this.editandoNotaEx().get(idNota);
+    const nota = notaStr !== undefined && notaStr !== '' ? parseFloat(notaStr) : null;
+    if (nota !== null && isNaN(nota)) return;
+
+    this.guardandoNotaEx.update(s => new Set(s).add(idNota));
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body: Record<string, unknown> = {};
+    if (nota !== null) body['nota'] = nota;
+
+    this.http.patch<NotaExamen>(
+      `http://localhost:8080/api/portal/docente/examenes/notas/${idNota}`,
+      body, { headers }
+    ).subscribe({
+      next: updated => {
+        this.notasPorExamen.update(m => {
+          const notas = m.get(idExamen) ?? [];
+          return new Map(m).set(idExamen, notas.map(n => n.idNotaExamen === idNota ? updated : n));
+        });
+        this.examenes.update(list => list.map(e => {
+          if (e.id !== idExamen) return e;
+          const all = this.notasPorExamen().get(idExamen) ?? [];
+          return { ...e, calificados: all.filter(n => n.nota !== null).length };
+        }));
+        this.guardandoNotaEx.update(s => { const n = new Set(s); n.delete(idNota); return n; });
+        this.cancelarEditNotaEx(idNota);
+      },
+      error: () => this.guardandoNotaEx.update(s => { const n = new Set(s); n.delete(idNota); return n; }),
+    });
+  }
+
+  toggleAsistio(idNota: number, idExamen: number, asistioActual: boolean) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    this.notasPorExamen.update(m => {
+      const notas = m.get(idExamen) ?? [];
+      return new Map(m).set(idExamen,
+        notas.map(n => n.idNotaExamen === idNota ? { ...n, asistio: !asistioActual } : n));
+    });
+    this.http.patch<NotaExamen>(
+      `http://localhost:8080/api/portal/docente/examenes/notas/${idNota}`,
+      { asistio: !asistioActual }, { headers }
+    ).subscribe({
+      next: updated => {
+        this.notasPorExamen.update(m => {
+          const notas = m.get(idExamen) ?? [];
+          return new Map(m).set(idExamen, notas.map(n => n.idNotaExamen === idNota ? updated : n));
+        });
+        this.examenes.update(list => list.map(e => {
+          if (e.id !== idExamen) return e;
+          const all = this.notasPorExamen().get(idExamen) ?? [];
+          return { ...e,
+            asistieron:   all.filter(n => n.asistio).length,
+            noAsistieron: all.filter(n => !n.asistio).length,
+          };
+        }));
+      },
+      error: () => this.cargarNotasExamen(idExamen),
+    });
+  }
+
+  /** Etiqueta legible del tipo de examen */
+  labelTipoExamen(tipo: string): string {
+    return ({ escrito: 'Escrito', oral: 'Oral', online: 'Online', practico: 'Práctico' } as Record<string, string>)[tipo] ?? tipo;
+  }
+
+  /* ── Métodos de Reportes ── */
+
+  cargarReportes(idAulaCurso: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoReportes.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<AlumnoReportes[]>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/reportes`,
+      { headers }
+    ).subscribe({
+      next: data => { this.reportesAlumnos.set(data); this.cargandoReportes.set(false); },
+      error: ()   => this.cargandoReportes.set(false),
+    });
+  }
+
+  toggleAlumnoReportes(idAlumno: number) {
+    this.alumnosExpandidos.update(set => {
+      const next = new Set(set);
+      next.has(idAlumno) ? next.delete(idAlumno) : next.add(idAlumno);
+      return next;
+    });
+  }
+
+  toggleFormReporte(abrir: boolean) {
+    if (abrir) {
+      this.formReporte.set({
+        idAlumno: null, tipo: 'anotacion',
+        titulo: '', descripcion: '', fecha: '', visiblePadre: true
+      });
+    }
+    this.mostrarFormReporte.set(abrir);
+  }
+
+  setFormReporte(campo: keyof FormReporte, valor: string | number | boolean | null) {
+    this.formReporte.update(f => ({ ...f, [campo]: valor }));
+  }
+
+  enviarReporte() {
+    const f = this.formReporte();
+    if (!f.titulo.trim() || !f.idAlumno) return;
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoReporte.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      idAlumno:     f.idAlumno,
+      tipo:         f.tipo,
+      titulo:       f.titulo.trim(),
+      descripcion:  f.descripcion?.trim() || null,
+      fecha:        f.fecha || null,
+      visiblePadre: f.visiblePadre,
+    };
+    this.http.post<Reporte>(
+      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/reportes`,
+      body, { headers }
+    ).subscribe({
+      next: nuevoReporte => {
+        /* Insertar localmente sin recargar todo */
+        this.reportesAlumnos.update(list =>
+          list.map(a => a.idAlumno === f.idAlumno
+            ? { ...a, totalReportes: a.totalReportes + 1, reportes: [nuevoReporte, ...a.reportes] }
+            : a
+          )
+        );
+        /* Expandir al alumno del nuevo reporte */
+        this.alumnosExpandidos.update(s => new Set(s).add(f.idAlumno!));
+        this.enviandoReporte.set(false);
+        this.mostrarFormReporte.set(false);
+      },
+      error: () => this.enviandoReporte.set(false),
+    });
+  }
+
+  eliminarReporte(idReporte: number, idAlumno: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    /* Optimistic update */
+    this.reportesAlumnos.update(list =>
+      list.map(a => a.idAlumno === idAlumno
+        ? { ...a,
+            totalReportes: a.totalReportes - 1,
+            reportes: a.reportes.filter(r => r.id !== idReporte)
+          }
+        : a
+      )
+    );
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.delete(
+      `http://localhost:8080/api/portal/docente/reportes/${idReporte}`, { headers }
+    ).subscribe({
+      error: () => {
+        const curso = this.cursoActivo();
+        if (curso) this.cargarReportes(curso.idAulaCurso);
+      }
+    });
+  }
+
+  toggleVisibilidadReporte(idReporte: number, idAlumno: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    /* Optimistic update */
+    this.reportesAlumnos.update(list =>
+      list.map(a => a.idAlumno === idAlumno
+        ? { ...a, reportes: a.reportes.map(r => r.id === idReporte ? { ...r, visiblePadre: !r.visiblePadre } : r) }
+        : a
+      )
+    );
+    this.http.patch<Reporte>(
+      `http://localhost:8080/api/portal/docente/reportes/${idReporte}/visibilidad`,
+      {}, { headers }
+    ).subscribe({
+      next: updated => {
+        this.reportesAlumnos.update(list =>
+          list.map(a => a.idAlumno === idAlumno
+            ? { ...a, reportes: a.reportes.map(r => r.id === idReporte ? updated : r) }
+            : a
+          )
+        );
+      },
+      error: () => {
+        const curso = this.cursoActivo();
+        if (curso) this.cargarReportes(curso.idAulaCurso);
+      }
+    });
+  }
+
+  /* ── Métodos de Asistencia ── */
+
+  /** Obtiene la fecha actual en formato YYYY-MM-DD */
+  private hoy(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  cargarSesionAsistencia(idAulaCurso: number, fecha?: string) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const f = fecha ?? (this.fechaAsistencia() || this.hoy());
+    this.fechaAsistencia.set(f);
+    this.cargandoAsistencia.set(true);
+    this.asistenciaModificada.set(false);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<SesionAsistencia>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/asistencia?fecha=${f}`,
+      { headers }
+    ).subscribe({
+      next: data => {
+        this.sesionAsistencia.set(data);
+        this.asistenciaLocal.set(data.alumnos.map(a => ({ ...a })));
+        this.cargandoAsistencia.set(false);
+      },
+      error: () => this.cargandoAsistencia.set(false),
+    });
+  }
+
+  cargarFechasSesiones(idAulaCurso: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<string[]>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/asistencia/fechas`,
+      { headers }
+    ).subscribe({ next: data => this.fechasSesiones.set(data) });
+  }
+
+  cambiarFechaAsistencia(fecha: string) {
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    if (this.asistenciaModificada()) {
+      if (!confirm('Hay cambios sin guardar. ¿Deseas descartarlos?')) return;
+    }
+    this.cargarSesionAsistencia(curso.idAulaCurso, fecha);
+  }
+
+  setEstadoAsistencia(idAlumno: number, estado: string) {
+    this.asistenciaModificada.set(true);
+    this.asistenciaLocal.update(list =>
+      list.map(a => a.idAlumno === idAlumno
+        ? { ...a, estado, justificante: estado !== 'justificado' ? null : a.justificante }
+        : a
+      )
+    );
+  }
+
+  setJustificanteAsistencia(idAlumno: number, justificante: string) {
+    this.asistenciaModificada.set(true);
+    this.asistenciaLocal.update(list =>
+      list.map(a => a.idAlumno === idAlumno ? { ...a, justificante } : a)
+    );
+  }
+
+  marcarTodosPresentes() {
+    this.asistenciaModificada.set(true);
+    this.asistenciaLocal.update(list =>
+      list.map(a => ({ ...a, estado: 'presente', justificante: null }))
+    );
+  }
+
+  guardarAsistencia() {
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.guardandoAsistencia.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      fecha:   this.fechaAsistencia(),
+      alumnos: this.asistenciaLocal().map(a => ({
+        idAlumno:     a.idAlumno,
+        estado:       a.estado,
+        justificante: a.justificante || null,
+      })),
+    };
+    this.http.post<SesionAsistencia>(
+      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/asistencia`,
+      body, { headers }
+    ).subscribe({
+      next: data => {
+        this.sesionAsistencia.set(data);
+        this.asistenciaLocal.set(data.alumnos.map(a => ({ ...a })));
+        this.guardandoAsistencia.set(false);
+        this.asistenciaModificada.set(false);
+        this.cargarFechasSesiones(curso.idAulaCurso);
+      },
+      error: () => this.guardandoAsistencia.set(false),
+    });
+  }
+
+  /** Helpers para stats locales (calculados sobre asistenciaLocal) */
+  asistenciaStats() {
+    const list = this.asistenciaLocal();
+    return {
+      presentes:    list.filter(a => a.estado === 'presente').length,
+      faltas:       list.filter(a => a.estado === 'falta').length,
+      tardanzas:    list.filter(a => a.estado === 'tardanza').length,
+      justificados: list.filter(a => a.estado === 'justificado').length,
+    };
+  }
+
+  /** Formato legible de fecha YYYY-MM-DD → "Mié 21 May" */
+  formatFechaCorta(fechaStr: string): string {
+    if (!fechaStr) return '';
+    const d = new Date(fechaStr + 'T12:00:00');
+    return d.toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  /** Cuenta cuántos reportes de un tipo tiene un alumno */
+  contarTipoReporte(reportes: Reporte[], tipo: string): number {
+    return reportes.filter(r => r.tipo === tipo).length;
+  }
+
+  /** Etiqueta e info de color para el tipo de reporte */
+  tipoReporteInfo(tipo: string): { label: string; css: string } {
+    const map: Record<string, { label: string; css: string }> = {
+      pendiente:        { label: 'Pendiente',         css: 'rp-tipo-pendiente'   },
+      anotacion:        { label: 'Anotación',         css: 'rp-tipo-anotacion'   },
+      llamada_atencion: { label: 'Llamada de Atención', css: 'rp-tipo-atencion' },
+      felicitacion:     { label: 'Felicitación',      css: 'rp-tipo-felicitacion'},
+      otro:             { label: 'Otro',               css: 'rp-tipo-otro'       },
+    };
+    return map[tipo] ?? { label: tipo, css: 'rp-tipo-otro' };
+  }
+
+  /* ── Métodos de Pendientes ── */
+
+  cargarPendientes() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Pendiente[]>(
+      'http://localhost:8080/api/portal/docente/pendientes',
+      { headers }
+    ).subscribe({ next: data => this.pendientes.set(data) });
+  }
+
+  /**
+   * Navega al curso correspondiente al pendiente y abre el tab correcto.
+   * Si el curso aún no está cargado, espera a que cursos() tenga datos.
+   */
+  irAPendiente(item: Pendiente) {
+    const curso = this.cursos().find(c => c.idAulaCurso === item.idAulaCurso);
+    if (!curso) return;
+    this.abrirCurso(curso);
+    const tab = item.tipo === 'tarea' ? 'tareas' : 'examenes';
+    this.activeSubTab.set(tab);
   }
 
   setSection(id: string)   { this.activeSection.set(id);   this.dropdownOpen.set(false); }

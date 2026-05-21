@@ -215,6 +215,23 @@ CREATE TABLE comunicados (
 );
 
 -- ============================================================
+-- TABLA: materiales_curso  (contenido semanal por aula_curso)
+-- El docente organiza el material didáctico por semana y clase.
+-- Tipos: pdf | word | video | url | youtube
+-- ============================================================
+
+CREATE TABLE materiales_curso (
+    id_material    SERIAL       PRIMARY KEY,
+    id_aula_curso  INT          NOT NULL REFERENCES aula_cursos(id_aula_curso) ON DELETE CASCADE,
+    semana         SMALLINT     NOT NULL DEFAULT 1,
+    clase          SMALLINT     NOT NULL DEFAULT 1,
+    titulo         VARCHAR(200) NOT NULL,
+    tipo           VARCHAR(20)  NOT NULL DEFAULT 'pdf',  -- pdf | word | video | url | youtube
+    url            TEXT,        -- enlace externo (url/youtube) o nombre del archivo subido
+    fecha_creacion TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
 -- TABLA: mensajes  (comunicación padre → maestro)
 -- El padre puede asociar un alumno y/o un aula_curso concreto.
 -- La administración no interviene; los envía directamente el padre.
@@ -679,3 +696,38 @@ VALUES
         CURRENT_DATE + INTERVAL '6 days',
         NOW() - INTERVAL '1 hour'
     );
+
+-- ============================================================
+-- MATERIALES DE PRUEBA: Oscar Castillo — Matemática
+-- id_aula_curso=1 → 5to Sec B  |  id_aula_curso=9 → 3ro Sec A
+-- id_aula_curso=17 → 1ro Prim A
+-- ============================================================
+
+INSERT INTO materiales_curso (id_aula_curso, semana, clase, titulo, tipo, url, fecha_creacion) VALUES
+    -- 5to Sec B — Semana 1, Clase 1
+    (1, 1, 1, 'Números enteros: concepto y clasificación',  'pdf',     NULL, NOW() - INTERVAL '20 days'),
+    (1, 1, 1, 'Ejercicios de práctica N°1',                'pdf',     NULL, NOW() - INTERVAL '19 days'),
+    -- 5to Sec B — Semana 1, Clase 2
+    (1, 1, 2, 'Video: Operaciones con enteros',            'youtube', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', NOW() - INTERVAL '18 days'),
+    (1, 1, 2, 'Recurso interactivo - GeoGebra',           'url',     'https://www.geogebra.org', NOW() - INTERVAL '17 days'),
+    -- 5to Sec B — Semana 2, Clase 1
+    (1, 2, 1, 'Decimales: concepto, tipos y escritura',    'pdf',     NULL, NOW() - INTERVAL '13 days'),
+    (1, 2, 1, 'Guía de trabajo: decimales',                'word',    NULL, NOW() - INTERVAL '12 days'),
+    -- 5to Sec B — Semana 2, Clase 2
+    (1, 2, 2, 'Operaciones con decimales – suma y resta',  'pdf',     NULL, NOW() - INTERVAL '11 days'),
+    -- 5to Sec B — Semana 3, Clase 1
+    (1, 3, 1, 'Fracciones: concepto y tipos',              'pdf',     NULL, NOW() - INTERVAL '6 days'),
+    (1, 3, 1, 'Video: Fracciones equivalentes',            'youtube', 'https://www.youtube.com/watch?v=example1', NOW() - INTERVAL '5 days'),
+    -- 3ro Sec A — Semana 1, Clase 1
+    (9, 1, 1, 'Introducción al álgebra',                   'pdf',     NULL, NOW() - INTERVAL '20 days'),
+    (9, 1, 1, 'Ejercicios de expresiones algebraicas',    'pdf',     NULL, NOW() - INTERVAL '19 days'),
+    -- 3ro Sec A — Semana 1, Clase 2
+    (9, 1, 2, 'Ecuaciones de primer grado',                'pdf',     NULL, NOW() - INTERVAL '17 days'),
+    (9, 1, 2, 'Tutorial interactivo - ecuaciones',         'url',     'https://www.khanacademy.org', NOW() - INTERVAL '16 days'),
+    -- 3ro Sec A — Semana 2, Clase 1
+    (9, 2, 1, 'Sistemas de ecuaciones',                    'pdf',     NULL, NOW() - INTERVAL '10 days'),
+    -- 1ro Prim A — Semana 1, Clase 1
+    (17, 1, 1, 'Números del 1 al 10',                     'pdf',     NULL, NOW() - INTERVAL '20 days'),
+    (17, 1, 1, 'Video: Contando con deditos',             'youtube', 'https://www.youtube.com/watch?v=example2', NOW() - INTERVAL '19 days'),
+    -- 1ro Prim A — Semana 1, Clase 2
+    (17, 1, 2, 'Suma y resta básica',                     'pdf',     NULL, NOW() - INTERVAL '17 days');
