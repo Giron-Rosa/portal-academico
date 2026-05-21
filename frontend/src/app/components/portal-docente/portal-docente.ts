@@ -219,6 +219,35 @@ export interface FormExamen {
   url: string;
 }
 
+/* ── Interfaces de Reportes ── */
+
+export interface Reporte {
+  id: number;
+  tipo: string;          // pendiente | anotacion | llamada_atencion | felicitacion | otro
+  titulo: string;
+  descripcion: string | null;
+  fecha: string;
+  visiblePadre: boolean;
+  fechaCreacion: string;
+}
+
+export interface AlumnoReportes {
+  idAlumno: number;
+  codigo: string;
+  nombres: string;
+  totalReportes: number;
+  reportes: Reporte[];
+}
+
+export interface FormReporte {
+  idAlumno: number | null;
+  tipo: string;
+  titulo: string;
+  descripcion: string;
+  fecha: string;
+  visiblePadre: boolean;
+}
+
 /* ── Interfaces de comunicados (Refuerzos) ── */
 
 /** Aula del docente: id + grado + sección, para el selector del formulario */
@@ -404,6 +433,18 @@ export class PortalDocente {
   notasPorExamen       = signal<Map<number, NotaExamen[]>>(new Map());
   editandoNotaEx       = signal<Map<number, string>>(new Map());
   guardandoNotaEx      = signal<Set<number>>(new Set());
+
+  /* ── Signals de Reportes ── */
+
+  reportesAlumnos      = signal<AlumnoReportes[]>([]);
+  cargandoReportes     = signal(false);
+  mostrarFormReporte   = signal(false);
+  enviandoReporte      = signal(false);
+  alumnosExpandidos    = signal<Set<number>>(new Set());
+  formReporte = signal<FormReporte>({
+    idAlumno: null, tipo: 'anotacion',
+    titulo: '', descripcion: '', fecha: '', visiblePadre: true
+  });
 
   /* ── Signals de comunicados (Refuerzos) ── */
 
@@ -870,6 +911,7 @@ export class PortalDocente {
     this.cargarMateriales(curso.idAulaCurso);
     this.cargarTareas(curso.idAulaCurso);
     this.cargarExamenes(curso.idAulaCurso);
+    this.cargarReportes(curso.idAulaCurso);
   }
 
   /** Vuelve a la sección inicio y limpia el estado del curso activo */
@@ -884,6 +926,9 @@ export class PortalDocente {
     this.examenesExpandidos.set(new Set());
     this.notasPorExamen.set(new Map());
     this.mostrarFormExamen.set(false);
+    this.reportesAlumnos.set([]);
+    this.alumnosExpandidos.set(new Set());
+    this.mostrarFormReporte.set(false);
     this.activeSection.set('inicio');
   }
 
@@ -1393,6 +1438,153 @@ export class PortalDocente {
   /** Etiqueta legible del tipo de examen */
   labelTipoExamen(tipo: string): string {
     return ({ escrito: 'Escrito', oral: 'Oral', online: 'Online', practico: 'Práctico' } as Record<string, string>)[tipo] ?? tipo;
+  }
+
+  /* ── Métodos de Reportes ── */
+
+  cargarReportes(idAulaCurso: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoReportes.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<AlumnoReportes[]>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/reportes`,
+      { headers }
+    ).subscribe({
+      next: data => { this.reportesAlumnos.set(data); this.cargandoReportes.set(false); },
+      error: ()   => this.cargandoReportes.set(false),
+    });
+  }
+
+  toggleAlumnoReportes(idAlumno: number) {
+    this.alumnosExpandidos.update(set => {
+      const next = new Set(set);
+      next.has(idAlumno) ? next.delete(idAlumno) : next.add(idAlumno);
+      return next;
+    });
+  }
+
+  toggleFormReporte(abrir: boolean) {
+    if (abrir) {
+      this.formReporte.set({
+        idAlumno: null, tipo: 'anotacion',
+        titulo: '', descripcion: '', fecha: '', visiblePadre: true
+      });
+    }
+    this.mostrarFormReporte.set(abrir);
+  }
+
+  setFormReporte(campo: keyof FormReporte, valor: string | number | boolean | null) {
+    this.formReporte.update(f => ({ ...f, [campo]: valor }));
+  }
+
+  enviarReporte() {
+    const f = this.formReporte();
+    if (!f.titulo.trim() || !f.idAlumno) return;
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoReporte.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      idAlumno:     f.idAlumno,
+      tipo:         f.tipo,
+      titulo:       f.titulo.trim(),
+      descripcion:  f.descripcion?.trim() || null,
+      fecha:        f.fecha || null,
+      visiblePadre: f.visiblePadre,
+    };
+    this.http.post<Reporte>(
+      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/reportes`,
+      body, { headers }
+    ).subscribe({
+      next: nuevoReporte => {
+        /* Insertar localmente sin recargar todo */
+        this.reportesAlumnos.update(list =>
+          list.map(a => a.idAlumno === f.idAlumno
+            ? { ...a, totalReportes: a.totalReportes + 1, reportes: [nuevoReporte, ...a.reportes] }
+            : a
+          )
+        );
+        /* Expandir al alumno del nuevo reporte */
+        this.alumnosExpandidos.update(s => new Set(s).add(f.idAlumno!));
+        this.enviandoReporte.set(false);
+        this.mostrarFormReporte.set(false);
+      },
+      error: () => this.enviandoReporte.set(false),
+    });
+  }
+
+  eliminarReporte(idReporte: number, idAlumno: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    /* Optimistic update */
+    this.reportesAlumnos.update(list =>
+      list.map(a => a.idAlumno === idAlumno
+        ? { ...a,
+            totalReportes: a.totalReportes - 1,
+            reportes: a.reportes.filter(r => r.id !== idReporte)
+          }
+        : a
+      )
+    );
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.delete(
+      `http://localhost:8080/api/portal/docente/reportes/${idReporte}`, { headers }
+    ).subscribe({
+      error: () => {
+        const curso = this.cursoActivo();
+        if (curso) this.cargarReportes(curso.idAulaCurso);
+      }
+    });
+  }
+
+  toggleVisibilidadReporte(idReporte: number, idAlumno: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    /* Optimistic update */
+    this.reportesAlumnos.update(list =>
+      list.map(a => a.idAlumno === idAlumno
+        ? { ...a, reportes: a.reportes.map(r => r.id === idReporte ? { ...r, visiblePadre: !r.visiblePadre } : r) }
+        : a
+      )
+    );
+    this.http.patch<Reporte>(
+      `http://localhost:8080/api/portal/docente/reportes/${idReporte}/visibilidad`,
+      {}, { headers }
+    ).subscribe({
+      next: updated => {
+        this.reportesAlumnos.update(list =>
+          list.map(a => a.idAlumno === idAlumno
+            ? { ...a, reportes: a.reportes.map(r => r.id === idReporte ? updated : r) }
+            : a
+          )
+        );
+      },
+      error: () => {
+        const curso = this.cursoActivo();
+        if (curso) this.cargarReportes(curso.idAulaCurso);
+      }
+    });
+  }
+
+  /** Cuenta cuántos reportes de un tipo tiene un alumno */
+  contarTipoReporte(reportes: Reporte[], tipo: string): number {
+    return reportes.filter(r => r.tipo === tipo).length;
+  }
+
+  /** Etiqueta e info de color para el tipo de reporte */
+  tipoReporteInfo(tipo: string): { label: string; css: string } {
+    const map: Record<string, { label: string; css: string }> = {
+      pendiente:        { label: 'Pendiente',         css: 'rp-tipo-pendiente'   },
+      anotacion:        { label: 'Anotación',         css: 'rp-tipo-anotacion'   },
+      llamada_atencion: { label: 'Llamada de Atención', css: 'rp-tipo-atencion' },
+      felicitacion:     { label: 'Felicitación',      css: 'rp-tipo-felicitacion'},
+      otro:             { label: 'Otro',               css: 'rp-tipo-otro'       },
+    };
+    return map[tipo] ?? { label: tipo, css: 'rp-tipo-otro' };
   }
 
   setSection(id: string)   { this.activeSection.set(id);   this.dropdownOpen.set(false); }

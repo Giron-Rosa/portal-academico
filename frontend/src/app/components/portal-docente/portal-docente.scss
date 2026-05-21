@@ -2412,6 +2412,409 @@ a.cd-mat-titulo {
   &:hover { text-decoration: underline; }
 }
 
+/* ═══════════════════════════════════════════
+   TAB: REPORTES
+═══════════════════════════════════════════ */
+
+/* Texto informativo */
+.rp-info-text {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: -0.25rem 0 1rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  line-height: 1.5;
+}
+
+.rp-eye-icon {
+  display: inline-block;
+  vertical-align: middle;
+  opacity: 0.6;
+}
+
+/* Botón "Nuevo Reporte" */
+.rp-btn-nuevo {
+  padding: 0.4rem 1rem;
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: #6d28d9; }
+}
+
+/* ── Panel del formulario de nuevo reporte ── */
+.rp-form-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.rp-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  background: #f5f3ff;
+  border-bottom: 1px solid #ddd6fe;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #5b21b6;
+}
+
+.rp-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 1.25rem;
+}
+
+/* Fila superior del form: alumno + tipo + fecha */
+.rp-form-row {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr;
+  gap: 1rem;
+
+  @media (max-width: 640px) { grid-template-columns: 1fr; }
+}
+
+.rp-field-alumno { flex: 2; }
+.rp-field-tipo   { flex: 1.5; }
+
+/* Checkbox visible al padre */
+.rp-check-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.83rem;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+}
+
+.rp-checkbox {
+  width: 15px;
+  height: 15px;
+  accent-color: #7c3aed;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Botón submit de reporte */
+.rp-btn-submit {
+  padding: 0.45rem 1.25rem;
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover:not(:disabled) { background: #6d28d9; }
+  &:disabled { background: #9ca3af; cursor: not-allowed; }
+}
+
+/* ── Lista de alumnos ── */
+.rp-alumno-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.rp-alumno-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  transition: box-shadow 0.15s;
+
+  &.rp-alumno-expandido {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+}
+
+/* Header de cada alumno */
+.rp-alumno-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  background: #fafafa;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+
+  &:hover { background: #f5f3ff; }
+}
+
+/* Avatar circular con inicial */
+.rp-alumno-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.rp-alumno-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rp-alumno-nombre {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rp-alumno-codigo {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  font-family: monospace;
+}
+
+.rp-alumno-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.rp-alumno-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Badge total de reportes */
+.rp-total-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #7c3aed;
+  background: #f5f3ff;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.rp-total-vacio {
+  color: #9ca3af;
+  background: #f3f4f6;
+}
+
+/* Mini badges numéricos por tipo */
+.rp-mini-badge {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+/* ── Contenedor de reportes del alumno ── */
+.rp-reportes-container {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Estado vacío dentro de un alumno */
+.rp-sin-reportes {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #9ca3af;
+  font-size: 0.8rem;
+  padding: 0.5rem 0;
+}
+
+/* ── Cada tarjeta de reporte ── */
+.rp-reporte-item {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  border-left-width: 4px;   /* override por tipo */
+  padding: 0.65rem 0.85rem;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* Fila superior: tipo + fecha + acciones */
+.rp-reporte-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rp-reporte-fecha {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  margin-right: auto;
+}
+
+.rp-reporte-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Título del reporte */
+.rp-reporte-titulo {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Descripción del reporte */
+.rp-reporte-desc {
+  font-size: 0.79rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* ── Botón visibilidad padre ── */
+.rp-vis-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+
+  &:hover { border-color: #7c3aed; color: #7c3aed; }
+
+  &.rp-vis-activo {
+    background: #f5f3ff;
+    border-color: #c4b5fd;
+    color: #7c3aed;
+  }
+}
+
+/* Botón eliminar reporte (overrides) */
+.rp-delete-btn {
+  padding: 4px !important;
+  &:hover { color: #dc2626 !important; }
+}
+
+/* Botón inline "Agregar reporte a X" */
+.rp-add-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.35rem 0.75rem;
+  border: 1px dashed #c4b5fd;
+  border-radius: 7px;
+  background: none;
+  color: #7c3aed;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  align-self: flex-start;
+  margin-top: 4px;
+
+  &:hover { background: #f5f3ff; border-color: #7c3aed; }
+}
+
+/* ══ Colores por tipo de reporte ══ */
+
+/* Pendiente — naranja */
+.rp-tipo-pendiente {
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.rp-tipo-pendiente-border { border-left-color: #fb923c !important; background: #fff7ed !important; }
+
+/* Anotación — azul */
+.rp-tipo-anotacion {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.rp-tipo-anotacion-border { border-left-color: #60a5fa !important; background: #f8faff !important; }
+
+/* Llamada de atención — rojo */
+.rp-tipo-atencion {
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.rp-tipo-atencion-border { border-left-color: #f87171 !important; background: #fff5f5 !important; }
+
+/* Felicitación — verde */
+.rp-tipo-felicitacion {
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.rp-tipo-felicitacion-border { border-left-color: #4ade80 !important; background: #f0fdf4 !important; }
+
+/* Otro — gris */
+.rp-tipo-otro {
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.rp-tipo-otro-border { border-left-color: #9ca3af !important; background: #fafafa !important; }
+
 /* ── Estado vacío (administrador no ha cargado horarios) ── */
 .cal-empty {
   display: flex;

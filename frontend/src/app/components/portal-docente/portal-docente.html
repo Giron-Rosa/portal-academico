@@ -1026,17 +1026,247 @@
 
         }<!-- /examenes -->
 
-        <!-- ─── Tab: REPORTES (placeholder) ─── -->
+        <!-- ─── Tab: REPORTES ─── -->
         @if (activeSubTab() === 'reportes') {
-          <div class="cd-placeholder-tab">
-            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
-              <line x1="18" y1="20" x2="18" y2="10"/>
-              <line x1="12" y1="20" x2="12" y2="4"/>
-              <line x1="6"  y1="20" x2="6"  y2="14"/>
-            </svg>
-            <p>Reportes — próximamente</p>
+
+          <!-- Cabecera -->
+          <div class="cd-section-header">
+            <h3 class="cd-section-title">Libreta de Reportes</h3>
+            @if (!mostrarFormReporte()) {
+              <button class="rp-btn-nuevo" (click)="toggleFormReporte(true)">+ Nuevo Reporte</button>
+            }
           </div>
-        }
+
+          <!-- Descripción informativa -->
+          <p class="rp-info-text">
+            Agrega pendientes, anotaciones, llamadas de atención o felicitaciones por alumno.
+            Los reportes marcados como <strong>Visible al padre</strong>
+            <svg class="rp-eye-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+            serán visibles en el portal de padres.
+          </p>
+
+          <!-- ── Formulario de nuevo reporte ── -->
+          @if (mostrarFormReporte()) {
+            <div class="rp-form-panel">
+              <div class="rp-form-header">
+                <span>Nuevo Reporte</span>
+                <button class="cd-modal-close" (click)="toggleFormReporte(false)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="rp-form-body">
+                <!-- Alumno + Tipo -->
+                <div class="rp-form-row">
+                  <div class="tr-field rp-field-alumno">
+                    <label class="cd-modal-label">Alumno *</label>
+                    <select class="cd-modal-input"
+                            [ngModel]="formReporte().idAlumno"
+                            (ngModelChange)="setFormReporte('idAlumno', $event ? +$event : null)">
+                      <option [value]="null">— Selecciona un alumno —</option>
+                      @for (a of reportesAlumnos(); track a.idAlumno) {
+                        <option [value]="a.idAlumno">{{ a.nombres }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="tr-field rp-field-tipo">
+                    <label class="cd-modal-label">Tipo</label>
+                    <select class="cd-modal-input"
+                            [ngModel]="formReporte().tipo"
+                            (ngModelChange)="setFormReporte('tipo', $event)">
+                      <option value="anotacion">📝 Anotación</option>
+                      <option value="pendiente">🔔 Pendiente</option>
+                      <option value="llamada_atencion">⚠️ Llamada de Atención</option>
+                      <option value="felicitacion">⭐ Felicitación</option>
+                      <option value="otro">📌 Otro</option>
+                    </select>
+                  </div>
+                  <div class="tr-field">
+                    <label class="cd-modal-label">Fecha</label>
+                    <input class="cd-modal-input" type="date"
+                           [ngModel]="formReporte().fecha"
+                           (ngModelChange)="setFormReporte('fecha', $event)"/>
+                  </div>
+                </div>
+
+                <!-- Título -->
+                <div class="tr-field tr-full">
+                  <label class="cd-modal-label">Título *</label>
+                  <input class="cd-modal-input" type="text"
+                         placeholder="Ej: Entregar trabajo pendiente de fracciones"
+                         maxlength="200"
+                         [ngModel]="formReporte().titulo"
+                         (ngModelChange)="setFormReporte('titulo', $event)"/>
+                </div>
+
+                <!-- Descripción -->
+                <div class="tr-field tr-full">
+                  <label class="cd-modal-label">Descripción / Detalle</label>
+                  <textarea class="tr-textarea" rows="3"
+                            placeholder="Agrega más contexto si es necesario..."
+                            [ngModel]="formReporte().descripcion"
+                            (ngModelChange)="setFormReporte('descripcion', $event)"></textarea>
+                </div>
+
+                <!-- Visible al padre -->
+                <label class="rp-check-label">
+                  <input type="checkbox"
+                         [ngModel]="formReporte().visiblePadre"
+                         (ngModelChange)="setFormReporte('visiblePadre', $event)"
+                         class="rp-checkbox"/>
+                  <span>Visible al padre / tutor en su portal</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" style="opacity:0.5">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </label>
+              </div>
+
+              <div class="tr-form-actions">
+                <button class="cd-modal-cancel" (click)="toggleFormReporte(false)">Cancelar</button>
+                <button class="rp-btn-submit"
+                        (click)="enviarReporte()"
+                        [disabled]="!formReporte().titulo.trim() || !formReporte().idAlumno || enviandoReporte()">
+                  @if (enviandoReporte()) { Guardando… } @else { Guardar Reporte }
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Estado de carga -->
+          @if (cargandoReportes()) {
+            <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando reportes...</span></div>
+          }
+
+          <!-- ── Lista de alumnos con sus reportes ── -->
+          @if (!cargandoReportes()) {
+            <div class="rp-alumno-list">
+              @for (alumno of reportesAlumnos(); track alumno.idAlumno) {
+                <div class="rp-alumno-card" [class.rp-alumno-expandido]="alumnosExpandidos().has(alumno.idAlumno)">
+
+                  <!-- Header del alumno (acordeón) -->
+                  <button class="rp-alumno-header" (click)="toggleAlumnoReportes(alumno.idAlumno)">
+                    <div class="rp-alumno-avatar">
+                      {{ alumno.nombres.charAt(0) }}
+                    </div>
+                    <div class="rp-alumno-info">
+                      <span class="rp-alumno-nombre">{{ alumno.nombres }}</span>
+                      <span class="rp-alumno-codigo">{{ alumno.codigo }}</span>
+                    </div>
+
+                    <!-- Badges de tipos de reporte que tiene -->
+                    <div class="rp-alumno-badges">
+                      @if (contarTipoReporte(alumno.reportes, 'pendiente') > 0) {
+                        <span class="rp-mini-badge rp-tipo-pendiente">{{ contarTipoReporte(alumno.reportes, 'pendiente') }}</span>
+                      }
+                      @if (contarTipoReporte(alumno.reportes, 'llamada_atencion') > 0) {
+                        <span class="rp-mini-badge rp-tipo-atencion">{{ contarTipoReporte(alumno.reportes, 'llamada_atencion') }}</span>
+                      }
+                      @if (contarTipoReporte(alumno.reportes, 'felicitacion') > 0) {
+                        <span class="rp-mini-badge rp-tipo-felicitacion">{{ contarTipoReporte(alumno.reportes, 'felicitacion') }}</span>
+                      }
+                    </div>
+
+                    <div class="rp-alumno-header-right">
+                      <span class="rp-total-badge"
+                            [class.rp-total-vacio]="alumno.totalReportes === 0">
+                        {{ alumno.totalReportes }} reporte{{ alumno.totalReportes !== 1 ? 's' : '' }}
+                      </span>
+                      <svg class="cd-chevron" [class.open]="alumnosExpandidos().has(alumno.idAlumno)"
+                           width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="18 15 12 9 6 15"/>
+                      </svg>
+                    </div>
+                  </button>
+
+                  <!-- Reportes del alumno (expandido) -->
+                  @if (alumnosExpandidos().has(alumno.idAlumno)) {
+                    <div class="rp-reportes-container">
+
+                      @if (alumno.reportes.length === 0) {
+                        <div class="rp-sin-reportes">
+                          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+                          </svg>
+                          <span>Sin reportes aún. Pulsa "+ Nuevo Reporte" para agregar uno.</span>
+                        </div>
+                      }
+
+                      @for (reporte of alumno.reportes; track reporte.id) {
+                        <div class="rp-reporte-item" [class]="tipoReporteInfo(reporte.tipo).css + '-border'">
+
+                          <!-- Tipo + fecha + acciones -->
+                          <div class="rp-reporte-top">
+                            <span class="rp-tipo-badge" [class]="tipoReporteInfo(reporte.tipo).css">
+                              {{ tipoReporteInfo(reporte.tipo).label }}
+                            </span>
+                            <span class="rp-reporte-fecha">{{ reporte.fecha }}</span>
+                            <div class="rp-reporte-actions">
+                              <!-- Toggle visible padre -->
+                              <button class="rp-vis-btn"
+                                      [class.rp-vis-activo]="reporte.visiblePadre"
+                                      (click)="toggleVisibilidadReporte(reporte.id, alumno.idAlumno)"
+                                      [title]="reporte.visiblePadre ? 'Ocultar al padre' : 'Hacer visible al padre'">
+                                @if (reporte.visiblePadre) {
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                  </svg>
+                                } @else {
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                  </svg>
+                                }
+                                <span>{{ reporte.visiblePadre ? 'Visible' : 'Oculto' }}</span>
+                              </button>
+                              <!-- Eliminar -->
+                              <button class="cd-mat-delete rp-delete-btn"
+                                      (click)="eliminarReporte(reporte.id, alumno.idAlumno)"
+                                      title="Eliminar reporte">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                                  <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+
+                          <!-- Título -->
+                          <p class="rp-reporte-titulo">{{ reporte.titulo }}</p>
+
+                          <!-- Descripción (si existe) -->
+                          @if (reporte.descripcion) {
+                            <p class="rp-reporte-desc">{{ reporte.descripcion }}</p>
+                          }
+
+                        </div>
+                      }
+
+                      <!-- Acceso rápido: agregar reporte a este alumno -->
+                      <button class="rp-add-inline"
+                              (click)="setFormReporte('idAlumno', alumno.idAlumno); toggleFormReporte(true)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Agregar reporte a {{ alumno.nombres.split(' ')[0] }}
+                      </button>
+
+                    </div>
+                  }
+
+                </div>
+              }
+            </div>
+          }
+
+        }<!-- /reportes -->
 
       }<!-- /curso-detalle -->
 
