@@ -388,49 +388,173 @@
   flex-shrink: 0;
 }
 
+/* ── Header POR REVISAR ── */
+.pd-review-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .pd-review-title {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 1.2px;
   color: #aaa;
   text-transform: uppercase;
-  margin-bottom: 1.1rem;
+  flex: 1;
+  margin: 0;
 }
 
+/* Badge con el total de pendientes */
+.pd-review-count {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 20px;
+  background: #c1121f;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+/* Estado vacío */
+.pd-review-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 0;
+}
+
+.pd-review-empty {
+  font-size: 0.78rem;
+  color: #bbb;
+  text-align: center;
+  margin: 0;
+}
+
+/* ── Card de pendiente (button) ── */
 .pd-review-item {
-  padding: 0.7rem 0 0.7rem 0.85rem;
-  border-left: 3px solid #c1121f;
-  margin-bottom: 1.1rem;
-  transition: background 0.15s;
-  border-radius: 0 6px 6px 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0.65rem 0.75rem 0.65rem 0.85rem;
+  border: none;
+  border-left: 3px solid #e5e7eb;
+  border-radius: 0 8px 8px 0;
+  background: #fafafa;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 0.55rem;
+  transition: all 0.15s;
+  position: relative;
 
-  &:hover { background: #fff5f5; }
+  &:hover {
+    background: #fff5f5;
+    border-left-color: #c1121f;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+
+    .pd-review-arrow { opacity: 1; transform: translateX(0); }
+  }
 }
 
-.pd-review-meta {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #555;
-  margin-bottom: 3px;
+/* Fila superior: tipo + grado */
+.pd-review-top {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
+/* Badge tipo Tarea/Examen */
+.pd-review-tipo {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.pd-tipo-tarea  { background: #dbeafe; color: #1d4ed8; }
+.pd-tipo-examen { background: #fef3c7; color: #b45309; }
+
+.pd-review-grado {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+/* Nombre del curso */
+.pd-review-curso {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* Título de la tarea/examen */
 .pd-review-tarea {
   font-size: 0.82rem;
   font-weight: 700;
   color: #0d1b2a;
-  margin-bottom: 2px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.pd-review-tema {
-  font-size: 0.75rem;
-  color: #888;
+/* Fila inferior: sin calificar */
+.pd-review-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 2px;
 }
 
-.pd-review-empty {
-  font-size: 0.82rem;
-  color: #bbb;
-  text-align: center;
-  margin-top: 2rem;
+.pd-review-sin-cal {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #c1121f;
+}
+
+.pd-review-de {
+  font-size: 0.68rem;
+  color: #9ca3af;
+}
+
+/* Flecha de navegación */
+.pd-review-arrow {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateX(-4px) translateY(-50%);
+  opacity: 0;
+  transition: all 0.15s;
+  color: #c1121f;
+}
+
+/* Botón actualizar */
+.pd-review-refresh {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  margin-top: 0.25rem;
+  transition: color 0.12s;
+  &:hover { color: #6b7280; }
 }
 
 /* ── Loading / Error / Empty ── */

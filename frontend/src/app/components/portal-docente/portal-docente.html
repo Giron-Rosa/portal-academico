@@ -2116,16 +2116,71 @@
 
     <!-- ── Right Sidebar ── -->
     <aside class="pd-sidebar-right">
-      <h3 class="pd-review-title">POR REVISAR</h3>
-      @for (item of pendientes(); track item.titulo + item.grado) {
-        <div class="pd-review-item">
-          <div class="pd-review-meta">{{ item.grado }} · {{ item.curso }}</div>
-          <div class="pd-review-tarea">{{ item.titulo }}</div>
-          <div class="pd-review-tema">{{ item.tema }}</div>
+      <div class="pd-review-header">
+        <h3 class="pd-review-title">POR REVISAR</h3>
+        @if (pendientes().length > 0) {
+          <span class="pd-review-count">{{ pendientes().length }}</span>
+        }
+      </div>
+
+      @if (pendientes().length === 0) {
+        <div class="pd-review-empty-state">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
+            <polyline points="9 11 12 14 22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          <p class="pd-review-empty">Sin pendientes</p>
         </div>
       }
-      @if (pendientes().length === 0) {
-        <p class="pd-review-empty">Sin pendientes</p>
+
+      @for (item of pendientes(); track item.idAulaCurso + item.titulo) {
+        <button class="pd-review-item" (click)="irAPendiente(item)">
+
+          <!-- Badge de tipo -->
+          <div class="pd-review-top">
+            <span class="pd-review-tipo"
+                  [class.pd-tipo-tarea]="item.tipo === 'tarea'"
+                  [class.pd-tipo-examen]="item.tipo === 'examen'">
+              {{ item.tipo === 'tarea' ? 'Tarea' : 'Examen' }}
+            </span>
+            <span class="pd-review-grado">{{ item.grado | slice:0:3 }} {{ item.seccion }}</span>
+          </div>
+
+          <!-- Curso + título -->
+          <div class="pd-review-curso">{{ item.curso }}</div>
+          <div class="pd-review-tarea">{{ item.titulo }}</div>
+
+          <!-- Contador de sin calificar -->
+          <div class="pd-review-footer">
+            <span class="pd-review-sin-cal">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              {{ item.sinCalificar }} sin calificar
+            </span>
+            <span class="pd-review-de">de {{ item.totalAlumnos }}</span>
+          </div>
+
+          <!-- Flecha de navegación -->
+          <svg class="pd-review-arrow" width="12" height="12" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+
+        </button>
+      }
+
+      <!-- Recargar pendientes -->
+      @if (pendientes().length > 0) {
+        <button class="pd-review-refresh" (click)="cargarPendientes()" title="Actualizar">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          Actualizar
+        </button>
       }
     </aside>
 

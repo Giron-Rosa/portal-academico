@@ -94,10 +94,14 @@ const CAL_HORA_FIN    = 15;
 const CAL_PX_POR_HORA = 64;
 
 export interface Pendiente {
-  grado: string;
-  curso: string;
-  titulo: string;
-  tema: string;
+  idAulaCurso:  number;
+  tipo:         string;    // 'tarea' | 'examen'
+  grado:        string;
+  seccion:      string;
+  curso:        string;
+  titulo:       string;
+  sinCalificar: number;
+  totalAlumnos: number;
 }
 
 /* ── Interfaces de detalle de curso ── */
@@ -582,6 +586,7 @@ export class PortalDocente {
     this.cargarMensajes();
     this.cargarComunicados();
     this.cargarMisAulas();
+    this.cargarPendientes();
   }
 
   /* ══════════════════════════════════════════
@@ -1742,6 +1747,30 @@ export class PortalDocente {
       otro:             { label: 'Otro',               css: 'rp-tipo-otro'       },
     };
     return map[tipo] ?? { label: tipo, css: 'rp-tipo-otro' };
+  }
+
+  /* ── Métodos de Pendientes ── */
+
+  cargarPendientes() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Pendiente[]>(
+      'http://localhost:8080/api/portal/docente/pendientes',
+      { headers }
+    ).subscribe({ next: data => this.pendientes.set(data) });
+  }
+
+  /**
+   * Navega al curso correspondiente al pendiente y abre el tab correcto.
+   * Si el curso aún no está cargado, espera a que cursos() tenga datos.
+   */
+  irAPendiente(item: Pendiente) {
+    const curso = this.cursos().find(c => c.idAulaCurso === item.idAulaCurso);
+    if (!curso) return;
+    this.abrirCurso(curso);
+    const tab = item.tipo === 'tarea' ? 'tareas' : 'examenes';
+    this.activeSubTab.set(tab);
   }
 
   setSection(id: string)   { this.activeSection.set(id);   this.dropdownOpen.set(false); }
