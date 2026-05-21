@@ -515,14 +515,224 @@
 
       }<!-- /mensajes -->
 
+      <!-- ═══ SECCIÓN: REFUERZOS / COMUNICADOS ═══ -->
       @if (activeSection() === 'refuerzos') {
-        <div class="pd-placeholder">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-          <p>Refuerzos — en desarrollo</p>
+
+        <!-- Cabecera: título + botón nuevo comunicado -->
+        <div class="com-top-bar">
+          <div>
+            <h2 class="pd-section-title" style="margin-bottom:2px">Refuerzos y Comunicados</h2>
+            <p class="com-subtitle">Crea anuncios y eventos para tus grados.</p>
+          </div>
+          <button class="com-btn-nuevo" (click)="toggleFormCom()">
+            @if (mostrarFormCom()) {
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Cancelar
+            } @else {
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nuevo comunicado
+            }
+          </button>
         </div>
-      }
+
+        <!-- ── Formulario inline de creación ── -->
+        @if (mostrarFormCom()) {
+          <div class="com-form-panel">
+            <h3 class="com-form-title">Nuevo comunicado</h3>
+
+            <div class="com-form-grid">
+
+              <!-- Título -->
+              <div class="com-form-group com-form-full">
+                <label class="com-form-label">Título <span class="com-req">*</span></label>
+                <input class="com-form-input"
+                       type="text"
+                       placeholder="Ej: Evaluación de fracciones – 3ro A"
+                       [ngModel]="formCom().titulo"
+                       (ngModelChange)="setFormCom('titulo', $event)"
+                       maxlength="200"/>
+              </div>
+
+              <!-- Tipo de evento -->
+              <div class="com-form-group">
+                <label class="com-form-label">Tipo de evento <span class="com-req">*</span></label>
+                <select class="com-form-select"
+                        [ngModel]="formCom().tipo"
+                        (ngModelChange)="setFormCom('tipo', $event)">
+                  <option value="examen">Examen</option>
+                  <option value="actividad">Actividad en aula</option>
+                  <option value="reunion_padres">Reunión de padres</option>
+                  <option value="paseo">Paseo escolar</option>
+                  <option value="dia_festivo">Día festivo / No hay clases</option>
+                  <option value="general">General</option>
+                </select>
+              </div>
+
+              <!-- Grado destino -->
+              <div class="com-form-group">
+                <label class="com-form-label">¿Para qué grado?</label>
+                <select class="com-form-select"
+                        [ngModel]="formCom().idAula"
+                        (ngModelChange)="setFormCom('idAula', $event ? +$event : null)">
+                  <option [value]="null">Todos mis grados</option>
+                  @for (a of misAulas(); track a.id) {
+                    <option [value]="a.id">
+                      {{ a.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ a.seccion }}
+                    </option>
+                  }
+                </select>
+              </div>
+
+              <!-- Fecha del evento -->
+              <div class="com-form-group">
+                <label class="com-form-label">Fecha del evento</label>
+                <input class="com-form-input"
+                       type="date"
+                       [ngModel]="formCom().fechaEvento"
+                       (ngModelChange)="setFormCom('fechaEvento', $event)"/>
+              </div>
+
+              <!-- Descripción -->
+              <div class="com-form-group com-form-full">
+                <label class="com-form-label">Descripción <span class="com-optional">(opcional)</span></label>
+                <textarea class="com-form-textarea"
+                          rows="3"
+                          placeholder="Detalles adicionales del comunicado..."
+                          [ngModel]="formCom().descripcion"
+                          (ngModelChange)="setFormCom('descripcion', $event)">
+                </textarea>
+              </div>
+
+            </div><!-- /com-form-grid -->
+
+            <div class="com-form-actions">
+              <button class="com-btn-cancel" (click)="toggleFormCom()">Cancelar</button>
+              <button class="com-btn-submit"
+                      (click)="enviarComunicado()"
+                      [disabled]="!formCom().titulo.trim() || enviandoCom()">
+                @if (enviandoCom()) { Publicando… }
+                @else { Publicar comunicado }
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Estado: cargando / error -->
+        @if (cargandoComunicados()) {
+          <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando comunicados...</span></div>
+        }
+        @if (errorComunicados()) {
+          <div class="pd-error-msg">{{ errorComunicados() }}</div>
+        }
+
+        <!-- Tabs de filtro por grado -->
+        <div class="com-filter-bar">
+          <button class="com-tab" [class.active]="filtroGradoCom() === ''"
+                  (click)="filtroGradoCom.set('')">Todos</button>
+          @for (g of gradosComunicados(); track g) {
+            <button class="com-tab" [class.active]="filtroGradoCom() === g"
+                    (click)="filtroGradoCom.set(g)">
+              {{ g.replace('Secundaria','Sec').replace('Primaria','Prim') }}
+            </button>
+          }
+          <!-- Botón recargar -->
+          <button class="msg-btn-reload" style="margin-left:auto" (click)="cargarComunicados()" title="Actualizar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Lista de comunicados como cards -->
+        @if (!cargandoComunicados()) {
+          @if (comunicadosFiltrados().length === 0) {
+            <!-- Estado vacío -->
+            <div class="com-empty">
+              <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              <p>No hay comunicados. Crea el primero con el botón de arriba.</p>
+            </div>
+          }
+
+          <div class="com-list">
+            @for (c of comunicadosFiltrados(); track c.id) {
+              <div class="com-card">
+
+                <!-- Franja de color lateral según tipo -->
+                <div class="com-card-stripe"
+                     [style.background]="colorTipoTexto(c.tipo)">
+                </div>
+
+                <div class="com-card-body">
+                  <!-- Fila superior: badge tipo + grado + fecha evento -->
+                  <div class="com-card-top">
+                    <!-- Badge tipo con color semántico -->
+                    <span class="com-tipo-badge"
+                          [style.background]="colorTipo(c.tipo)"
+                          [style.color]="colorTipoTexto(c.tipo)">
+                      {{ labelTipo(c.tipo) }}
+                    </span>
+
+                    <!-- Grado destino -->
+                    <span class="com-card-grado">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                      </svg>
+                      @if (c.idAula === null) {
+                        Todos los grados
+                      } @else {
+                        {{ c.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ c.seccion }}
+                      }
+                    </span>
+
+                    <!-- Fecha del evento (si tiene) -->
+                    @if (c.fechaEvento) {
+                      <span class="com-card-fecha-evento">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        {{ c.fechaEvento }}
+                      </span>
+                    }
+
+                    <!-- Botón eliminar (esquina derecha) -->
+                    <button class="com-card-delete" (click)="eliminarComunicado(c.id)" title="Eliminar comunicado">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14H6L5 6"/>
+                        <path d="M10 11v6"/><path d="M14 11v6"/>
+                        <path d="M9 6V4h6v2"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Título del comunicado -->
+                  <h4 class="com-card-titulo">{{ c.titulo }}</h4>
+
+                  <!-- Descripción (si tiene) -->
+                  @if (c.descripcion) {
+                    <p class="com-card-desc">{{ c.descripcion }}</p>
+                  }
+
+                  <!-- Fecha de creación -->
+                  <div class="com-card-creacion">
+                    Publicado {{ tiempoRelativo(c.fechaCreacion) }}
+                  </div>
+                </div>
+
+              </div>
+            }
+          </div>
+        }
+
+      }<!-- /refuerzos -->
 
     </main>
 

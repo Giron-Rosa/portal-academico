@@ -1105,6 +1105,319 @@
   .msg-inbox  { width: 100%; border-right: none; border-bottom: 1px solid #e5e7eb; max-height: 260px; }
 }
 
+/* ═══════════════════════════════════════════
+   REFUERZOS / COMUNICADOS
+   Cabecera + formulario inline + grid de cards
+═══════════════════════════════════════════ */
+
+/* Barra superior: título + botón nuevo comunicado */
+.com-top-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.com-subtitle {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Botón "Nuevo comunicado" / "Cancelar" */
+.com-btn-nuevo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: #0d1b2a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+
+  &:hover { background: #1a2e45; }
+}
+
+/* ── Panel del formulario inline ── */
+.com-form-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,.04);
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.com-form-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 1rem;
+}
+
+/* Grid de 2 columnas; .com-form-full ocupa las 2 */
+.com-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem 1.25rem;
+}
+
+.com-form-group { display: flex; flex-direction: column; gap: 4px; }
+.com-form-full  { grid-column: 1 / -1; }
+
+.com-form-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.com-req      { color: #c1121f; }
+.com-optional { font-weight: 400; color: #9ca3af; }
+
+/* Inputs y selects del formulario */
+.com-form-input,
+.com-form-select,
+.com-form-textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.83rem;
+  font-family: inherit;
+  color: #1f2937;
+  outline: none;
+  transition: border-color 0.15s;
+  background: #fff;
+
+  &:focus { border-color: #0d1b2a; }
+}
+
+.com-form-textarea {
+  resize: vertical;
+  min-height: 68px;
+}
+
+/* Botones de acción del formulario */
+.com-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.com-btn-cancel {
+  padding: 0.45rem 1rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: #e5e7eb; }
+}
+
+.com-btn-submit {
+  padding: 0.45rem 1.1rem;
+  background: #c1121f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) { background: #9e0e19; }
+  &:disabled { background: #9ca3af; cursor: not-allowed; }
+}
+
+/* ── Barra de filtros por grado ── */
+.com-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 1.1rem;
+}
+
+.com-tab {
+  padding: 0.28rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #fff;
+  color: #555;
+  font-size: 0.73rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+
+  &:hover  { background: #f3f4f6; }
+  &.active { background: #0d1b2a; color: #fff; border-color: #0d1b2a; }
+}
+
+/* ── Estado vacío ── */
+.com-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 3rem 1rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ── Grid de cards ── */
+.com-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 1rem;
+}
+
+/* Una card de comunicado */
+.com-card {
+  display: flex;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.15s;
+
+  &:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,.08);
+    transform: translateY(-2px);
+  }
+}
+
+/* Franja de color lateral */
+.com-card-stripe {
+  width: 5px;
+  flex-shrink: 0;
+  border-radius: 0;
+}
+
+/* Cuerpo de la card */
+.com-card-body {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+/* Fila superior: badge + grado + fecha + botón eliminar */
+.com-card-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+/* Badge semántico de tipo */
+.com-tipo-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+/* Info de grado */
+.com-card-grado {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* Fecha del evento con icono calendario */
+.com-card-fecha-evento {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* Botón eliminar (push a la derecha) */
+.com-card-delete {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fee2e2;
+  border-radius: 6px;
+  background: #fff;
+  color: #b91c1c;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+
+  &:hover { background: #fee2e2; }
+}
+
+/* Título del comunicado */
+.com-card-titulo {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  line-height: 1.35;
+}
+
+/* Descripción (texto gris, 3 líneas máx) */
+.com-card-desc {
+  font-size: 0.78rem;
+  color: #6b7280;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+/* Fecha de creación (footer de la card) */
+.com-card-creacion {
+  font-size: 0.68rem;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+/* Responsivo: 1 columna en pantallas pequeñas */
+@media (max-width: 640px) {
+  .com-list     { grid-template-columns: 1fr; }
+  .com-form-grid { grid-template-columns: 1fr; }
+  .com-form-full { grid-column: 1; }
+}
+
 /* ── Estado vacío (administrador no ha cargado horarios) ── */
 .cal-empty {
   display: flex;

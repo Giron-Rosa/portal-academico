@@ -98,6 +98,37 @@ export interface Pendiente {
   tema: string;
 }
 
+/* ── Interfaces de comunicados (Refuerzos) ── */
+
+/** Aula del docente: id + grado + sección, para el selector del formulario */
+export interface AulaSimple {
+  id: number;
+  grado: string;
+  seccion: string;
+}
+
+/** Comunicado creado por el docente */
+export interface Comunicado {
+  id: number;
+  titulo: string;
+  descripcion: string | null;
+  tipo: string;           // 'examen' | 'actividad' | 'reunion_padres' | 'paseo' | 'dia_festivo' | 'general'
+  fechaEvento: string | null;   // "DD/MM/YYYY"
+  fechaCreacion: string;        // "DD/MM/YYYY HH:MM"
+  grado: string;                // grado o "Todos los grados"
+  seccion: string | null;
+  idAula: number | null;
+}
+
+/** Estado local del formulario de nuevo comunicado */
+export interface FormComunicado {
+  titulo: string;
+  tipo: string;
+  idAula: number | null;   // null = todos los grados
+  descripcion: string;
+  fechaEvento: string;     // "YYYY-MM-DD" (formato input[type=date])
+}
+
 const CARD_COLORS = ['#dce8f7', '#fde8e8', '#d5e5f5', '#fdd8d8', '#e8f0fc', '#fce8e8', '#e8f7ec', '#fef9e0'];
 
 const ICON_MAP: Record<string, string> = {
@@ -178,6 +209,40 @@ export class PortalDocente {
   /** Cantidad de mensajes no leídos (para el badge del sidebar) */
   noLeidos = computed(() => this.mensajes().filter(m => !m.leido).length);
 
+  /* ── Signals de comunicados (Refuerzos) ── */
+
+  /** Lista completa de comunicados del docente */
+  comunicados          = signal<Comunicado[]>([]);
+  cargandoComunicados  = signal(false);
+  errorComunicados     = signal('');
+  /** Aulas del docente para el selector del formulario */
+  misAulas             = signal<AulaSimple[]>([]);
+  /** Controla si el formulario de creación está visible */
+  mostrarFormCom       = signal(false);
+  /** Enviando estado del formulario */
+  enviandoCom          = signal(false);
+  /** Filtro de grado en la lista de comunicados ('' = Todos) */
+  filtroGradoCom       = signal('');
+  /** Estado del formulario de nuevo comunicado */
+  formCom = signal<FormComunicado>({
+    titulo: '', tipo: 'examen', idAula: null, descripcion: '', fechaEvento: ''
+  });
+
+  /** Grados únicos en los comunicados para los tabs de filtro */
+  gradosComunicados = computed(() => {
+    const grados = this.comunicados()
+      .map(c => c.grado)
+      .filter(g => g !== 'Todos los grados');
+    return [...new Set(grados)];
+  });
+
+  /** Comunicados filtrados por grado seleccionado */
+  comunicadosFiltrados = computed(() => {
+    const f = this.filtroGradoCom();
+    if (!f) return this.comunicados();
+    return this.comunicados().filter(c => c.grado === f || c.idAula === null);
+  });
+
   /* ── Signals del calendario ── */
 
   /** Todos los bloques de clase devueltos por el backend */
@@ -247,6 +312,8 @@ export class PortalDocente {
     this.cargarCursos();
     this.cargarHorario();
     this.cargarMensajes();
+    this.cargarComunicados();
+    this.cargarMisAulas();
   }
 
   /* ══════════════════════════════════════════
@@ -429,6 +496,129 @@ export class PortalDocente {
     if (hrs   > 0) return `hace ${hrs} hora${hrs > 1 ? 's' : ''}`;
     if (mins  > 0) return `hace ${mins} min`;
     return 'ahora';
+  }
+
+  /* ── Comunicados: carga, creación y eliminación ── */
+
+  /** Carga todos los comunicados del docente desde el backend */
+  cargarComunicados() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoComunicados.set(true);
+    this.errorComunicados.set('');
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Comunicado[]>('http://localhost:8080/api/portal/docente/comunicados', { headers })
+      .subscribe({
+        next: data => { this.comunicados.set(data); this.cargandoComunicados.set(false); },
+        error: ()   => { this.errorComunicados.set('No se pudieron cargar los comunicados.'); this.cargandoComunicados.set(false); },
+      });
+  }
+
+  /** Carga las aulas del docente para poblar el selector del formulario */
+  private cargarMisAulas() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<AulaSimple[]>('http://localhost:8080/api/portal/docente/comunicados/mis-aulas', { headers })
+      .subscribe({ next: data => this.misAulas.set(data) });
+  }
+
+  /** Abre/cierra el formulario y lo resetea al abrir */
+  toggleFormCom() {
+    const abrir = !this.mostrarFormCom();
+    if (abrir) {
+      this.formCom.set({ titulo: '', tipo: 'examen', idAula: null, descripcion: '', fechaEvento: '' });
+    }
+    this.mostrarFormCom.set(abrir);
+  }
+
+  /** Actualiza un campo del formulario de comunicado de forma reactiva */
+  setFormCom(campo: keyof FormComunicado, valor: string | number | null) {
+    this.formCom.update(f => ({ ...f, [campo]: valor }));
+  }
+
+  /**
+   * Envía el formulario al backend para crear el comunicado.
+   * Al recibir el nuevo DTO lo inserta al inicio de la lista local
+   * (sin recargar todos) y cierra el formulario.
+   */
+  enviarComunicado() {
+    const f = this.formCom();
+    if (!f.titulo.trim() || !f.tipo) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoCom.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      titulo:      f.titulo.trim(),
+      tipo:        f.tipo,
+      idAula:      f.idAula,
+      descripcion: f.descripcion.trim() || null,
+      fechaEvento: f.fechaEvento || null,
+    };
+    this.http.post<Comunicado>('http://localhost:8080/api/portal/docente/comunicados', body, { headers })
+      .subscribe({
+        next: nuevo => {
+          /* Insertar al principio y reordenar por fecha_evento */
+          this.comunicados.update(lista => [nuevo, ...lista]);
+          this.mostrarFormCom.set(false);
+          this.enviandoCom.set(false);
+          this.cargarComunicados(); /* recargar para tener orden correcto del backend */
+        },
+        error: () => { this.enviandoCom.set(false); },
+      });
+  }
+
+  /**
+   * Elimina un comunicado por id.
+   * Lo quita de la lista local antes de llamar al backend (optimistic update).
+   */
+  eliminarComunicado(id: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.comunicados.update(lista => lista.filter(c => c.id !== id));
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.delete(`http://localhost:8080/api/portal/docente/comunicados/${id}`, { headers })
+      .subscribe({ error: () => this.cargarComunicados() /* revertir si falla */ });
+  }
+
+  /** Devuelve el color CSS del tipo de comunicado para el badge */
+  colorTipo(tipo: string): string {
+    const mapa: Record<string, string> = {
+      examen:          '#fee2e2',
+      actividad:       '#dbeafe',
+      reunion_padres:  '#d1fae5',
+      paseo:           '#fef9c3',
+      dia_festivo:     '#ede9fe',
+      general:         '#f3f4f6',
+    };
+    return mapa[tipo] ?? '#f3f4f6';
+  }
+
+  /** Devuelve el color de texto del badge de tipo */
+  colorTipoTexto(tipo: string): string {
+    const mapa: Record<string, string> = {
+      examen:          '#991b1b',
+      actividad:       '#1e40af',
+      reunion_padres:  '#065f46',
+      paseo:           '#713f12',
+      dia_festivo:     '#4c1d95',
+      general:         '#374151',
+    };
+    return mapa[tipo] ?? '#374151';
+  }
+
+  /** Devuelve el label legible del tipo de comunicado */
+  labelTipo(tipo: string): string {
+    const mapa: Record<string, string> = {
+      examen:          'Examen',
+      actividad:       'Actividad',
+      reunion_padres:  'Reunión de Padres',
+      paseo:           'Paseo Escolar',
+      dia_festivo:     'Día Festivo',
+      general:         'General',
+    };
+    return mapa[tipo] ?? tipo;
   }
 
   /** Llama al endpoint /mi-horario y guarda los bloques en el signal `horario` */
