@@ -178,6 +178,77 @@ CREATE TABLE matriculas (
 );
 
 -- ============================================================
+-- TABLA: horarios  (bloques horarios por día para cada aula_curso)
+-- Cada fila = un bloque de clase en un día concreto.
+-- La administración es quien carga y administra estos registros.
+-- ============================================================
+
+CREATE TABLE horarios (
+    id_horario    SERIAL   PRIMARY KEY,
+    id_aula_curso INT      NOT NULL REFERENCES aula_cursos(id_aula_curso) ON DELETE CASCADE,
+    dia_semana    SMALLINT NOT NULL CHECK (dia_semana BETWEEN 1 AND 5),
+    -- 1=Lunes  2=Martes  3=Miércoles  4=Jueves  5=Viernes
+    hora_inicio   TIME     NOT NULL,
+    hora_fin      TIME     NOT NULL,
+    CONSTRAINT ck_horario_valido CHECK (hora_fin > hora_inicio)
+);
+
+-- ============================================================
+-- TABLA: comunicados  (anuncios/eventos del docente por grado)
+-- El docente crea un comunicado que puede ser para una aula
+-- específica (id_aula) o para todas sus aulas (id_aula = NULL).
+-- Tipos: examen | actividad | reunion_padres | paseo |
+--        dia_festivo | general
+-- ============================================================
+
+CREATE TABLE comunicados (
+    id_comunicado  SERIAL       PRIMARY KEY,
+    id_maestro     INT          NOT NULL REFERENCES maestros(id_maestro) ON DELETE CASCADE,
+    id_aula        INT          REFERENCES aulas(id_aula) ON DELETE SET NULL,
+    -- NULL = comunicado general para todas las aulas del docente
+    titulo         VARCHAR(200) NOT NULL,
+    descripcion    TEXT,
+    tipo           VARCHAR(30)  NOT NULL DEFAULT 'general',
+    fecha_evento   DATE,
+    -- fecha del evento (examen, reunión…); NULL si no aplica
+    fecha_creacion TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
+-- TABLA: mensajes  (comunicación padre → maestro)
+-- El padre puede asociar un alumno y/o un aula_curso concreto.
+-- La administración no interviene; los envía directamente el padre.
+-- ============================================================
+
+CREATE TABLE mensajes (
+    id_mensaje    SERIAL       PRIMARY KEY,
+    id_padre      INT          NOT NULL REFERENCES padres(id_padre)              ON DELETE CASCADE,
+    id_maestro    INT          NOT NULL REFERENCES maestros(id_maestro)          ON DELETE RESTRICT,
+    id_alumno     INT          REFERENCES alumnos(id_alumno)                     ON DELETE SET NULL,
+    id_aula_curso INT          REFERENCES aula_cursos(id_aula_curso)             ON DELETE SET NULL,
+    asunto        VARCHAR(200) NOT NULL,
+    cuerpo        TEXT         NOT NULL,
+    tipo          VARCHAR(20)  NOT NULL DEFAULT 'consulta',
+    -- 'justificante' | 'consulta' | 'otro'
+    leido         BOOLEAN      NOT NULL DEFAULT FALSE,
+    fecha_envio   TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
+-- TABLA: mensajes_respuestas  (hilo de respuestas bidireccional)
+-- Tanto el maestro como el padre pueden responder.
+-- Se identifica al autor mediante id_usuario.
+-- ============================================================
+
+CREATE TABLE mensajes_respuestas (
+    id_respuesta SERIAL    PRIMARY KEY,
+    id_mensaje   INT       NOT NULL REFERENCES mensajes(id_mensaje) ON DELETE CASCADE,
+    id_usuario   INT       NOT NULL REFERENCES usuarios(id_usuario) ON DELETE RESTRICT,
+    cuerpo       TEXT      NOT NULL,
+    fecha        TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
 -- DATOS DE PRUEBA
 -- Contraseñas en texto plano (para referencia del equipo):
 --   Maestro  → Test1234!
@@ -471,3 +542,140 @@ JOIN periodos_academicos p ON p.nombre = '2026-I'
 JOIN aulas a ON a.id_grado = g.id_grado AND a.id_seccion = s.id_seccion AND a.id_periodo = p.id_periodo
 WHERE u.codigo IN ('2A261001','3A261002','4A261003','5A261004','6A261005',
                    '1S261006','2S261007','4S261008','5S261009');
+
+-- ============================================================
+-- HORARIOS DE PRUEBA: Oscar Castillo (Matemática, aulas 1-3)
+-- 5to Sec B = aula 1 | 3ro Sec A = aula 2 | 1ro Prim A = aula 3
+-- La columna id_aula_curso se obtiene con subqueries para evitar
+-- depender de IDs fijos que podrían variar entre instalaciones.
+-- ============================================================
+
+INSERT INTO horarios (id_aula_curso, dia_semana, hora_inicio, hora_fin) VALUES
+    -- ── 5to Secundaria B  (Matemática, 5 h/sem) ──
+    ((SELECT id_aula_curso FROM aula_cursos WHERE id_aula=1 AND id_curso=1), 1, '07:30', '09:00'),  -- Lunes
+    ((SELECT id_aula_curso FROM aula_cursos WHERE id_aula=1 AND id_curso=1), 2, '10:00', '11:00'),  -- Martes
+    ((SELECT id_aula_curso FROM aula_cursos WHERE id_aula=1 AND id_curso=1), 4, '07:30', '09:00'),  -- Jueves
+    -- ── 3ro Secundaria A  (Matemática, 5 h/sem) ──
+    ((SELECT id_aula_curso FROM aula_cursos WHERE id_aula=2 AND id_curso=1), 1, '10:00', '11:30'),  -- Lunes
+    ((SELECT id_aula_curso FROM aula_cursos WHERE id_aula=2 AND id_curso=1), 3, '07:30', '09:00'),  -- Miércoles
+    ((SELECT id_aula_curso FROM aula_cursos WHERE id_aula=2 AND id_curso=1), 5, '10:00', '11:00'),  -- Viernes
+    -- ── 1ro Primaria A    (Matemática, 5 h/sem) ──
+    ((SELECT id_aula_curso FROM aula_cursos WHERE id_aula=3 AND id_curso=1), 2, '07:30', '09:00'),  -- Martes
+    ((SELECT id_aula_curso FROM aula_cursos WHERE id_aula=3 AND id_curso=1), 3, '10:00', '11:00'),  -- Miércoles
+    ((SELECT id_aula_curso FROM aula_cursos WHERE id_aula=3 AND id_curso=1), 5, '07:30', '08:30');  -- Viernes
+
+-- ============================================================
+-- MENSAJES DE PRUEBA: Marisol → Oscar Castillo
+-- Marisol es madre de Juan (5to Sec B), Sofía (3ro Sec A) y
+-- Diego (1ro Prim A), los tres alumnos de Oscar.
+-- ============================================================
+
+INSERT INTO mensajes (id_padre, id_maestro, id_alumno, id_aula_curso, asunto, cuerpo, tipo, leido, fecha_envio)
+VALUES
+    -- Mensaje 1 (sin leer): justificante médico de Juan
+    (
+        (SELECT p.id_padre FROM padres p JOIN usuarios u ON u.id_usuario=p.id_usuario WHERE u.codigo='PAD-2024-00142'),
+        (SELECT m.id_maestro FROM maestros m JOIN usuarios u ON u.id_usuario=m.id_usuario WHERE u.codigo='OC16Mar26'),
+        (SELECT id_alumno FROM alumnos WHERE nombre='Juan' AND apellido='Martínez'),
+        (SELECT id_aula_curso FROM aula_cursos WHERE id_aula=1 AND id_curso=1),
+        'Justificante de inasistencia - Juan Martínez',
+        'Estimado profesor Castillo, le informo que mi hijo Juan no pudo asistir el día lunes 19 de mayo debido a una consulta médica. Adjunto el certificado del médico para su conocimiento. Quedo atenta a cualquier tarea o avance que haya perdido. Muchas gracias.',
+        'justificante', FALSE, NOW() - INTERVAL '2 hours'
+    ),
+    -- Mensaje 2 (sin leer): consulta sobre examen de Sofía
+    (
+        (SELECT p.id_padre FROM padres p JOIN usuarios u ON u.id_usuario=p.id_usuario WHERE u.codigo='PAD-2024-00142'),
+        (SELECT m.id_maestro FROM maestros m JOIN usuarios u ON u.id_usuario=m.id_usuario WHERE u.codigo='OC16Mar26'),
+        (SELECT id_alumno FROM alumnos WHERE nombre='Sofía' AND apellido='Martínez'),
+        (SELECT id_aula_curso FROM aula_cursos WHERE id_aula=2 AND id_curso=1),
+        'Consulta sobre fecha de examen de Matemática - 3ro A',
+        'Profesor Oscar, buenos días. Le escribo para consultar cuándo será el próximo examen de matemática de 3ro A. Mi hija Sofía me comentó que no tiene muy claro la fecha y quiero organizarle sus repasas en casa. Agradecería también si pudiera indicarme los temas que entrarán. Gracias.',
+        'consulta', FALSE, NOW() - INTERVAL '5 hours'
+    ),
+    -- Mensaje 3 (leído, con respuesta): justificante de Diego
+    (
+        (SELECT p.id_padre FROM padres p JOIN usuarios u ON u.id_usuario=p.id_usuario WHERE u.codigo='PAD-2024-00142'),
+        (SELECT m.id_maestro FROM maestros m JOIN usuarios u ON u.id_usuario=m.id_usuario WHERE u.codigo='OC16Mar26'),
+        (SELECT id_alumno FROM alumnos WHERE nombre='Diego' AND apellido='Martínez'),
+        (SELECT id_aula_curso FROM aula_cursos WHERE id_aula=3 AND id_curso=1),
+        'Ausencia justificada - Diego Martínez',
+        'Estimado profesor, le comunico que Diego estuvo con fiebre los días 15 y 16 de mayo. Le adjunto el descanso médico emitido por el pediatra del centro de salud San Agustín. Por favor, indíqueme qué temas debo reforzar con él en casa para que no se atrase. Gracias por su comprensión.',
+        'justificante', TRUE, NOW() - INTERVAL '2 days'
+    ),
+    -- Mensaje 4 (leído, sin respuesta): consulta general
+    (
+        (SELECT p.id_padre FROM padres p JOIN usuarios u ON u.id_usuario=p.id_usuario WHERE u.codigo='PAD-2024-00142'),
+        (SELECT m.id_maestro FROM maestros m JOIN usuarios u ON u.id_usuario=m.id_usuario WHERE u.codigo='OC16Mar26'),
+        (SELECT id_alumno FROM alumnos WHERE nombre='Juan' AND apellido='Martínez'),
+        (SELECT id_aula_curso FROM aula_cursos WHERE id_aula=1 AND id_curso=1),
+        'Consulta sobre material de refuerzo para fracciones',
+        'Profesor, buenas tardes. Juan está teniendo algunas dificultades con el tema de fracciones equivalentes. ¿Podría recomendarme algún material de práctica adicional o ejercicios que pueda hacer en casa? Le agradecería mucho. Atentamente, Marisol.',
+        'consulta', TRUE, NOW() - INTERVAL '4 days'
+    );
+
+-- Respuesta del docente al mensaje 3 (Diego - justificante)
+INSERT INTO mensajes_respuestas (id_mensaje, id_usuario, cuerpo, fecha)
+VALUES (
+    3,
+    (SELECT id_usuario FROM usuarios WHERE codigo='OC16Mar26'),
+    'Estimada señora Marisol, recibí el justificante de Diego. Los temas vistos durante su ausencia fueron: operaciones con decimales (lección 8) y resolución de problemas con regla de tres simple. Le sugiero que practique los ejercicios del libro de texto páginas 54-58. Cualquier duda estoy disponible. Saludos.',
+    NOW() - INTERVAL '1 day'
+);
+
+-- ============================================================
+-- COMUNICADOS DE PRUEBA: Oscar Castillo
+-- aula 1 = 5to Sec B  |  aula 2 = 3ro Sec A  |  aula 3 = 1ro Prim A
+-- ============================================================
+
+INSERT INTO comunicados (id_maestro, id_aula, titulo, descripcion, tipo, fecha_evento, fecha_creacion)
+VALUES
+    -- Examen específico para 5to Sec B
+    (
+        (SELECT m.id_maestro FROM maestros m JOIN usuarios u ON u.id_usuario=m.id_usuario WHERE u.codigo='OC16Mar26'),
+        1,
+        'Evaluación de operaciones con decimales',
+        'Se evaluarán los temas de la lección 7, 8 y 9: suma y resta de decimales, multiplicación y división. Se permite calculadora. Duración: 90 minutos.',
+        'examen',
+        CURRENT_DATE + INTERVAL '4 days',
+        NOW() - INTERVAL '1 day'
+    ),
+    -- Reunión de padres para todas las aulas (id_aula = NULL)
+    (
+        (SELECT m.id_maestro FROM maestros m JOIN usuarios u ON u.id_usuario=m.id_usuario WHERE u.codigo='OC16Mar26'),
+        NULL,
+        'Reunión de padres de familia – Fin de bimestre',
+        'Se les convoca a la reunión de padres para informar sobre el avance académico del primer bimestre. Se entregará el reporte de calificaciones parciales. Favor de llegar puntual.',
+        'reunion_padres',
+        CURRENT_DATE + INTERVAL '9 days',
+        NOW() - INTERVAL '3 hours'
+    ),
+    -- Actividad en aula para 3ro Sec A
+    (
+        (SELECT m.id_maestro FROM maestros m JOIN usuarios u ON u.id_usuario=m.id_usuario WHERE u.codigo='OC16Mar26'),
+        2,
+        'Actividad grupal: resolución de problemas de regla de tres',
+        'Los alumnos trabajarán en equipos de 4 para resolver un set de 10 problemas aplicados. Cada equipo presentará su solución al final de la clase. Materiales: lápiz, regla, calculadora.',
+        'actividad',
+        CURRENT_DATE + INTERVAL '2 days',
+        NOW() - INTERVAL '6 hours'
+    ),
+    -- Paseo escolar para 1ro Prim A
+    (
+        (SELECT m.id_maestro FROM maestros m JOIN usuarios u ON u.id_usuario=m.id_usuario WHERE u.codigo='OC16Mar26'),
+        3,
+        'Paseo escolar al Parque de las Leyendas',
+        'Salida a las 8:00 am desde el colegio. Los alumnos deberán traer lonchera, agua y usar ropa cómoda con el uniforme deportivo. El regreso está programado para las 3:00 pm.',
+        'paseo',
+        CURRENT_DATE + INTERVAL '14 days',
+        NOW() - INTERVAL '2 hours'
+    ),
+    -- Día festivo general (todas las aulas)
+    (
+        (SELECT m.id_maestro FROM maestros m JOIN usuarios u ON u.id_usuario=m.id_usuario WHERE u.codigo='OC16Mar26'),
+        NULL,
+        'No hay clases – Día del Maestro',
+        'Con motivo del Día del Maestro Peruano, no habrá clases ese día. Las actividades se reanudan con normalidad al día siguiente.',
+        'dia_festivo',
+        CURRENT_DATE + INTERVAL '6 days',
+        NOW() - INTERVAL '1 hour'
+    );

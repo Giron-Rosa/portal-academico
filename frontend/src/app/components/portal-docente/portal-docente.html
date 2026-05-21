@@ -73,6 +73,10 @@
             }
           </span>
           <span class="pd-nav-label">{{ item.label }}</span>
+          <!-- Badge de mensajes no leídos (solo visible en la sección mensajes) -->
+          @if (item.id === 'mensajes' && noLeidos() > 0) {
+            <span class="pd-nav-badge">{{ noLeidos() }}</span>
+          }
         </button>
       }
     </aside>
@@ -198,36 +202,537 @@
         }
       }
 
+      <!-- ═══ SECCIÓN: CALENDARIO ═══ -->
       @if (activeSection() === 'calendario') {
-        <div class="pd-placeholder">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5">
-            <rect x="3" y="4" width="18" height="18" rx="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/>
-            <line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-          <p>Calendario — en desarrollo</p>
-        </div>
-      }
 
+        <!-- Cabecera del calendario: título + navegación de semana -->
+        <div class="cal-header">
+          <h2 class="pd-section-title" style="margin-bottom:0">Horario semanal</h2>
+
+          <div class="cal-nav">
+            <!-- Botón Hoy: vuelve a la semana actual -->
+            <button class="cal-btn-hoy" (click)="semanaHoy()">Hoy</button>
+
+            <!-- Flecha semana anterior -->
+            <button class="cal-btn-arrow" (click)="semanaAnterior()" title="Semana anterior">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
+
+            <!-- Rango de fechas de la semana visible -->
+            <span class="cal-semana-label">{{ semanaLabel() }}</span>
+
+            <!-- Flecha semana siguiente -->
+            <button class="cal-btn-arrow" (click)="semanaSiguiente()" title="Semana siguiente">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Estado: cargando horario -->
+        @if (cargandoHorario()) {
+          <div class="pd-loading">
+            <div class="pd-spinner"></div>
+            <span>Cargando horario...</span>
+          </div>
+        }
+
+        <!-- Estado: error al cargar -->
+        @if (errorHorario()) {
+          <div class="pd-error-msg">{{ errorHorario() }}</div>
+        }
+
+        <!-- ── Grilla del calendario ── -->
+        @if (!cargandoHorario()) {
+        <div class="cal-wrapper">
+
+          <!-- Fila de cabecera: celda vacía (esquina) + un encabezado por día -->
+          <div class="cal-head-row">
+            <div class="cal-time-corner"></div>
+            @for (dia of diasSemana; track dia.num) {
+              <!-- Resaltar el día actual con clase 'hoy' -->
+              <div class="cal-day-header" [class.hoy]="hoyDia() === dia.num">
+                <span class="cal-day-corto">{{ dia.corto }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Fila principal: eje de tiempo + columnas de días -->
+          <div class="cal-body">
+
+            <!-- ── Eje vertical de horas ── -->
+            <div class="cal-time-axis">
+              @for (hora of horasGrilla; track hora) {
+                <!-- Cada label de hora ocupa CAL_PX_POR_HORA píxeles de alto -->
+                <div class="cal-time-slot">{{ hora }}</div>
+              }
+            </div>
+
+            <!-- ── Columnas de días (Lunes … Viernes) ── -->
+            @for (dia of diasSemana; track dia.num) {
+              <div class="cal-day-col" [class.hoy]="hoyDia() === dia.num"
+                   [style.height.px]="altoGrilla">
+
+                <!-- Líneas horizontales de fondo (una por hora) -->
+                @for (hora of horasGrilla; track hora) {
+                  <div class="cal-bg-line"></div>
+                }
+
+                <!-- ── Bloques de clase para este día ── -->
+                @for (clase of clasesDelDia(dia.num); track clase.horaInicio + clase.curso) {
+                  <!--
+                    top    = posición vertical calculada desde 07:00
+                    height = duración en píxeles
+                    El color de fondo viene de cursoColor() según el nombre del curso.
+                  -->
+                  <div class="cal-block"
+                       [style.top.px]="blockTop(clase.horaInicio)"
+                       [style.height.px]="blockHeight(clase.horaInicio, clase.horaFin)"
+                       [style.background-color]="cursoColor(clase.curso)">
+                    <!-- Hora de inicio y fin del bloque -->
+                    <span class="cal-block-time">{{ clase.horaInicio }} – {{ clase.horaFin }}</span>
+                    <!-- Nombre del curso -->
+                    <span class="cal-block-curso">{{ clase.curso }}</span>
+                    <!-- Grado y sección, abreviados para que quepan -->
+                    <span class="cal-block-aula">
+                      {{ clase.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }}
+                      · {{ clase.seccion }}
+                    </span>
+                  </div>
+                }
+
+              </div>
+            }
+
+          </div><!-- /cal-body -->
+        </div><!-- /cal-wrapper -->
+
+        <!-- Mensaje cuando el administrador aún no ha cargado horarios -->
+        @if (horario().length === 0) {
+          <div class="cal-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.3">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8"  y1="2" x2="8"  y2="6"/>
+              <line x1="3"  y1="10" x2="21" y2="10"/>
+            </svg>
+            <p>No hay horario asignado para este período.</p>
+            <small>La administración es quien configura los horarios.</small>
+          </div>
+        }
+        }<!-- /!cargandoHorario -->
+
+      }<!-- /calendario -->
+
+      <!-- ═══ SECCIÓN: MENSAJES ═══ -->
       @if (activeSection() === 'mensajes') {
-        <div class="pd-placeholder">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5">
-            <rect x="2" y="4" width="20" height="16" rx="2"/>
-            <polyline points="2 4 12 13 22 4"/>
-          </svg>
-          <p>Mensajes — en desarrollo</p>
-        </div>
-      }
 
-      @if (activeSection() === 'refuerzos') {
-        <div class="pd-placeholder">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-          <p>Refuerzos — en desarrollo</p>
+        <!-- Cabecera: título + contador de no leídos -->
+        <div class="msg-top-bar">
+          <h2 class="pd-section-title" style="margin-bottom:0">Mensajes</h2>
+          @if (noLeidos() > 0) {
+            <span class="msg-badge-total">{{ noLeidos() }} sin leer</span>
+          }
+          <!-- Botón para recargar la bandeja manualmente -->
+          <button class="msg-btn-reload" (click)="cargarMensajes()" title="Actualizar">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+          </button>
         </div>
-      }
+
+        <!-- Estado: cargando / error -->
+        @if (cargandoMensajes()) {
+          <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando mensajes...</span></div>
+        }
+        @if (errorMensajes()) {
+          <div class="pd-error-msg">{{ errorMensajes() }}</div>
+        }
+
+        <!-- ── Layout de dos paneles ── -->
+        <div class="msg-layout">
+
+          <!-- ════ PANEL IZQUIERDO: bandeja de entrada ════ -->
+          <aside class="msg-inbox">
+
+            <!-- Tabs de filtro por grado -->
+            <div class="msg-filter-tabs">
+              <!-- "Todos" siempre presente -->
+              <button class="msg-tab" [class.active]="filtroGradoMsg() === ''"
+                      (click)="filtroGradoMsg.set('')">Todos</button>
+              <!-- Un tab por cada grado encontrado en los mensajes -->
+              @for (g of gradosMensajes(); track g) {
+                <button class="msg-tab" [class.active]="filtroGradoMsg() === g"
+                        (click)="filtroGradoMsg.set(g)">
+                  <!-- Abreviamos el nombre del grado para que quepa en el tab -->
+                  {{ g.replace('Secundaria','Sec').replace('Primaria','Prim') }}
+                </button>
+              }
+            </div>
+
+            <!-- Lista de mensajes filtrados -->
+            <div class="msg-list">
+              @if (mensajesFiltrados().length === 0) {
+                <p class="msg-empty-inbox">No hay mensajes.</p>
+              }
+              @for (m of mensajesFiltrados(); track m.id) {
+                <!--
+                  Clase 'unread'  → mensaje aún no leído (punto azul + fondo levemente resaltado)
+                  Clase 'activo'  → mensaje seleccionado actualmente en el panel derecho
+                -->
+                <div class="msg-item"
+                     [class.unread]="!m.leido"
+                     [class.activo]="mensajeActivo()?.id === m.id"
+                     (click)="abrirMensaje(m.id)">
+
+                  <!-- Indicador de no leído (punto) -->
+                  <div class="msg-unread-dot" [class.visible]="!m.leido"></div>
+
+                  <div class="msg-item-body">
+                    <div class="msg-item-top">
+                      <!-- Nombre del padre remitente -->
+                      <span class="msg-item-padre">{{ m.nombrePadre }}</span>
+                      <!-- Tiempo relativo (hace 2h, hace 3 días…) -->
+                      <span class="msg-item-time">{{ tiempoRelativo(m.fechaEnvio) }}</span>
+                    </div>
+                    <!-- Asunto del mensaje -->
+                    <p class="msg-item-asunto">{{ m.asunto }}</p>
+                    <div class="msg-item-meta">
+                      <!-- Alumno relacionado (si lo hay) -->
+                      @if (m.nombreAlumno) {
+                        <span class="msg-item-alumno">{{ m.nombreAlumno }}</span>
+                      }
+                      <!-- Badge del tipo: justificante / consulta / otro -->
+                      <span class="msg-tipo-badge" [attr.data-tipo]="m.tipo">
+                        @if (m.tipo === 'justificante') { Justificante }
+                        @else if (m.tipo === 'consulta') { Consulta }
+                        @else { Otro }
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </aside>
+
+          <!-- ════ PANEL DERECHO: detalle + hilo de conversación ════ -->
+          <section class="msg-detail">
+
+            @if (!mensajeActivo()) {
+              <!-- Estado vacío: ningún mensaje seleccionado -->
+              <div class="msg-detail-empty">
+                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/>
+                  <polyline points="2 4 12 13 22 4"/>
+                </svg>
+                <p>Selecciona un mensaje para leerlo</p>
+              </div>
+            }
+
+            @if (mensajeActivo(); as msg) {
+              <!-- ── Encabezado del mensaje ── -->
+              <div class="msg-detail-header">
+                <div class="msg-detail-meta">
+                  <!-- Remitente y alumno -->
+                  <div class="msg-detail-from">
+                    <span class="msg-detail-label">De:</span>
+                    <strong>{{ msg.nombrePadre }}</strong>
+                    @if (msg.nombreAlumno) {
+                      <span class="msg-detail-sep">·</span>
+                      <span class="msg-detail-alumno">Alumno: {{ msg.nombreAlumno }}</span>
+                    }
+                  </div>
+                  <!-- Curso y grado -->
+                  @if (msg.curso) {
+                    <div class="msg-detail-curso">
+                      <span class="msg-detail-label">Curso:</span>
+                      {{ msg.curso }}
+                      @if (msg.grado) { · {{ msg.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ msg.seccion }} }
+                    </div>
+                  }
+                  <!-- Fecha y tipo -->
+                  <div class="msg-detail-fecha-row">
+                    <span class="msg-detail-label">Fecha:</span>
+                    <span>{{ msg.fechaEnvio }}</span>
+                    <span class="msg-tipo-badge" [attr.data-tipo]="msg.tipo" style="margin-left:0.5rem">
+                      @if (msg.tipo === 'justificante') { Justificante médico }
+                      @else if (msg.tipo === 'consulta') { Consulta }
+                      @else { Otro }
+                    </span>
+                  </div>
+                </div>
+                <!-- Asunto destacado -->
+                <h3 class="msg-detail-asunto">{{ msg.asunto }}</h3>
+              </div>
+
+              <!-- ── Cuerpo del mensaje original ── -->
+              <div class="msg-detail-cuerpo">{{ msg.cuerpo }}</div>
+
+              <!-- ── Hilo de respuestas ── -->
+              @if (msg.respuestas.length > 0) {
+                <div class="msg-thread">
+                  <span class="msg-thread-title">Respuestas</span>
+                  @for (r of msg.respuestas; track r.id) {
+                    <!--
+                      'docente'  → mensaje enviado por el maestro (derecha, azul)
+                      'padre'    → respuesta del padre (izquierda, gris)
+                    -->
+                    <div class="msg-bubble" [class.docente]="r.esMaestro" [class.padre]="!r.esMaestro">
+                      <div class="msg-bubble-author">{{ r.nombreAutor }}</div>
+                      <div class="msg-bubble-cuerpo">{{ r.cuerpo }}</div>
+                      <div class="msg-bubble-fecha">{{ r.fecha }}</div>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- ── Formulario de respuesta ── -->
+              <div class="msg-reply-form">
+                <textarea class="msg-reply-input"
+                          placeholder="Escribe tu respuesta al padre de familia..."
+                          rows="3"
+                          [ngModel]="replyText()" (ngModelChange)="replyText.set($event)"
+                          [disabled]="enviandoReply()">
+                </textarea>
+                <div class="msg-reply-actions">
+                  <span class="msg-reply-hint">Presiona Enviar para que el padre reciba tu respuesta.</span>
+                  <button class="msg-reply-btn"
+                          (click)="enviarRespuesta()"
+                          [disabled]="!replyText().trim() || enviandoReply()">
+                    @if (enviandoReply()) { Enviando… }
+                    @else { Enviar respuesta }
+                  </button>
+                </div>
+              </div>
+            }
+
+          </section>
+        </div><!-- /msg-layout -->
+
+      }<!-- /mensajes -->
+
+      <!-- ═══ SECCIÓN: REFUERZOS / COMUNICADOS ═══ -->
+      @if (activeSection() === 'refuerzos') {
+
+        <!-- Cabecera: título + botón nuevo comunicado -->
+        <div class="com-top-bar">
+          <div>
+            <h2 class="pd-section-title" style="margin-bottom:2px">Refuerzos y Comunicados</h2>
+            <p class="com-subtitle">Crea anuncios y eventos para tus grados.</p>
+          </div>
+          <button class="com-btn-nuevo" (click)="toggleFormCom()">
+            @if (mostrarFormCom()) {
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Cancelar
+            } @else {
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nuevo comunicado
+            }
+          </button>
+        </div>
+
+        <!-- ── Formulario inline de creación ── -->
+        @if (mostrarFormCom()) {
+          <div class="com-form-panel">
+            <h3 class="com-form-title">Nuevo comunicado</h3>
+
+            <div class="com-form-grid">
+
+              <!-- Título -->
+              <div class="com-form-group com-form-full">
+                <label class="com-form-label">Título <span class="com-req">*</span></label>
+                <input class="com-form-input"
+                       type="text"
+                       placeholder="Ej: Evaluación de fracciones – 3ro A"
+                       [ngModel]="formCom().titulo"
+                       (ngModelChange)="setFormCom('titulo', $event)"
+                       maxlength="200"/>
+              </div>
+
+              <!-- Tipo de evento -->
+              <div class="com-form-group">
+                <label class="com-form-label">Tipo de evento <span class="com-req">*</span></label>
+                <select class="com-form-select"
+                        [ngModel]="formCom().tipo"
+                        (ngModelChange)="setFormCom('tipo', $event)">
+                  <option value="examen">Examen</option>
+                  <option value="actividad">Actividad en aula</option>
+                  <option value="reunion_padres">Reunión de padres</option>
+                  <option value="paseo">Paseo escolar</option>
+                  <option value="dia_festivo">Día festivo / No hay clases</option>
+                  <option value="general">General</option>
+                </select>
+              </div>
+
+              <!-- Grado destino -->
+              <div class="com-form-group">
+                <label class="com-form-label">¿Para qué grado?</label>
+                <select class="com-form-select"
+                        [ngModel]="formCom().idAula"
+                        (ngModelChange)="setFormCom('idAula', $event ? +$event : null)">
+                  <option [value]="null">Todos mis grados</option>
+                  @for (a of misAulas(); track a.id) {
+                    <option [value]="a.id">
+                      {{ a.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ a.seccion }}
+                    </option>
+                  }
+                </select>
+              </div>
+
+              <!-- Fecha del evento -->
+              <div class="com-form-group">
+                <label class="com-form-label">Fecha del evento</label>
+                <input class="com-form-input"
+                       type="date"
+                       [ngModel]="formCom().fechaEvento"
+                       (ngModelChange)="setFormCom('fechaEvento', $event)"/>
+              </div>
+
+              <!-- Descripción -->
+              <div class="com-form-group com-form-full">
+                <label class="com-form-label">Descripción <span class="com-optional">(opcional)</span></label>
+                <textarea class="com-form-textarea"
+                          rows="3"
+                          placeholder="Detalles adicionales del comunicado..."
+                          [ngModel]="formCom().descripcion"
+                          (ngModelChange)="setFormCom('descripcion', $event)">
+                </textarea>
+              </div>
+
+            </div><!-- /com-form-grid -->
+
+            <div class="com-form-actions">
+              <button class="com-btn-cancel" (click)="toggleFormCom()">Cancelar</button>
+              <button class="com-btn-submit"
+                      (click)="enviarComunicado()"
+                      [disabled]="!formCom().titulo.trim() || enviandoCom()">
+                @if (enviandoCom()) { Publicando… }
+                @else { Publicar comunicado }
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Estado: cargando / error -->
+        @if (cargandoComunicados()) {
+          <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando comunicados...</span></div>
+        }
+        @if (errorComunicados()) {
+          <div class="pd-error-msg">{{ errorComunicados() }}</div>
+        }
+
+        <!-- Tabs de filtro por grado -->
+        <div class="com-filter-bar">
+          <button class="com-tab" [class.active]="filtroGradoCom() === ''"
+                  (click)="filtroGradoCom.set('')">Todos</button>
+          @for (g of gradosComunicados(); track g) {
+            <button class="com-tab" [class.active]="filtroGradoCom() === g"
+                    (click)="filtroGradoCom.set(g)">
+              {{ g.replace('Secundaria','Sec').replace('Primaria','Prim') }}
+            </button>
+          }
+          <!-- Botón recargar -->
+          <button class="msg-btn-reload" style="margin-left:auto" (click)="cargarComunicados()" title="Actualizar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Lista de comunicados como cards -->
+        @if (!cargandoComunicados()) {
+          @if (comunicadosFiltrados().length === 0) {
+            <!-- Estado vacío -->
+            <div class="com-empty">
+              <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              <p>No hay comunicados. Crea el primero con el botón de arriba.</p>
+            </div>
+          }
+
+          <div class="com-list">
+            @for (c of comunicadosFiltrados(); track c.id) {
+              <div class="com-card">
+
+                <!-- Franja de color lateral según tipo -->
+                <div class="com-card-stripe"
+                     [style.background]="colorTipoTexto(c.tipo)">
+                </div>
+
+                <div class="com-card-body">
+                  <!-- Fila superior: badge tipo + grado + fecha evento -->
+                  <div class="com-card-top">
+                    <!-- Badge tipo con color semántico -->
+                    <span class="com-tipo-badge"
+                          [style.background]="colorTipo(c.tipo)"
+                          [style.color]="colorTipoTexto(c.tipo)">
+                      {{ labelTipo(c.tipo) }}
+                    </span>
+
+                    <!-- Grado destino -->
+                    <span class="com-card-grado">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                      </svg>
+                      @if (c.idAula === null) {
+                        Todos los grados
+                      } @else {
+                        {{ c.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ c.seccion }}
+                      }
+                    </span>
+
+                    <!-- Fecha del evento (si tiene) -->
+                    @if (c.fechaEvento) {
+                      <span class="com-card-fecha-evento">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        {{ c.fechaEvento }}
+                      </span>
+                    }
+
+                    <!-- Botón eliminar (esquina derecha) -->
+                    <button class="com-card-delete" (click)="eliminarComunicado(c.id)" title="Eliminar comunicado">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14H6L5 6"/>
+                        <path d="M10 11v6"/><path d="M14 11v6"/>
+                        <path d="M9 6V4h6v2"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Título del comunicado -->
+                  <h4 class="com-card-titulo">{{ c.titulo }}</h4>
+
+                  <!-- Descripción (si tiene) -->
+                  @if (c.descripcion) {
+                    <p class="com-card-desc">{{ c.descripcion }}</p>
+                  }
+
+                  <!-- Fecha de creación -->
+                  <div class="com-card-creacion">
+                    Publicado {{ tiempoRelativo(c.fechaCreacion) }}
+                  </div>
+                </div>
+
+              </div>
+            }
+          </div>
+        }
+
+      }<!-- /refuerzos -->
 
     </main>
 
