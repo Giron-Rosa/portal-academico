@@ -1,0 +1,11 @@
+backend/target/
+backend/.classpath
+backend/.project
+backend/.settings/
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+.idea/
+.vscode/
+*.class
+*.log
