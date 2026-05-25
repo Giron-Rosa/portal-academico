@@ -8,7 +8,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pe.sanagustin.portal.dto.LoginRequest;
 import pe.sanagustin.portal.dto.LoginResponse;
+import pe.sanagustin.portal.dto.RegistroRequest;
 import pe.sanagustin.portal.entity.Usuario;
+import pe.sanagustin.portal.enums.RolUsuario;
 import pe.sanagustin.portal.repository.UsuarioRepository;
 import pe.sanagustin.portal.security.JwtUtil;
 
@@ -49,6 +51,28 @@ public class AuthService {
                 usuario.getEmail(),
                 nombre
         );
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void registrarUsuario(RegistroRequest request) {
+        if (usuarioRepository.findByCodigo(request.getCodigo()).isPresent()) {
+            throw new IllegalArgumentException("El código de usuario ya está registrado.");
+        }
+        if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("El correo electrónico ya está registrado.");
+        }
+
+        Usuario usuario = new Usuario();
+        usuario.setCodigo(request.getCodigo().trim());
+        usuario.setEmail(request.getEmail().trim());
+        usuario.setContrasenaHash(passwordEncoder.encode(request.getContrasena()));
+        try {
+            usuario.setRol(RolUsuario.valueOf(request.getRol().toLowerCase().trim()));
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Rol inválido. Roles válidos: alumno, padre, maestro, admin");
+        }
+        usuario.setActivo(true);
+        usuarioRepository.save(usuario);
     }
 
     private String resolveNombre(Usuario u) {
