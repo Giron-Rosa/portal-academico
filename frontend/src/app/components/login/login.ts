@@ -15,19 +15,19 @@ interface LoginResp {
   styleUrl: './login.scss',
 })
 export class Login {
-  private auth   = inject(AuthService);
+  private auth = inject(AuthService);
   private router = inject(Router);
-  private http   = inject(HttpClient);
+  private http = inject(HttpClient);
 
   private readonly API = 'http://localhost:8080/api/auth/login';
 
-  isOpen   = this.auth.isLoginOpen;
-  codigo   = signal('');
+  isOpen = this.auth.isLoginOpen;
+  codigo = signal('');
   password = signal('');
   remember = signal(false);
   showPass = signal(false);
-  loading  = signal(false);
-  error    = signal('');
+  loading = signal(false);
+  error = signal('');
 
   @HostListener('document:keydown.escape')
   onEsc() { this.close(); }
