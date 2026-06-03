@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
+import { AuthService } from '../../../services/auth.service';
 
 type Seccion = 'inicio' | 'cursos' | 'asistencia' | 'mensajes' | 'eventos' | 'pagos';
 type Vista   = 'dashboard' | 'detalle';
