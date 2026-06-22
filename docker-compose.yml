@@ -42,6 +42,7 @@ services:
       SPRING_DATASOURCE_USERNAME: sa_admin
       SPRING_DATASOURCE_PASSWORD: Sa2025*Secure
       SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
     depends_on:
       - db
 

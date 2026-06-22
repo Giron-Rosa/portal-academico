@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/portal/docente/**").hasRole("MAESTRO")
                         .requestMatchers("/api/portal/alumno/**").hasRole("ALUMNO")
+                        .requestMatchers("/api/pdf-study/**").hasRole("ALUMNO")
                         .requestMatchers("/api/portal/padre/**").hasRole("PADRE")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

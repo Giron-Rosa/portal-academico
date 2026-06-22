@@ -2,8 +2,12 @@ import { Component, inject, signal, OnInit, HostListener } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { PdfStudyService } from '../../../services/pdf-study.service';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
-type Seccion = 'inicio' | 'calendario' | 'kanban' | 'refuerzo' | 'recursos';
+type Seccion = 'inicio' | 'calendario' | 'kanban' | 'refuerzo' | 'recursos' | 'estudio-inteligente';
 
 interface CursoApi {
   nombre: string;
@@ -37,7 +41,7 @@ interface Actividad {
 
 @Component({
   selector: 'app-portal-alumno',
-  imports: [],
+  imports: [CommonModule, FormsModule],
   templateUrl: './portal-alumno.html',
   styleUrl: './portal-alumno.scss',
 })
@@ -45,6 +49,8 @@ export class PortalAlumno implements OnInit {
   private router = inject(Router);
   private auth = inject(AuthService);
   private http = inject(HttpClient);
+  private pdfStudyService = inject(PdfStudyService);
+  private sanitizer = inject(DomSanitizer);
 
   private readonly API = 'http://localhost:8080/api/portal/alumno/mis-cursos';
 
@@ -54,6 +60,19 @@ export class PortalAlumno implements OnInit {
   cargando = signal(true);
   errorCarga = signal('');
   cursos = signal<Curso[]>([]);
+
+  // Lector PDF Inteligente
+  selectedFile = signal<File | null>(null);
+  pdfUrl = signal<SafeResourceUrl | null>(null);
+  analyzing = signal(false);
+  chatting = signal(false);
+  currentTab = signal<'summary' | 'tactics' | 'quiz' | 'chat'>('summary');
+  analysisResult = signal<any>(null);
+  questionInput = signal<string>('');
+  chatMessages = signal<{role: 'user' | 'model', text: string}[]>([]);
+  quizAnswers = signal<Record<number, number>>({});
+  quizSubmitted = signal(false);
+  errorEstudio = signal('');
 
   nombre = this.auth.getNombre() ?? 'Estudiante';
   codigo = this.auth.getCodigo() ?? '';
@@ -65,6 +84,7 @@ export class PortalAlumno implements OnInit {
     { id: 'kanban', label: 'Kanban', icon: 'kanban' },
     { id: 'refuerzo', label: 'Refuerzo', icon: 'refuerzo' },
     { id: 'recursos', label: 'Recursos', icon: 'recursos' },
+    { id: 'estudio-inteligente', label: 'Estudio IA', icon: 'brain' },
   ];
 
   actividades: Actividad[] = [
@@ -134,6 +154,110 @@ export class PortalAlumno implements OnInit {
   onDocClick(e: MouseEvent) {
     const t = e.target as HTMLElement;
     if (!t.closest('.pa-avatar-wrapper')) this.dropdownOpen.set(false);
+  }
+
+  // Métodos del Lector PDF Inteligente
+  onFileSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (file) {
+      this.selectedFile.set(file);
+      const url = URL.createObjectURL(file);
+      this.pdfUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+      this.analyzeFile();
+    }
+  }
+
+  onFileDropped(event: DragEvent) {
+    event.preventDefault();
+    if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+      const file = event.dataTransfer.files[0];
+      if (file.type === 'application/pdf') {
+        this.selectedFile.set(file);
+        const url = URL.createObjectURL(file);
+        this.pdfUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
+        this.analyzeFile();
+      } else {
+        this.errorEstudio.set('Solo se permiten archivos PDF.');
+      }
+    }
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+  }
+
+  analyzeFile() {
+    const file = this.selectedFile();
+    if (!file) return;
+
+    this.analyzing.set(true);
+    this.errorEstudio.set('');
+    this.analysisResult.set(null);
+    this.quizAnswers.set({});
+    this.quizSubmitted.set(false);
+    this.chatMessages.set([]);
+
+    this.pdfStudyService.analyzePdf(file).subscribe({
+      next: (res) => {
+        this.analysisResult.set(res);
+        this.analyzing.set(false);
+      },
+      error: (err) => {
+        this.errorEstudio.set(err.error?.message || 'Error al analizar el PDF. Inténtalo de nuevo.');
+        this.analyzing.set(false);
+      }
+    });
+  }
+
+  sendQuestion() {
+    const file = this.selectedFile();
+    const q = this.questionInput().trim();
+    if (!file || !q) return;
+
+    // Agregar mensaje del usuario localmente
+    const currentMsgs = this.chatMessages();
+    this.chatMessages.set([...currentMsgs, { role: 'user', text: q }]);
+    this.questionInput.set('');
+    this.chatting.set(true);
+
+    // Formatear el historial para la API
+    const history = currentMsgs.map(m => ({
+      role: m.role,
+      text: m.text
+    }));
+
+    this.pdfStudyService.chatWithPdf(file, q, history).subscribe({
+      next: (res: any) => {
+        this.chatMessages.set([...this.chatMessages(), { role: 'model', text: res.reply }]);
+        this.chatting.set(false);
+      },
+      error: () => {
+        this.errorEstudio.set('Error en la conversación.');
+        this.chatting.set(false);
+      }
+    });
+  }
+
+  selectOption(qIndex: number, optIndex: number) {
+    if (this.quizSubmitted()) return;
+    const current = { ...this.quizAnswers() };
+    current[qIndex] = optIndex;
+    this.quizAnswers.set(current);
+  }
+
+  submitQuiz() {
+    this.quizSubmitted.set(true);
+  }
+
+  resetStudy() {
+    this.selectedFile.set(null);
+    this.pdfUrl.set(null);
+    this.analysisResult.set(null);
+    this.errorEstudio.set('');
+    this.quizAnswers.set({});
+    this.quizSubmitted.set(false);
+    this.chatMessages.set([]);
+    this.questionInput.set('');
   }
 
   logout() {
