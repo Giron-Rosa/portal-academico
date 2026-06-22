@@ -236,6 +236,192 @@
   min-width: 0;
 }
 
+/* ── Bienvenida ── */
+.pd-welcome-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0d1b2a;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Summary Cards (4 tarjetas) ── */
+.pd-summary-cards {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.pd-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: #ffffff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 0.7rem 1.1rem;
+  min-width: 150px;
+  flex: 1;
+  transition: box-shadow 0.15s;
+
+  &:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+}
+
+.pd-summary-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pd-si-cursos     { background: #d1fae5; color: #059669; }
+.pd-si-pendientes { background: #ffedd5; color: #ea580c; }
+.pd-si-clases     { background: #dbeafe; color: #2563eb; }
+.pd-si-riesgo     { background: #fee2e2; color: #dc2626; }
+
+.pd-summary-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-summary-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #9ca3af;
+  line-height: 1.2;
+}
+
+.pd-summary-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0d1b2a;
+  line-height: 1.2;
+}
+
+/* ── Alertas Críticas ── */
+.pd-alertas-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee;
+}
+
+.pd-alertas-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.pd-alertas-titulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0d1b2a;
+  margin: 0;
+}
+
+.pd-alertas-count {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 20px;
+  background: #e67e22;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+.pd-alertas-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0;
+  color: #bbb;
+  font-size: 0.82rem;
+}
+
+.pd-alerta-card {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+  transition: background 0.12s, border-color 0.12s;
+  cursor: pointer;
+
+  &:hover {
+    background: #fff8f0;
+    border-color: #fde68a;
+  }
+}
+
+.pd-alerta-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2.5px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #fff;
+
+  span {
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+}
+
+.pd-alerta-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pd-alerta-nombre {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0d1b2a;
+}
+
+.pd-alerta-desc {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pd-alerta-badge {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+
+.pd-alerta-rendimiento { background: #dcfce7; color: #15803d; }
+.pd-alerta-asistencia  { background: #fef3c7; color: #b45309; }
+
+.pd-alerta-arrow {
+  flex-shrink: 0;
+  color: #d1d5db;
+  transition: color 0.12s;
+}
+
+.pd-alerta-card:hover .pd-alerta-arrow { color: #e67e22; }
+
 .pd-section-title {
   font-size: 1.3rem;
   font-weight: 700;
@@ -388,7 +574,7 @@
   flex-shrink: 0;
 }
 
-/* ── Header POR REVISAR ── */
+/* ── Header Pendientes ── */
 .pd-review-header {
   display: flex;
   align-items: center;
@@ -397,28 +583,11 @@
 }
 
 .pd-review-title {
-  font-size: 0.72rem;
+  font-size: 0.88rem;
   font-weight: 700;
-  letter-spacing: 1.2px;
-  color: #aaa;
-  text-transform: uppercase;
+  color: #0d1b2a;
   flex: 1;
   margin: 0;
-}
-
-/* Badge con el total de pendientes */
-.pd-review-count {
-  min-width: 20px;
-  height: 20px;
-  border-radius: 20px;
-  background: #c1121f;
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 5px;
 }
 
 /* Estado vacío */
@@ -437,124 +606,94 @@
   margin: 0;
 }
 
-/* ── Card de pendiente (button) ── */
-.pd-review-item {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0.65rem 0.75rem 0.65rem 0.85rem;
-  border: none;
-  border-left: 3px solid #e5e7eb;
-  border-radius: 0 8px 8px 0;
+/* ── Item de pendiente (nuevo diseño) ── */
+.pd-pend-item {
+  margin-bottom: 0.65rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 8px;
   background: #fafafa;
-  cursor: pointer;
-  text-align: left;
-  margin-bottom: 0.55rem;
-  transition: all 0.15s;
-  position: relative;
+  border: 1px solid #f0f0f0;
+  transition: background 0.12s, border-color 0.12s;
 
   &:hover {
     background: #fff5f5;
-    border-left-color: #c1121f;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-
-    .pd-review-arrow { opacity: 1; transform: translateX(0); }
+    border-color: #fecaca;
   }
 }
 
-/* Fila superior: tipo + grado */
-.pd-review-top {
+.pd-pend-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.pd-pend-check {
+  flex-shrink: 0;
+  margin-top: 2px;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
 }
 
-/* Badge tipo Tarea/Examen */
-.pd-review-tipo {
-  font-size: 0.62rem;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 20px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.pd-pend-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-.pd-tipo-tarea  { background: #dbeafe; color: #1d4ed8; }
-.pd-tipo-examen { background: #fef3c7; color: #b45309; }
 
-.pd-review-grado {
+.pd-pend-desc {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #0d1b2a;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pd-pend-context {
   font-size: 0.68rem;
-  font-weight: 700;
-  color: #6b7280;
-  margin-left: auto;
-}
-
-/* Nombre del curso */
-.pd-review-curso {
-  font-size: 0.7rem;
   color: #9ca3af;
   font-weight: 500;
 }
 
-/* Título de la tarea/examen */
-.pd-review-tarea {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #0d1b2a;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Fila inferior: sin calificar */
-.pd-review-footer {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
+/* Badge de prioridad */
+.pd-pend-prio {
+  flex-shrink: 0;
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   margin-top: 2px;
 }
 
-.pd-review-sin-cal {
+.pd-prio-alta  { background: #fecaca; color: #b91c1c; }
+.pd-prio-media { background: #fef3c7; color: #b45309; }
+.pd-prio-baja  { background: #f3f4f6; color: #6b7280; }
+
+/* Botón ir a actividad */
+.pd-pend-goto {
   display: flex;
   align-items: center;
   gap: 3px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #c1121f;
-}
-
-.pd-review-de {
-  font-size: 0.68rem;
-  color: #9ca3af;
-}
-
-/* Flecha de navegación */
-.pd-review-arrow {
-  position: absolute;
-  right: 0.6rem;
-  top: 50%;
-  transform: translateX(-4px) translateY(-50%);
-  opacity: 0;
-  transition: all 0.15s;
-  color: #c1121f;
-}
-
-/* Botón actualizar */
-.pd-review-refresh {
-  display: flex;
-  align-items: center;
-  gap: 4px;
   background: none;
   border: none;
-  color: #9ca3af;
+  color: #6366f1;
   font-size: 0.68rem;
   font-weight: 600;
   cursor: pointer;
-  padding: 0.25rem 0;
-  margin-top: 0.25rem;
+  padding: 0;
+  margin-top: 0.35rem;
+  margin-left: 1.35rem;
   transition: color 0.12s;
-  &:hover { color: #6b7280; }
+
+  &:hover { color: #4338ca; }
 }
 
 /* ── Loading / Error / Empty ── */

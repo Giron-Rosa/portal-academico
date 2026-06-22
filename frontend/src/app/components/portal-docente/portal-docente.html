@@ -85,6 +85,68 @@
     <main class="pd-main">
 
       @if (activeSection() === 'inicio') {
+
+        <!-- ── Bienvenida + Resumen ── -->
+        <h2 class="pd-welcome-title">Bienvenido Profesor</h2>
+
+        <div class="pd-summary-cards">
+          <div class="pd-summary-card">
+            <div class="pd-summary-icon pd-si-cursos">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/>
+              </svg>
+            </div>
+            <div class="pd-summary-info">
+              <span class="pd-summary-label">Cursos</span>
+              <span class="pd-summary-value">{{ cursos().length }}</span>
+            </div>
+          </div>
+
+          <div class="pd-summary-card">
+            <div class="pd-summary-icon pd-si-pendientes">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+              </svg>
+            </div>
+            <div class="pd-summary-info">
+              <span class="pd-summary-label">Pendientes</span>
+              <span class="pd-summary-value">{{ pendientes().length }}</span>
+            </div>
+          </div>
+
+          <div class="pd-summary-card">
+            <div class="pd-summary-icon pd-si-clases">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <div class="pd-summary-info">
+              <span class="pd-summary-label">Clases de Hoy</span>
+              <span class="pd-summary-value">{{ clasesDeHoy().length }}</span>
+            </div>
+          </div>
+
+          <div class="pd-summary-card">
+            <div class="pd-summary-icon pd-si-riesgo">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="pd-summary-info">
+              <span class="pd-summary-label">Alumnos Riesgos</span>
+              <span class="pd-summary-value">{{ alertasCriticas().length }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Mis cursos ── -->
         <h2 class="pd-section-title">Mis cursos</h2>
 
         @if (errorCarga()) {
@@ -103,14 +165,6 @@
               </button>
             }
           </div>
-          <div class="pd-year-filter">
-            <label class="pd-year-label">Año</label>
-            <select class="pd-year-select" [value]="selectedYear()" (change)="setYear($any($event.target).value)">
-              @for (y of years; track y) {
-                <option [value]="y">{{ y }}</option>
-              }
-            </select>
-          </div>
         </div>
 
         <!-- Course grid -->
@@ -123,7 +177,7 @@
 
         @if (!cargando()) {
         <div class="pd-courses-grid">
-          @for (curso of filteredCursos(); track curso.nombre) {
+          @for (curso of filteredCursos(); track curso.idAulaCurso) {
             <div class="pd-course-card" [style.background-color]="curso.color"
                  (click)="abrirCurso(curso)" role="button" tabindex="0"
                  (keydown.enter)="abrirCurso(curso)">
@@ -198,10 +252,61 @@
             </div>
           }
           @if (filteredCursos().length === 0 && !errorCarga()) {
-            <p class="pd-empty">No hay cursos asignados para este período.</p>
+            @if (activeGrade() === 'Clases de Hoy') {
+              <p class="pd-empty">No hay clases programadas para hoy.</p>
+            } @else {
+              <p class="pd-empty">No hay cursos asignados para este grado.</p>
+            }
           }
         </div>
         }
+
+        <!-- ── Alertas Críticas ── -->
+        <div class="pd-alertas-section">
+          <div class="pd-alertas-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e67e22" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <h3 class="pd-alertas-titulo">Alertas Críticas</h3>
+            @if (alertasCriticas().length > 0) {
+              <span class="pd-alertas-count">{{ alertasCriticas().length }}</span>
+            }
+          </div>
+
+          @if (alertasCriticas().length === 0) {
+            <div class="pd-alertas-empty">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
+                <polyline points="9 11 12 14 22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
+              <span>Sin alertas críticas</span>
+            </div>
+          }
+
+          @for (alerta of alertasCriticas(); track alerta.idAlumno + alerta.tipo) {
+            <div class="pd-alerta-card">
+              <div class="pd-alerta-avatar" [style.border-color]="alerta.color">
+                <span [style.color]="alerta.color">{{ alerta.inicial }}</span>
+              </div>
+              <div class="pd-alerta-info">
+                <span class="pd-alerta-nombre">{{ alerta.nombre }}</span>
+                <span class="pd-alerta-desc">{{ alerta.descripcion }}</span>
+              </div>
+              <span class="pd-alerta-badge"
+                    [class.pd-alerta-rendimiento]="alerta.tipo === 'rendimiento'"
+                    [class.pd-alerta-asistencia]="alerta.tipo === 'asistencia'">
+                {{ alerta.tipo === 'rendimiento' ? 'Rendimiento' : 'Asistencia' }}
+              </span>
+              <svg class="pd-alerta-arrow" width="12" height="12" viewBox="0 0 24 24"
+                   fill="none" stroke="#9ca3af" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </div>
+          }
+        </div>
+
       }
 
       <!-- ═══ SECCIÓN: DETALLE DE CURSO ═══ -->
@@ -2114,13 +2219,10 @@
 
     </main>
 
-    <!-- ── Right Sidebar ── -->
+    <!-- ── Right Sidebar: Pendientes ── -->
     <aside class="pd-sidebar-right">
       <div class="pd-review-header">
-        <h3 class="pd-review-title">POR REVISAR</h3>
-        @if (pendientes().length > 0) {
-          <span class="pd-review-count">{{ pendientes().length }}</span>
-        }
+        <h3 class="pd-review-title">Pendientes</h3>
       </div>
 
       @if (pendientes().length === 0) {
@@ -2134,53 +2236,35 @@
       }
 
       @for (item of pendientes(); track item.idAulaCurso + item.titulo) {
-        <button class="pd-review-item" (click)="irAPendiente(item)">
-
-          <!-- Badge de tipo -->
-          <div class="pd-review-top">
-            <span class="pd-review-tipo"
-                  [class.pd-tipo-tarea]="item.tipo === 'tarea'"
-                  [class.pd-tipo-examen]="item.tipo === 'examen'">
-              {{ item.tipo === 'tarea' ? 'Tarea' : 'Examen' }}
-            </span>
-            <span class="pd-review-grado">{{ item.grado | slice:0:3 }} {{ item.seccion }}</span>
-          </div>
-
-          <!-- Curso + título -->
-          <div class="pd-review-curso">{{ item.curso }}</div>
-          <div class="pd-review-tarea">{{ item.titulo }}</div>
-
-          <!-- Contador de sin calificar -->
-          <div class="pd-review-footer">
-            <span class="pd-review-sin-cal">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
+        <div class="pd-pend-item">
+          <div class="pd-pend-row">
+            <!-- Checkbox visual -->
+            <span class="pd-pend-check">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
               </svg>
-              {{ item.sinCalificar }} sin calificar
             </span>
-            <span class="pd-review-de">de {{ item.totalAlumnos }}</span>
+
+            <!-- Texto -->
+            <div class="pd-pend-text">
+              <span class="pd-pend-desc">{{ item.titulo }}</span>
+              <span class="pd-pend-context">({{ item.sinCalificar }} entregas) · {{ item.curso }}</span>
+            </div>
+
+            <!-- Badge de prioridad -->
+            <span class="pd-pend-prio" [ngClass]="prioridadPendiente(item).css">
+              {{ prioridadPendiente(item).label }}
+            </span>
           </div>
 
-          <!-- Flecha de navegación -->
-          <svg class="pd-review-arrow" width="12" height="12" viewBox="0 0 24 24"
-               fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-
-        </button>
-      }
-
-      <!-- Recargar pendientes -->
-      @if (pendientes().length > 0) {
-        <button class="pd-review-refresh" (click)="cargarPendientes()" title="Actualizar">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="23 4 23 10 17 10"/>
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-          </svg>
-          Actualizar
-        </button>
+          <!-- Ir a la actividad -->
+          <button class="pd-pend-goto" (click)="irAPendiente(item)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+            Ir a actividad
+          </button>
+        </div>
       }
     </aside>
 
