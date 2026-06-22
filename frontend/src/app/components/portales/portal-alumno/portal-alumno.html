@@ -97,6 +97,12 @@
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
           }
+          @if (item.icon === 'brain') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1 0-3.12 3 3 0 0 1 0-3.88 2.5 2.5 0 0 1 0-3.12A2.5 2.5 0 0 1 9.5 2z"/>
+              <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 0-3.12 3 3 0 0 0 0-3.88 2.5 2.5 0 0 0 0-3.12A2.5 2.5 0 0 0 14.5 2z"/>
+            </svg>
+          }
 
           <span class="pa-nav-label">{{ item.label }}</span>
         </button>
@@ -312,6 +318,241 @@
           </svg>
           <h3>Recursos</h3>
           <p>Biblioteca de recursos educativos próximamente</p>
+        </div>
+      }
+
+      <!-- ========== ESTUDIO INTELIGENTE (IA) ========== -->
+      @if (seccionActiva() === 'estudio-inteligente') {
+        <div class="pa-study-container">
+          
+          @if (!selectedFile()) {
+            <!-- Área de Carga / Drag and Drop -->
+            <div class="pa-study-upload-card" 
+                 (dragover)="onDragOver($event)" 
+                 (drop)="onFileDropped($event)">
+              <div class="pa-upload-content">
+                <div class="pa-upload-icon-wrapper">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
+                <h3>Sube tu material de estudio</h3>
+                <p>Arrastra tu archivo PDF aquí o presiona el botón para examinar tu dispositivo.</p>
+                <input type="file" id="pdfFileInput" (change)="onFileSelected($event)" accept="application/pdf" style="display: none;" />
+                <label for="pdfFileInput" class="pa-btn-upload">Seleccionar PDF</label>
+                @if (errorEstudio()) {
+                  <div class="pa-error-message mt-3">{{ errorEstudio() }}</div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (selectedFile() && analyzing()) {
+            <!-- Cargando y Analizando -->
+            <div class="pa-study-loading">
+              <div class="pa-brain-loader">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                  <path class="pa-path-brain" d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1 0-3.12 3 3 0 0 1 0-3.88 2.5 2.5 0 0 1 0-3.12A2.5 2.5 0 0 1 9.5 2z"/>
+                  <path class="pa-path-brain" d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 0-3.12 3 3 0 0 0 0-3.88 2.5 2.5 0 0 0 0-3.12A2.5 2.5 0 0 0 14.5 2z"/>
+                </svg>
+              </div>
+              <h3>Analizando material de estudio...</h3>
+              <p>Gemini está extrayendo conceptos claves, preguntas y creando tácticas para ti.</p>
+            </div>
+          }
+
+          @if (selectedFile() && !analyzing() && analysisResult()) {
+            <!-- Área de Trabajo Dual -->
+            <div class="pa-study-workspace">
+              
+              <!-- Panel Izquierdo: Visualizador del PDF -->
+              <div class="pa-study-pdf-panel">
+                <div class="pa-study-pdf-header">
+                  <div class="pa-file-card">
+                    <div class="pa-file-icon">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                      </svg>
+                    </div>
+                    <div class="pa-file-details">
+                      <h4 class="pa-file-name" [title]="selectedFile()?.name">{{ selectedFile()?.name }}</h4>
+                    </div>
+                  </div>
+                  <button class="pa-btn-secondary compact" (click)="resetStudy()">
+                    Subir otro
+                  </button>
+                </div>
+                <div class="pa-pdf-frame-wrapper">
+                  @if (pdfUrl()) {
+                    <iframe [src]="pdfUrl()" width="100%" height="100%" class="pa-pdf-iframe"></iframe>
+                  }
+                </div>
+              </div>
+
+              <!-- Panel Derecho: Pestañas de Estudio -->
+              <div class="pa-study-tabs-container">
+                
+                <!-- Barra de Pestañas -->
+                <div class="pa-study-tabs-bar">
+                  <button class="pa-tab-btn" 
+                          [class.active]="currentTab() === 'summary'" 
+                          (click)="currentTab.set('summary')">
+                    Resumen
+                  </button>
+                  <button class="pa-tab-btn" 
+                          [class.active]="currentTab() === 'tactics'" 
+                          (click)="currentTab.set('tactics')">
+                    Tácticas de Estudio
+                  </button>
+                  <button class="pa-tab-btn" 
+                          [class.active]="currentTab() === 'quiz'" 
+                          (click)="currentTab.set('quiz')">
+                    Autoevaluación
+                  </button>
+                  <button class="pa-tab-btn" 
+                          [class.active]="currentTab() === 'chat'" 
+                          (click)="currentTab.set('chat')">
+                    Preguntar a IA
+                  </button>
+                </div>
+
+                <!-- Contenido de Pestañas -->
+                <div class="pa-tab-content-viewport">
+
+                  <!-- 1. RESUMEN -->
+                  @if (currentTab() === 'summary') {
+                    <div class="pa-summary-view">
+                      <div class="pa-summary-card">
+                        <div class="pa-card-body-study-text">
+                          <pre class="pa-markdown-pre">{{ analysisResult()?.summary }}</pre>
+                        </div>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- 2. TÁCTICAS -->
+                  @if (currentTab() === 'tactics') {
+                    <div class="pa-tactics-view">
+                      <div class="pa-tactics-grid">
+                        @for (tactic of analysisResult()?.studyTactics; track tactic.title) {
+                          <div class="pa-tactic-card">
+                            <div class="pa-tactic-header">
+                              <span class="pa-tactic-icon">💡</span>
+                              <h4>{{ tactic.title }}</h4>
+                            </div>
+                            <p>{{ tactic.description }}</p>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <!-- 3. AUTOEVALUACIÓN -->
+                  @if (currentTab() === 'quiz') {
+                    <div class="pa-quiz-view">
+                      @for (q of analysisResult()?.questions; track q.questionText; let qIndex = $index) {
+                        <div class="pa-quiz-card">
+                          <p class="pa-quiz-question-number">Pregunta {{ qIndex + 1 }}</p>
+                          <h4 class="pa-quiz-question">{{ q.questionText }}</h4>
+                          
+                          <div class="pa-quiz-options">
+                            @for (opt of q.options; track opt; let optIndex = $index) {
+                              <button class="pa-quiz-option-btn"
+                                      [class.selected]="quizAnswers()[qIndex] === optIndex"
+                                      [class.correct]="quizSubmitted() && q.correctOptionIndex === optIndex"
+                                      [class.incorrect]="quizSubmitted() && quizAnswers()[qIndex] === optIndex && q.correctOptionIndex !== optIndex"
+                                      (click)="selectOption(qIndex, optIndex)"
+                                      [disabled]="quizSubmitted()">
+                                <span class="pa-option-letter">{{ ['A', 'B', 'C', 'D'][optIndex] }}</span>
+                                <span class="pa-option-text">{{ opt }}</span>
+                              </button>
+                            }
+                          </div>
+
+                          @if (quizSubmitted()) {
+                            <div class="pa-quiz-feedback" 
+                                 [class.correct]="quizAnswers()[qIndex] === q.correctOptionIndex">
+                              <strong>{{ quizAnswers()[qIndex] === q.correctOptionIndex ? '¡Correcto!' : 'Incorrecto' }}</strong>
+                              <p>{{ q.explanation }}</p>
+                            </div>
+                          }
+                        </div>
+                      }
+
+                      @if (!quizSubmitted()) {
+                        <button class="pa-btn-primary mt-4" 
+                                [disabled]="(analysisResult()?.questions?.length ?? 0) !== (quizAnswers() | keyvalue).length"
+                                (click)="submitQuiz()">
+                          Calificar autoevaluación
+                        </button>
+                      }
+                    </div>
+                  }
+
+                  <!-- 4. CHAT -->
+                  @if (currentTab() === 'chat') {
+                    <div class="pa-chat-view">
+                      
+                      <div class="pa-chat-messages-box">
+                        @if (chatMessages().length === 0) {
+                          <div class="pa-chat-welcome">
+                            <span class="pa-chat-welcome-icon">💬</span>
+                            <h4>¿Qué te gustaría saber sobre este documento?</h4>
+                            <p>Pregúntale a la inteligencia artificial sobre términos complicados, fórmulas, resúmenes de páginas o ejemplos adicionales.</p>
+                          </div>
+                        }
+
+                        @for (msg of chatMessages(); track msg.text) {
+                          <div class="pa-chat-bubble-wrapper" [class.user-msg]="msg.role === 'user'">
+                            <div class="pa-chat-avatar">
+                              {{ msg.role === 'user' ? iniciales : 'AI' }}
+                            </div>
+                            <div class="pa-chat-bubble">
+                              <p>{{ msg.text }}</p>
+                            </div>
+                          </div>
+                        }
+
+                        @if (chatting()) {
+                          <div class="pa-chat-bubble-wrapper">
+                            <div class="pa-chat-avatar">AI</div>
+                            <div class="pa-chat-bubble loading-dots">
+                              <span class="dot"></span>
+                              <span class="dot"></span>
+                              <span class="dot"></span>
+                            </div>
+                          </div>
+                        }
+                      </div>
+
+                      <div class="pa-chat-input-bar">
+                        <input type="text" 
+                               placeholder="Escribe tu pregunta aquí..." 
+                               [ngModel]="questionInput()" 
+                               (ngModelChange)="questionInput.set($event)" 
+                               (keyup.enter)="sendQuestion()" 
+                               [disabled]="chatting()" />
+                        <button class="pa-btn-send" (click)="sendQuestion()" [disabled]="chatting() || !questionInput().trim()">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                          </svg>
+                        </button>
+                      </div>
+
+                    </div>
+                  }
+
+                </div>
+
+              </div>
+
+            </div>
+          }
+
         </div>
       }
 

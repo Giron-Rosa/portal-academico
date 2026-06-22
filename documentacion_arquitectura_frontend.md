@@ -11,13 +11,15 @@ El frontend está desarrollado sobre **Angular 21** utilizando el paradigma mode
 La jerarquía del directorio principal `src/app` se organiza de la siguiente manera:
 
 * **`src/app/`**
-  * **`components/`**: Capa de presentación y vistas funcionales. Contiene subcarpetas independientes para cada sección visual o vista protegida.
-    * **`home/`**: Vista pública inicial de la plataforma.
-    * **`login/`**: Componente de autenticación y control de acceso.
-    * **`navbar/` & `footer/`**: Componentes globales de estructura y navegación.
-    * **`portal-alumno/`**: Panel académico reactivo para estudiantes.
-    * **`portal-padre/`**: Tablero analítico y de supervisión para padres.
-    * **`portal-docente/`**: Panel de gestión pedagógica integral (notas, asistencia, comunicados, mensajería).
+  * **`components/`**: Capa de presentación y vistas funcionales.
+    * **`public/`**: Componentes pertenecientes al sitio público de presentación.
+      * **`home/`**: Vista pública inicial de la plataforma (landing page).
+      * **`login/`**: Componente de autenticación (modal de inicio de sesión).
+      * **`navbar/` & `footer/`**: Estructura de navegación global de la landing.
+    * **`portales/`**: Módulos privados e intranet de la institución.
+      * **`portal-alumno/`**: Panel académico reactivo para estudiantes.
+      * **`portal-padre/`**: Tablero analítico y de supervisión para padres.
+      * **`portal-docente/`**: Panel de gestión pedagógica integral (notas, asistencia, comunicados).
   * **`services/`**: Capa lógica e infraestructura. Alberga servicios transversales inyectados como Singletons globales.
     * [auth.service.ts](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/services/auth.service.ts)
   * **Configuraciones raíz**:
@@ -54,33 +56,33 @@ A continuación, se detalla el análisis de los archivos clave del proyecto en b
   * Implementa [saveSession](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/services/auth.service.ts#L16-L22) para persistir datos de la sesión y [logout](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/services/auth.service.ts#L24-L27) para limpiarlos.
   * Define [getPortalRoute](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/services/auth.service.ts#L36-L44) para redirigir condicionalmente según el rol del usuario (`maestro`, `alumno`, `padre`, `admin`).
 
-### Nombre del archivo: [login.ts](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/components/login/login.ts)
+### Nombre del archivo: [login.ts](file:///c:/Users/USER/Documents/Desarrollo%20Web%20Integrado/portal-academico/frontend/src/app/components/public/login/login.ts)
 * **Propósito**: Controlador del formulario de autenticación. Realiza la llamada HTTP POST para validar credenciales y asienta la sesión en caso de éxito.
 * **Dependencias**:
   * Inyecta [AuthService](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/services/auth.service.ts) para delegar el guardado de sesión.
   * Inyecta `Router` y `HttpClient` de Angular.
 * **Lógica clave**:
   * Mantiene campos reactivos mediante Signals (`codigo`, `password`, `remember`, `showPass`, `loading`, `error`).
-  * En [onSubmit](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/components/login/login.ts#L43-L69), ejecuta una petición POST a `http://localhost:8080/api/auth/login` enviando el identificador y la contraseña.
+  * En [onSubmit](file:///c:/Users/USER/Documents/Desarrollo%20Web%20Integrado/portal-academico/frontend/src/app/components/public/login/login.ts#L43-L69), ejecuta una petición POST a `http://localhost:8080/api/auth/login` enviando el identificador y la contraseña.
   * Procesa la respuesta asíncrona mediante un Observable de RxJS (`.subscribe()`), guardando la sesión al completarse y redirigiendo al portal correspondiente.
 
-### Nombre del archivo: [portal-alumno.ts](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/components/portal-alumno/portal-alumno.ts)
+### Nombre del archivo: [portal-alumno.ts](file:///c:/Users/USER/Documents/Desarrollo%20Web%20Integrado/portal-academico/frontend/src/app/components/portales/portal-alumno/portal-alumno.ts)
 * **Propósito**: Controlador del panel principal del estudiante. Permite visualizar el avance de cursos y las tareas del período académico vigente.
 * **Dependencias**: Inyecta [AuthService](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/services/auth.service.ts) para extraer metadatos de sesión, además de `Router` y `HttpClient`.
 * **Lógica clave**:
   * Implementa el ciclo de vida `OnInit` para verificar la existencia de una sesión válida.
-  * En [ngOnInit](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/components/portal-alumno/portal-alumno.ts#L100-L126), recupera el token de sesión y realiza un GET a `http://localhost:8080/api/portal/alumno/mis-cursos` inyectando el header `Authorization: Bearer <token>`.
+  * En [ngOnInit](file:///c:/Users/USER/Documents/Desarrollo%20Web%20Integrado/portal-academico/frontend/src/app/components/portales/portal-alumno/portal-alumno.ts#L100-L126), recupera el token de sesión y realiza un GET a `http://localhost:8080/api/portal/alumno/mis-cursos` inyectando el header `Authorization: Bearer <token>`.
   * Utiliza Signals como `cursos`, `cargando` y `errorCarga` para actualizar la vista sin generar parpadeos en el DOM.
 
-### Nombre del archivo: [portal-padre.ts](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/components/portal-padre/portal-padre.ts)
+### Nombre del archivo: [portal-padre.ts](file:///c:/Users/USER/Documents/Desarrollo%20Web%20Integrado/portal-academico/frontend/src/app/components/portales/portal-padre/portal-padre.ts)
 * **Propósito**: Panel administrativo para los padres de familia, permitiendo monitorizar el estado académico de uno o más estudiantes asociados.
 * **Dependencias**: Inyecta [AuthService](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/services/auth.service.ts), `HttpClient` y `Router`.
 * **Lógica clave**:
-  * Inicia la carga en el constructor llamando a [cargarResumen](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/components/portal-padre/portal-padre.ts#L91-L109) mediante una llamada HTTP GET a `/api/portal/padre/resumen`.
+  * Inicia la carga en el constructor llamando a [cargarResumen](file:///c:/Users/USER/Documents/Desarrollo%20Web%20Integrado/portal-academico/frontend/src/app/components/portales/portal-padre/portal-padre.ts#L91-L109) mediante una llamada HTTP GET a `/api/portal/padre/resumen`.
   * Utiliza **Signals Computados** (`hijoActual` y `hijosEnRiesgo`) que optimizan el rendimiento calculando valores derivados automáticamente sólo cuando sus señales fuente cambian.
   * Aplica un formateador de datos `mapHijo` para moldear la respuesta JSON del servidor (`HijoApi`) en el modelo estructurado del frontend (`Hijo`).
 
-### Nombre del archivo: [portal-docente.ts](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/components/portal-docente/portal-docente.ts)
+### Nombre del archivo: [portal-docente.ts](file:///c:/Users/USER/Documents/Desarrollo%20Web%20Integrado/portal-academico/frontend/src/app/components/portales/portal-docente/portal-docente.ts)
 * **Propósito**: Panel de control del maestro para gestionar notas de exámenes, tareas, tomar asistencia por fechas, publicar comunicados (refuerzos) y mensajería con los padres.
 * **Dependencias**: Inyecta [AuthService](file:///c:/Users/USER/Documents/GitHub/Angular/frontend/src/app/services/auth.service.ts), `HttpClient` y `Router`.
 * **Lógica clave**:

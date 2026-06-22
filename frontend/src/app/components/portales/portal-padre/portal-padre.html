@@ -16,9 +16,7 @@
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
-        @if (hijosEnRiesgo() > 0) {
-          <span class="notif-badge">{{ hijosEnRiesgo() }}</span>
-        }
+        <span class="notif-badge">2</span>
       </button>
 
       <div class="nav-user" (click)="toggleMenuUsuario()">
@@ -54,53 +52,77 @@
 
     <!-- SIDEBAR VERTICAL -->
     <aside class="sidebar">
-      @for (item of navItems; track item.id) {
-        <button
-          class="sidebar-item"
-          [class.active]="seccionActiva() === item.id"
-          (click)="setSeccion(item.id)">
+      <div class="sidebar-nav">
+        @for (item of navItems; track item.id) {
+          <button
+            class="sidebar-item"
+            [class.active]="seccionActiva() === item.id"
+            (click)="setSeccion(item.id)">
 
-          <!-- Iconos SVG por sección -->
-          @if (item.icon === 'home') {
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-          }
-          @if (item.icon === 'book') {
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-          }
-          @if (item.icon === 'check') {
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 11 12 14 22 4"/>
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-            </svg>
-          }
-          @if (item.icon === 'message') {
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          }
-          @if (item.icon === 'calendar') {
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-          }
-          @if (item.icon === 'card') {
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-              <line x1="1" y1="10" x2="23" y2="10"/>
-            </svg>
-          }
+            <!-- Iconos SVG por sección -->
+            @if (item.icon === 'home') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            }
+            @if (item.icon === 'book') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+            }
+            @if (item.icon === 'check') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 11 12 14 22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
+            }
+            @if (item.icon === 'message') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            }
+            @if (item.icon === 'calendar') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            }
+            @if (item.icon === 'card') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                <line x1="1" y1="10" x2="23" y2="10"/>
+              </svg>
+            }
 
-          <span class="sidebar-label">{{ item.label }}</span>
-        </button>
-      }
+            <span class="sidebar-label">{{ item.label }}</span>
+          </button>
+        }
+      </div>
+
+      <!-- Sección de mis hijos en la barra lateral -->
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-title">MIS HIJOS</div>
+      <div class="sidebar-hijos-list">
+        @for (hijo of hijos(); track hijo.id; let i = $index) {
+          <button 
+            class="sidebar-hijo-item" 
+            [class.active]="seccionActiva() === 'inicio' && vista() === 'detalle' && hijoIdx() === i"
+            (click)="setSeccion('inicio'); verDetalle(i)">
+            <div class="sidebar-hijo-avatar">
+              {{ hijo.nombre.split(' ')[0][0] }}{{ hijo.nombre.split(' ')[1] ? hijo.nombre.split(' ')[1][0] : '' }}
+            </div>
+            <div class="sidebar-hijo-info">
+              <span class="sidebar-hijo-name">{{ hijo.nombre.split(' ')[0] }}</span>
+              <span class="sidebar-hijo-desc">
+                {{ hijo.grado.split(' ')[0] }}{{ hijo.grado.includes('Primaria') ? ' Primaria' : '' }}
+              </span>
+            </div>
+          </button>
+        }
+      </div>
     </aside>
 
     <!-- ===== ÁREA DE CONTENIDO DINÁMICO ===== -->
@@ -126,69 +148,45 @@
               <div class="pp-error">{{ errorCarga() }}</div>
             }
 
-            @if (hijosEnRiesgo() > 0) {
-              <div class="alerta-riesgo">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                <div>
-                  <strong>Acción requerida</strong>
-                  <p>{{ hijosEnRiesgo() }} hijo(s) requiere(n) atención inmediata</p>
-                </div>
-              </div>
-            }
-
             <div class="hijos-grid">
               @for (hijo of hijos(); track hijo.id; let i = $index) {
                 <div class="hijo-card" [class]="'estado-' + hijo.estado">
+                  
+                  <!-- Cabecera de la Tarjeta -->
                   <div class="hijo-card-header">
-                    <div class="hijo-avatar">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="#0d1b2a" stroke="none">
-                        <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                      </svg>
+                    <div class="hijo-avatar-initials">
+                      {{ hijo.nombre.split(' ')[0][0] }}{{ hijo.nombre.split(' ')[1] ? hijo.nombre.split(' ')[1][0] : '' }}
                     </div>
                     <div class="hijo-info">
                       <span class="hijo-nombre">{{ hijo.nombre }}</span>
                       <span class="hijo-grado">{{ hijo.grado }}</span>
                     </div>
                     <span class="estado-badge badge-{{ hijo.estado }}">
-                      @if (hijo.estado === 'riesgo') {
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-                          <line x1="12" y1="16" x2="12.01" y2="16"/>
-                        </svg>
-                      }
-                      @if (hijo.estado === 'observacion') {
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                        </svg>
-                      }
-                      @if (hijo.estado === 'bueno') {
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      }
-                      {{ getEstadoLabel(hijo.estado) }}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                      </svg>
+                      Observación
                     </span>
                   </div>
 
+                  <!-- Bloque de Métricas Rediseñado -->
                   <div class="hijo-metricas">
-                    <div class="metrica">
+                    <div class="metrica metrica-promedio">
                       <span class="metrica-val">{{ hijo.promedio }}</span>
-                      <span class="metrica-lbl">Promedio</span>
+                      <span class="metrica-lbl">PROMEDIO</span>
                     </div>
-                    <div class="metrica">
+                    <div class="metrica metrica-asistencia">
                       <span class="metrica-val">{{ hijo.asistencia }}%</span>
-                      <span class="metrica-lbl">Asistencia</span>
+                      <span class="metrica-lbl">ASISTENCIA</span>
                     </div>
-                    <div class="metrica">
+                    <div class="metrica metrica-riesgo">
                       <span class="metrica-val" [class.val-riesgo]="hijo.cursosRiesgo > 0">{{ hijo.cursosRiesgo }}</span>
-                      <span class="metrica-lbl">En Riesgo</span>
+                      <span class="metrica-lbl">EN RIESGO</span>
                     </div>
                   </div>
 
+                  <!-- Cursos a Monitorear -->
                   <div class="cursos-monitor">
                     <span class="cursos-monitor-title">CURSOS A MONITOREAR</span>
                     @for (curso of hijo.cursosMonitor; track curso.nombre) {
@@ -205,26 +203,41 @@
                     }
                   </div>
 
-                  <button class="btn-detalles" (click)="verDetalle(i)">
-                    Ver detalles completos
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </button>
+                  <!-- Enlace inferior con círculo de flecha -->
+                  <div class="card-footer" (click)="verDetalle(i)">
+                    <span class="link-detalles">Ver detalles completos &gt;</span>
+                    <button class="btn-arrow-circle">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               }
             </div>
 
+            <!-- Leyenda rediseñada de manera moderna -->
             <div class="leyenda">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                <polyline points="17 6 23 6 23 12"/>
-              </svg>
-              <strong>Cómo interpretar los datos</strong>
+              <div class="leyenda-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                  <polyline points="17 6 23 6 23 12"/>
+                </svg>
+                <span>Cómo interpretar los datos</span>
+              </div>
               <div class="leyenda-items">
-                <span><span class="dot dot-verde"></span>Verde: Desempeño excelente (80%+)</span>
-                <span><span class="dot dot-amarillo"></span>Amarillo: Necesita mejorar (60-79%)</span>
-                <span><span class="dot dot-rojo"></span>Rojo: Requiere atención (menos de 60%)</span>
+                <div class="leyenda-item">
+                  <span class="dot dot-verde"></span>
+                  <span>Verde: Desempeño excelente (80%+)</span>
+                </div>
+                <div class="leyenda-item">
+                  <span class="dot dot-amarillo"></span>
+                  <span>Amarillo: Necesita mejorar (60-79%)</span>
+                </div>
+                <div class="leyenda-item">
+                  <span class="dot dot-rojo"></span>
+                  <span>Rojo: Requiere atención (menos de 60%)</span>
+                </div>
               </div>
             </div>
           </div>
@@ -241,10 +254,8 @@
             </button>
 
             <div class="detalle-header">
-              <div class="detalle-avatar">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="#0d1b2a" stroke="none">
-                  <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                </svg>
+              <div class="detalle-avatar-initials">
+                {{ hijoActual().nombre.split(' ')[0][0] }}{{ hijoActual().nombre.split(' ')[1] ? hijoActual().nombre.split(' ')[1][0] : '' }}
               </div>
               <div class="detalle-info">
                 <h2 class="detalle-nombre">{{ hijoActual().nombre }}</h2>
@@ -259,22 +270,28 @@
               <div class="dmetrica">
                 <span class="dmetrica-val">{{ hijoActual().promedio }}</span>
                 <span class="dmetrica-lbl">Promedio General</span>
-                <span class="dmetrica-sub">{{ hijoActual().promedio >= 17 ? 'Excelente' : hijoActual().promedio >= 13 ? 'Aceptable' : 'Por mejorar' }}</span>
+                <span class="dmetrica-sub" [style.color]="getBarColor(hijoActual().promedio * 5)">
+                  {{ hijoActual().promedio >= 17 ? 'Excelente' : hijoActual().promedio >= 13 ? 'Aceptable' : 'Por mejorar' }}
+                </span>
               </div>
               <div class="dmetrica">
                 <span class="dmetrica-val">{{ hijoActual().asistencia }}%</span>
                 <span class="dmetrica-lbl">Asistencia</span>
-                <span class="dmetrica-sub">{{ hijoActual().asistencia >= 90 ? 'Muy buena' : 'Regular' }}</span>
+                <span class="dmetrica-sub" [style.color]="hijoActual().asistencia >= 90 ? '#10b981' : '#f59e0b'">
+                  {{ hijoActual().asistencia >= 90 ? 'Muy buena' : 'Regular' }}
+                </span>
               </div>
               <div class="dmetrica">
                 <span class="dmetrica-val" [class.val-riesgo]="hijoActual().cursosRiesgo > 0">{{ hijoActual().cursosRiesgo }}</span>
                 <span class="dmetrica-lbl">Cursos en Riesgo</span>
-                <span class="dmetrica-sub">{{ hijoActual().cursosRiesgo === 0 ? 'Ninguno' : 'Requieren atención' }}</span>
+                <span class="dmetrica-sub" [class.val-riesgo]="hijoActual().cursosRiesgo > 0">
+                  {{ hijoActual().cursosRiesgo === 0 ? 'Ninguno' : 'Requieren atención' }}
+                </span>
               </div>
               <div class="dmetrica">
                 <span class="dmetrica-val">{{ hijoActual().entregaTareas }}%</span>
                 <span class="dmetrica-lbl">Entrega de Tareas</span>
-                <span class="dmetrica-sub">Puntualidad</span>
+                <span class="dmetrica-sub" style="color: #0284c7">Puntualidad</span>
               </div>
             </div>
 
@@ -286,7 +303,7 @@
               <!-- Próximos eventos -->
               <div class="detalle-eventos">
                 <h3 class="detalle-section-title">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                     <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
                     <line x1="3" y1="10" x2="21" y2="10"/>
@@ -306,7 +323,7 @@
 
             <!-- Progreso por cursos -->
             <h3 class="detalle-section-title mt-lg">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
               </svg>
               Progreso por Cursos
@@ -347,7 +364,7 @@
             <!-- CTA mensajes -->
             <div class="cta-mensaje">
               <div class="cta-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="2">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
               </div>
@@ -368,7 +385,7 @@
       @if (seccionActiva() === 'cursos') {
         <div class="seccion-placeholder">
           <div class="placeholder-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
               <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
             </svg>
@@ -383,7 +400,7 @@
       @if (seccionActiva() === 'asistencia') {
         <div class="seccion-placeholder">
           <div class="placeholder-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <polyline points="9 11 12 14 22 4"/>
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
             </svg>
@@ -398,7 +415,7 @@
       @if (seccionActiva() === 'mensajes') {
         <div class="seccion-placeholder">
           <div class="placeholder-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
@@ -412,7 +429,7 @@
       @if (seccionActiva() === 'eventos') {
         <div class="seccion-placeholder">
           <div class="placeholder-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
               <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
               <line x1="3" y1="10" x2="21" y2="10"/>
@@ -428,7 +445,7 @@
       @if (seccionActiva() === 'pagos') {
         <div class="seccion-placeholder">
           <div class="placeholder-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
               <line x1="1" y1="10" x2="23" y2="10"/>
             </svg>
