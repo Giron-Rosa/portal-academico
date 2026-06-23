@@ -1583,127 +1583,303 @@
       <!-- ═══ SECCIÓN: CALENDARIO ═══ -->
       @if (activeSection() === 'calendario') {
 
-        <!-- Cabecera del calendario: título + navegación de semana -->
+        <!-- ── Cabecera del calendario ── -->
         <div class="cal-header">
-          <h2 class="pd-section-title" style="margin-bottom:0">Horario semanal</h2>
+          <div class="cal-header-left">
+            <h2 class="pd-section-title" style="margin-bottom:0">Calendario</h2>
 
-          <div class="cal-nav">
-            <!-- Botón Hoy: vuelve a la semana actual -->
-            <button class="cal-btn-hoy" (click)="semanaHoy()">Hoy</button>
+            <!-- Tabs: Mis Clases / Reservas de Espacios -->
+            <div class="cal-tabs">
+              <button class="cal-tab" [class.active]="calendarioTab() === 'mis-clases'"
+                      (click)="calendarioTab.set('mis-clases')">
+                Mis Clases
+              </button>
+              <button class="cal-tab" [class.active]="calendarioTab() === 'reservas'"
+                      (click)="calendarioTab.set('reservas')">
+                Reservas de Espacios
+              </button>
+            </div>
+          </div>
 
-            <!-- Flecha semana anterior -->
-            <button class="cal-btn-arrow" (click)="semanaAnterior()" title="Semana anterior">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="15 18 9 12 15 6"/>
+          <div class="cal-header-right">
+            <!-- Botón + Reservar Espacio -->
+            <button class="cal-btn-reservar" (click)="toggleModalReserva(true)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
+              Reservar Espacio
             </button>
 
-            <!-- Rango de fechas de la semana visible -->
-            <span class="cal-semana-label">{{ semanaLabel() }}</span>
-
-            <!-- Flecha semana siguiente -->
-            <button class="cal-btn-arrow" (click)="semanaSiguiente()" title="Semana siguiente">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </button>
+            <div class="cal-nav">
+              <button class="cal-btn-arrow" (click)="semanaAnterior()" title="Semana anterior">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+              </button>
+              <span class="cal-semana-label">{{ semanaLabel() }}</span>
+              <button class="cal-btn-arrow" (click)="semanaSiguiente()" title="Semana siguiente">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+              <button class="cal-btn-hoy" (click)="semanaHoy()">Hoy</button>
+            </div>
           </div>
         </div>
 
         <!-- Estado: cargando horario -->
-        @if (cargandoHorario()) {
+        @if (cargandoHorario() || cargandoReservas()) {
           <div class="pd-loading">
             <div class="pd-spinner"></div>
-            <span>Cargando horario...</span>
+            <span>Cargando calendario...</span>
           </div>
         }
 
-        <!-- Estado: error al cargar -->
-        @if (errorHorario()) {
-          <div class="pd-error-msg">{{ errorHorario() }}</div>
+        @if (errorHorario() || errorReservas()) {
+          <div class="pd-error-msg">{{ errorHorario() || errorReservas() }}</div>
         }
 
         <!-- ── Grilla del calendario ── -->
-        @if (!cargandoHorario()) {
+        @if (!cargandoHorario() && !cargandoReservas()) {
         <div class="cal-wrapper">
 
-          <!-- Fila de cabecera: celda vacía (esquina) + un encabezado por día -->
+          <!-- Fila de cabecera -->
           <div class="cal-head-row">
             <div class="cal-time-corner"></div>
             @for (dia of diasSemana; track dia.num) {
-              <!-- Resaltar el día actual con clase 'hoy' -->
               <div class="cal-day-header" [class.hoy]="hoyDia() === dia.num">
                 <span class="cal-day-corto">{{ dia.corto }}</span>
+                <span class="cal-day-num">{{ fechaDeDia(dia.num) | date:'dd' }}</span>
               </div>
             }
           </div>
 
-          <!-- Fila principal: eje de tiempo + columnas de días -->
+          <!-- Cuerpo de la grilla -->
           <div class="cal-body">
 
-            <!-- ── Eje vertical de horas ── -->
+            <!-- Eje vertical de horas -->
             <div class="cal-time-axis">
               @for (hora of horasGrilla; track hora) {
-                <!-- Cada label de hora ocupa CAL_PX_POR_HORA píxeles de alto -->
                 <div class="cal-time-slot">{{ hora }}</div>
               }
             </div>
 
-            <!-- ── Columnas de días (Lunes … Viernes) ── -->
+            <!-- Columnas de días -->
             @for (dia of diasSemana; track dia.num) {
               <div class="cal-day-col" [class.hoy]="hoyDia() === dia.num"
                    [style.height.px]="altoGrilla">
 
-                <!-- Líneas horizontales de fondo (una por hora) -->
                 @for (hora of horasGrilla; track hora) {
                   <div class="cal-bg-line"></div>
                 }
 
-                <!-- ── Bloques de clase para este día ── -->
-                @for (clase of clasesDelDia(dia.num); track clase.horaInicio + clase.curso) {
-                  <!--
-                    top    = posición vertical calculada desde 07:00
-                    height = duración en píxeles
-                    El color de fondo viene de cursoColor() según el nombre del curso.
-                  -->
-                  <div class="cal-block"
-                       [style.top.px]="blockTop(clase.horaInicio)"
-                       [style.height.px]="blockHeight(clase.horaInicio, clase.horaFin)"
-                       [style.background-color]="cursoColor(clase.curso)">
-                    <!-- Hora de inicio y fin del bloque -->
-                    <span class="cal-block-time">{{ clase.horaInicio }} – {{ clase.horaFin }}</span>
-                    <!-- Nombre del curso -->
-                    <span class="cal-block-curso">{{ clase.curso }}</span>
-                    <!-- Grado y sección, abreviados para que quepan -->
-                    <span class="cal-block-aula">
-                      {{ clase.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }}
-                      · {{ clase.seccion }}
-                    </span>
-                  </div>
+                <!-- Bloques de clase fija (Mis Clases) -->
+                @if (calendarioTab() === 'mis-clases') {
+                  @for (clase of clasesDelDia(dia.num); track clase.horaInicio + clase.curso) {
+                    <div class="cal-block"
+                         [style.top.px]="blockTop(clase.horaInicio)"
+                         [style.height.px]="blockHeight(clase.horaInicio, clase.horaFin)"
+                         [style.background-color]="cursoColor(clase.curso)">
+                      <span class="cal-block-time">{{ clase.horaInicio }} – {{ clase.horaFin }}</span>
+                      <span class="cal-block-curso">{{ clase.curso }}</span>
+                      <span class="cal-block-aula">
+                        {{ clase.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} · {{ clase.seccion }}
+                      </span>
+                      @if (clase.curso.toLowerCase().includes('ciencia')) {
+                        <span class="cal-block-lab">Lab. Ciencias A</span>
+                      }
+                    </div>
+                  }
+                }
+
+                <!-- Bloques de reserva (Reservas de Espacios) -->
+                @if (calendarioTab() === 'reservas') {
+                  @for (reserva of reservasDelDia(dia.num); track reserva.id) {
+                    <button class="cal-block cal-block-reserva"
+                         [style.top.px]="blockTop(reserva.horaInicio)"
+                         [style.height.px]="blockHeight(reserva.horaInicio, reserva.horaFin)"
+                         (click)="editarReserva(reserva)"
+                         title="Editar reserva">
+                      <span class="cal-block-time">{{ reserva.horaInicio }} – {{ reserva.horaFin }}</span>
+                      <span class="cal-block-curso">{{ reserva.espacio }}</span>
+                      <span class="cal-block-aula">{{ reserva.proposito || 'Sin propósito' }}</span>
+                      @if (reserva.curso) {
+                        <span class="cal-block-aula">{{ reserva.curso }} · {{ reserva.grado?.replace('Secundaria','Sec')?.replace('Primaria','Prim') }} {{ reserva.seccion }}</span>
+                      }
+                    </button>
+                  }
+                }
+
+                <!-- Celdas vacías clickeables para crear reserva (solo en Reservas) -->
+                @if (calendarioTab() === 'reservas') {
+                  @for (hora of horasGrilla; track hora) {
+                    <button class="cal-slot-empty"
+                            [style.top.px]="blockTop(hora + ':00')"
+                            [style.height.px]="calPxPorHora"
+                            (click)="abrirReservaEnHora(dia.num, hora.split(':')[0])"
+                            title="Reservar este horario">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                      </svg>
+                    </button>
+                  }
                 }
 
               </div>
             }
 
-          </div><!-- /cal-body -->
-        </div><!-- /cal-wrapper -->
+          </div>
+        </div>
 
-        <!-- Mensaje cuando el administrador aún no ha cargado horarios -->
-        @if (horario().length === 0) {
+        <!-- Estado vacío -->
+        @if (calendarioTab() === 'mis-clases' && horario().length === 0) {
           <div class="cal-empty">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.3">
               <rect x="3" y="4" width="18" height="18" rx="2"/>
               <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8"  y1="2" x2="8"  y2="6"/>
-              <line x1="3"  y1="10" x2="21" y2="10"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
             <p>No hay horario asignado para este período.</p>
             <small>La administración es quien configura los horarios.</small>
           </div>
         }
-        }<!-- /!cargandoHorario -->
+        @if (calendarioTab() === 'reservas' && reservasForSemana().length === 0) {
+          <div class="cal-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.3">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <p>No hay reservas para esta semana.</p>
+            <small>Haz clic en cualquier celda vacía para reservar un espacio.</small>
+          </div>
+        }
+        }<!-- /!cargando -->
 
       }<!-- /calendario -->
+
+      <!-- ────── MODAL: NUEVA RESERVA DE ESPACIO ────── -->
+      @if (modalReserva()) {
+        <div class="cd-modal-backdrop" (click)="toggleModalReserva(false)">
+          <div class="cd-modal cd-modal-reserva" (click)="$event.stopPropagation()">
+
+            <!-- Header -->
+            <div class="cd-modal-header">
+              <div>
+                <h3 class="cd-modal-title">{{ reservaEditando() ? 'Editar Reserva' : 'Nueva Reserva de Espacio' }}</h3>
+                <p class="cd-modal-subtitle">{{ reservaEditando() ? 'Modifica los datos o anula la reserva' : 'Completa los datos para confirmar tu reserva' }}</p>
+              </div>
+              <button class="cd-modal-close" (click)="toggleModalReserva(false)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6"  y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Mensajes de disponibilidad -->
+            @if (errorDisponibilidad()) {
+              <div class="rv-disponibilidad rv-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span>{{ errorDisponibilidad() }}</span>
+              </div>
+            }
+            @if (okDisponibilidad()) {
+              <div class="rv-disponibilidad rv-success">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span>Espacio disponible para la fecha seleccionada.</span>
+              </div>
+            }
+
+            <!-- Cuerpo del modal -->
+            <div class="cd-modal-body">
+
+              <!-- Espacio Requerido -->
+              <div class="cd-modal-field">
+                <label class="cd-modal-label">Espacio Requerido</label>
+                <select class="cd-modal-input"
+                        [ngModel]="formReserva().espacio"
+                        (ngModelChange)="setFormReserva('espacio', $event)">
+                  @for (e of ESPACIOS; track e) {
+                    <option [value]="e">{{ e }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Fecha -->
+              <div class="cd-modal-field">
+                <label class="cd-modal-label">Fecha</label>
+                <input class="cd-modal-input" type="date"
+                       [ngModel]="formReserva().fecha"
+                       (ngModelChange)="setFormReserva('fecha', $event)"/>
+              </div>
+
+              <!-- Desde / Hasta -->
+              <div class="rv-horario-row">
+                <div class="cd-modal-field">
+                  <label class="cd-modal-label">Desde</label>
+                  <input class="cd-modal-input" type="time"
+                         [ngModel]="formReserva().horaInicio"
+                         (ngModelChange)="setFormReserva('horaInicio', $event)"/>
+                </div>
+                <div class="cd-modal-field">
+                  <label class="cd-modal-label">Hasta</label>
+                  <input class="cd-modal-input" type="time"
+                         [ngModel]="formReserva().horaFin"
+                         (ngModelChange)="setFormReserva('horaFin', $event)"/>
+                </div>
+              </div>
+
+              <!-- Asignar a clase -->
+              <div class="cd-modal-field">
+                <label class="cd-modal-label">Asignar a clase</label>
+                <select class="cd-modal-input"
+                        [ngModel]="formReserva().idAulaCurso"
+                        (ngModelChange)="setFormReserva('idAulaCurso', $event ? +$event : null)">
+                  <option [value]="null">— Sin asignar —</option>
+                  @for (c of cursos(); track c.idAulaCurso) {
+                    <option [value]="c.idAulaCurso">{{ c.nombre }} – {{ c.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ c.seccion }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Propósito -->
+              <div class="cd-modal-field">
+                <label class="cd-modal-label">Propósito</label>
+                <textarea class="cd-modal-input rv-textarea" rows="3"
+                          placeholder="Ej: Laboratorio de cinemática y energía potencial"
+                          [ngModel]="formReserva().proposito"
+                          (ngModelChange)="setFormReserva('proposito', $event)"></textarea>
+              </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="cd-modal-footer rv-footer">
+              @if (reservaEditando()) {
+                <button class="cd-modal-cancel rv-btn-anular" (click)="anularReserva()">Anular</button>
+              }
+              <button class="cd-modal-cancel" (click)="toggleModalReserva(false)">Cancelar</button>
+              <button class="cd-modal-submit"
+                      (click)="guardarReserva()"
+                      [disabled]="!formReserva().espacio || !formReserva().fecha || !formReserva().horaInicio || !formReserva().horaFin || enviandoReserva()">
+                @if (enviandoReserva()) { Guardando… } @else { {{ reservaEditando() ? 'Guardar Cambios' : 'Confirmar Reserva' }} }
+              </button>
+            </div>
+
+          </div>
+        </div>
+      }<!-- /modal reserva -->
 
       <!-- ═══ SECCIÓN: MENSAJES ═══ -->
       @if (activeSection() === 'mensajes') {
@@ -2115,6 +2291,7 @@
     </main>
 
     <!-- ── Right Sidebar ── -->
+    @if (activeSection() !== 'calendario') {
     <aside class="pd-sidebar-right">
       <div class="pd-review-header">
         <h3 class="pd-review-title">POR REVISAR</h3>
@@ -2183,6 +2360,7 @@
         </button>
       }
     </aside>
+    }
 
   </div>
 </div>
