@@ -15,6 +15,7 @@ public record MensajeDetalleDto(
         String fechaEnvio,
         String nombrePadre,
         String nombreAlumno,
+        Long   idAlumno,
         String grado,
         String seccion,
         String curso,

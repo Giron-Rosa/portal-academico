@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import pe.sanagustin.portal.dto.AlumnoContextoDto;
 import pe.sanagustin.portal.dto.MensajeDetalleDto;
 import pe.sanagustin.portal.dto.MensajeResumenDto;
 import pe.sanagustin.portal.dto.ResponderRequest;
@@ -62,5 +63,17 @@ public class MensajeController {
             @AuthenticationPrincipal UserDetails userDetails) {
         mensajeService.responder(id, request.getCuerpo(), userDetails.getUsername());
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * GET /api/portal/docente/mensajes/alumno-contexto/{idAlumno}
+     * Devuelve el resumen del alumno para el panel lateral de mensajes.
+     */
+    @GetMapping("/alumno-contexto/{idAlumno}")
+    public ResponseEntity<AlumnoContextoDto> getContextoAlumno(
+            @PathVariable long idAlumno,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                mensajeService.getContextoAlumno(idAlumno, userDetails.getUsername()));
     }
 }
