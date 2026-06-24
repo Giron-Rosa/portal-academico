@@ -60,6 +60,7 @@ export interface RespuestaResumen {
 export interface MensajeDetalle extends MensajeResumen {
   cuerpo: string;
   respuestas: RespuestaResumen[];
+  iniciadoPorDocente: boolean;
 }
 
 /** Contexto del alumno para el panel lateral en mensajes */
@@ -76,6 +77,19 @@ export interface AlumnoContexto {
   clasesPresente: number;
   tareasPendientes: number;
   promedio: number;
+}
+
+/** Alumno disponible para iniciar un nuevo chat */
+export interface AlumnoDisponible {
+  idAlumno: number;
+  nombreAlumno: string;
+  grado: string;
+  seccion: string;
+  idPadre: number;
+  nombrePadre: string;
+  emailPadre: string;
+  idAulaCurso: number;
+  curso: string;
 }
 
 /** Estructura que devuelve el endpoint GET /api/portal/docente/mi-horario */
@@ -387,6 +401,45 @@ export class PortalDocente {
   contextoAlumno     = signal<AlumnoContexto | null>(null);
   cargandoContexto   = signal(false);
   mostrarContexto    = signal(false);
+
+  /* ── Signals para "Nuevo Chat" ── */
+  modalNuevoChat       = signal(false);
+  alumnosDisponibles   = signal<AlumnoDisponible[]>([]);
+  cargandoAlumnos      = signal(false);
+  nuevoChatGrado       = signal('');
+  nuevoChatSeccion     = signal('');
+  nuevoChatBusqueda    = signal('');
+  nuevoChatAlumnoSel   = signal<AlumnoDisponible | null>(null);
+  nuevoChatAsunto      = signal('');
+  nuevoChatMensaje     = signal('');
+  enviandoNuevoChat    = signal(false);
+
+  /** Grados únicos de alumnos disponibles para el modal nuevo chat */
+  gradosDisponibles = computed(() =>
+    [...new Set(this.alumnosDisponibles().map(a => a.grado))].sort()
+  );
+
+  /** Secciones únicas para el grado seleccionado */
+  seccionesDisponibles = computed(() => {
+    const g = this.nuevoChatGrado();
+    const base = g
+      ? this.alumnosDisponibles().filter(a => a.grado === g)
+      : this.alumnosDisponibles();
+    return [...new Set(base.map(a => a.seccion))].sort();
+  });
+
+  /** Alumnos filtrados por grado + sección + búsqueda libre en el modal */
+  alumnosFiltradosModal = computed(() => {
+    const g  = this.nuevoChatGrado();
+    const s  = this.nuevoChatSeccion();
+    const q  = this.nuevoChatBusqueda().toLowerCase().trim();
+    return this.alumnosDisponibles().filter(a =>
+      (!g || a.grado === g) &&
+      (!s || a.seccion === s) &&
+      (!q || a.nombreAlumno.toLowerCase().includes(q) ||
+             a.nombrePadre.toLowerCase().includes(q))
+    );
+  });
 
   /** Grados únicos presentes en los mensajes, para los filtro-tabs */
   gradosMensajes = computed(() => {
@@ -783,6 +836,78 @@ export class PortalDocente {
   /** Alterna la visibilidad del panel de contexto del alumno */
   toggleContexto() {
     this.mostrarContexto.update(v => !v);
+  }
+
+  /** Abre el modal y carga la lista de alumnos disponibles */
+  abrirModalNuevoChat() {
+    this.modalNuevoChat.set(true);
+    this.nuevoChatGrado.set('');
+    this.nuevoChatSeccion.set('');
+    this.nuevoChatBusqueda.set('');
+    this.nuevoChatAlumnoSel.set(null);
+    this.nuevoChatAsunto.set('');
+    this.nuevoChatMensaje.set('');
+    if (this.alumnosDisponibles().length === 0) {
+      this.cargarAlumnosDisponibles();
+    }
+  }
+
+  /** Carga el listado de alumnos disponibles desde el backend */
+  cargarAlumnosDisponibles() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoAlumnos.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<AlumnoDisponible[]>(
+      'http://localhost:8080/api/portal/docente/mensajes/alumnos-disponibles', { headers }
+    ).subscribe({
+      next: data => { this.alumnosDisponibles.set(data); this.cargandoAlumnos.set(false); },
+      error: () => { this.cargandoAlumnos.set(false); },
+    });
+  }
+
+  /** Selecciona un alumno en el modal y rellena el asunto por defecto */
+  seleccionarAlumnoModal(a: AlumnoDisponible) {
+    this.nuevoChatAlumnoSel.set(a);
+    if (!this.nuevoChatAsunto()) {
+      this.nuevoChatAsunto.set(`Consulta sobre ${a.nombreAlumno}`);
+    }
+  }
+
+  /** Cierra el modal sin enviar */
+  cerrarModalNuevoChat() {
+    this.modalNuevoChat.set(false);
+  }
+
+  /** Envía el nuevo chat y abre el hilo creado */
+  enviarNuevoChat() {
+    const alumno  = this.nuevoChatAlumnoSel();
+    const asunto  = this.nuevoChatAsunto().trim();
+    const mensaje = this.nuevoChatMensaje().trim();
+    if (!alumno || !asunto || !mensaje) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoNuevoChat.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    this.http.post<{ id: number }>(
+      'http://localhost:8080/api/portal/docente/mensajes/iniciar',
+      {
+        idAlumno:    alumno.idAlumno,
+        idPadre:     alumno.idPadre,
+        idAulaCurso: alumno.idAulaCurso,
+        asunto,
+        cuerpo:      mensaje,
+      },
+      { headers }
+    ).subscribe({
+      next: res => {
+        this.enviandoNuevoChat.set(false);
+        this.cerrarModalNuevoChat();
+        this.cargarMensajes();
+        setTimeout(() => this.abrirMensaje(res.id), 400);
+      },
+      error: () => { this.enviandoNuevoChat.set(false); },
+    });
   }
 
   /** % de asistencia del alumno activo */

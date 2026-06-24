@@ -20,5 +20,6 @@ public record MensajeDetalleDto(
         String seccion,
         String curso,
         String cuerpo,
-        List<RespuestaResumenDto> respuestas
+        List<RespuestaResumenDto> respuestas,
+        boolean iniciadoPorDocente
 ) {}

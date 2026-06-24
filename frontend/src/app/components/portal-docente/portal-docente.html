@@ -1741,14 +1741,20 @@
               }
             </div>
 
-            <!-- Botón nuevo chat -->
+            <!-- Botones: Actualizar + Nuevo Chat -->
             <div class="msg-new-btn-wrap">
-              <button class="msg-btn-nuevo" (click)="cargarMensajes()">
+              <button class="msg-btn-reload" (click)="cargarMensajes()" title="Actualizar bandeja">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <polyline points="23 4 23 10 17 10"/>
                   <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
                 </svg>
                 Actualizar bandeja
+              </button>
+              <button class="msg-btn-nuevo-chat" (click)="abrirModalNuevoChat()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Nuevo chat
               </button>
             </div>
 
@@ -1847,8 +1853,8 @@
               <!-- Área del hilo de mensajes -->
               <div class="msg-chat-thread">
 
-                <!-- Mensaje original como primer burbuja del padre -->
-                <div class="msg-bubble padre">
+                <!-- Mensaje original: clase según quién lo inició -->
+                <div class="msg-bubble" [class.docente]="msg.iniciadoPorDocente" [class.padre]="!msg.iniciadoPorDocente">
                   <div class="msg-bubble-cuerpo">{{ msg.cuerpo }}</div>
                   <div class="msg-bubble-fecha">{{ msg.fechaEnvio }}</div>
                 </div>
@@ -1964,6 +1970,135 @@
           }
 
         </div><!-- /msg-layout -->
+
+        <!-- ══ MODAL: Nuevo Chat ══ -->
+        @if (modalNuevoChat()) {
+          <div class="nc-overlay" (click)="cerrarModalNuevoChat()"></div>
+          <div class="nc-modal" role="dialog" aria-modal="true" aria-labelledby="nc-title">
+
+            <!-- Cabecera del modal -->
+            <div class="nc-header">
+              <h3 class="nc-title" id="nc-title">Nuevo chat con apoderado</h3>
+              <button class="nc-close" (click)="cerrarModalNuevoChat()" aria-label="Cerrar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            @if (nuevoChatAlumnoSel() === null) {
+              <!-- PASO 1: seleccionar alumno -->
+              <div class="nc-body">
+
+                <!-- Filtros de grado / sección -->
+                <div class="nc-filters">
+                  <select class="nc-select"
+                          [ngModel]="nuevoChatGrado()"
+                          (ngModelChange)="nuevoChatGrado.set($event); nuevoChatSeccion.set('')">
+                    <option value="">Todos los grados</option>
+                    @for (g of gradosDisponibles(); track g) {
+                      <option [value]="g">{{ g }}</option>
+                    }
+                  </select>
+
+                  <select class="nc-select"
+                          [ngModel]="nuevoChatSeccion()"
+                          (ngModelChange)="nuevoChatSeccion.set($event)"
+                          [disabled]="!nuevoChatGrado()">
+                    <option value="">Todas las secciones</option>
+                    @for (s of seccionesDisponibles(); track s) {
+                      <option [value]="s">{{ s }}</option>
+                    }
+                  </select>
+
+                  <input class="nc-search"
+                         type="text"
+                         placeholder="Buscar alumno o apoderado..."
+                         [ngModel]="nuevoChatBusqueda()"
+                         (ngModelChange)="nuevoChatBusqueda.set($event)"/>
+                </div>
+
+                <!-- Lista de alumnos -->
+                @if (cargandoAlumnos()) {
+                  <div class="nc-loading">Cargando alumnos...</div>
+                } @else if (alumnosFiltradosModal().length === 0) {
+                  <div class="nc-empty">Sin alumnos que coincidan.</div>
+                } @else {
+                  <div class="nc-alumno-list">
+                    @for (a of alumnosFiltradosModal(); track a.idAlumno) {
+                      <button class="nc-alumno-item" (click)="seleccionarAlumnoModal(a)">
+                        <div class="nc-alumno-avatar"
+                             [style.background]="'#' + (a.nombreAlumno.charCodeAt(0) % 4 === 0 ? '4361ee' : a.nombreAlumno.charCodeAt(0) % 4 === 1 ? '06d6a0' : a.nombreAlumno.charCodeAt(0) % 4 === 2 ? 'ef476f' : 'f4a261')">
+                          {{ a.nombreAlumno.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase() }}
+                        </div>
+                        <div class="nc-alumno-info">
+                          <span class="nc-alumno-nombre">{{ a.nombreAlumno }}</span>
+                          <span class="nc-alumno-meta">{{ a.grado }} {{ a.seccion }} · {{ a.curso }}</span>
+                          <span class="nc-alumno-padre">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            {{ a.nombrePadre }}
+                          </span>
+                        </div>
+                        <svg class="nc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+
+            } @else {
+              <!-- PASO 2: redactar mensaje -->
+              <div class="nc-body">
+
+                <!-- Alumno seleccionado (resumen) -->
+                <div class="nc-selected-alumno">
+                  <div class="nc-alumno-avatar sm"
+                       [style.background]="'#' + (nuevoChatAlumnoSel()!.nombreAlumno.charCodeAt(0) % 4 === 0 ? '4361ee' : nuevoChatAlumnoSel()!.nombreAlumno.charCodeAt(0) % 4 === 1 ? '06d6a0' : nuevoChatAlumnoSel()!.nombreAlumno.charCodeAt(0) % 4 === 2 ? 'ef476f' : 'f4a261')">
+                    {{ nuevoChatAlumnoSel()!.nombreAlumno.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase() }}
+                  </div>
+                  <div>
+                    <p class="nc-sel-nombre">{{ nuevoChatAlumnoSel()!.nombreAlumno }}</p>
+                    <p class="nc-sel-meta">{{ nuevoChatAlumnoSel()!.grado }} · Sec. {{ nuevoChatAlumnoSel()!.seccion }} · {{ nuevoChatAlumnoSel()!.curso }}</p>
+                    <p class="nc-sel-padre">Para: {{ nuevoChatAlumnoSel()!.nombrePadre }}</p>
+                  </div>
+                  <button class="nc-cambiar" (click)="nuevoChatAlumnoSel.set(null)">Cambiar</button>
+                </div>
+
+                <!-- Asunto -->
+                <div class="nc-field">
+                  <label class="nc-label">Asunto</label>
+                  <input class="nc-input"
+                         type="text"
+                         placeholder="Ej: Consulta sobre tarea de matemática"
+                         [ngModel]="nuevoChatAsunto()"
+                         (ngModelChange)="nuevoChatAsunto.set($event)"/>
+                </div>
+
+                <!-- Mensaje -->
+                <div class="nc-field">
+                  <label class="nc-label">Mensaje</label>
+                  <textarea class="nc-textarea"
+                            rows="5"
+                            placeholder="Escribe el mensaje que recibirá el apoderado..."
+                            [ngModel]="nuevoChatMensaje()"
+                            (ngModelChange)="nuevoChatMensaje.set($event)"></textarea>
+                </div>
+
+                <!-- Acciones -->
+                <div class="nc-actions">
+                  <button class="nc-btn-cancel" (click)="cerrarModalNuevoChat()">Cancelar</button>
+                  <button class="nc-btn-send"
+                          [disabled]="!nuevoChatAsunto().trim() || !nuevoChatMensaje().trim() || enviandoNuevoChat()"
+                          (click)="enviarNuevoChat()">
+                    @if (enviandoNuevoChat()) { Enviando... } @else { Iniciar chat }
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
 
       }<!-- /mensajes -->
 

@@ -7,8 +7,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import pe.sanagustin.portal.dto.AlumnoContextoDto;
+import pe.sanagustin.portal.dto.AlumnoDisponibleDto;
 import pe.sanagustin.portal.dto.MensajeDetalleDto;
 import pe.sanagustin.portal.dto.MensajeResumenDto;
+import pe.sanagustin.portal.dto.NuevoChatRequest;
 import pe.sanagustin.portal.dto.RespuestaResumenDto;
 
 import java.util.List;
@@ -35,7 +37,8 @@ public class MensajeService {
             s.nombre  AS seccion,
             c.nombre  AS curso,
             (SELECT COUNT(*) FROM mensajes_respuestas mr WHERE mr.id_mensaje = m.id_mensaje) AS cant_respuestas,
-            SUBSTRING(m.cuerpo FROM 1 FOR 60)            AS ultima_respuesta
+            SUBSTRING(m.cuerpo FROM 1 FOR 60)            AS ultima_respuesta,
+            m.iniciado_por_maestro
             """;
 
     private static final String JOINS_COMUNES = """
@@ -133,8 +136,9 @@ public class MensajeService {
                 (String)   r[8],                                    // grado
                 (String)   r[9],                                    // seccion
                 (String)   r[10],                                   // curso
-                (String)   r[13],                                   // cuerpo completo (after COLS_COMUNES 0-12)
-                respuestas
+                (String)   r[14],                                   // cuerpo (idx 14: after cols 0-12 + iniciado_por_maestro=13)
+                respuestas,
+                (Boolean)  r[13]                                    // iniciadoPorDocente
         );
     }
 
@@ -266,6 +270,99 @@ public class MensajeService {
                 ((Number) r[10]).intValue(),
                 ((Number) r[11]).doubleValue()
         );
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       getAlumnosDisponibles: lista de alumnos que el docente
+       puede contactar (tienen padre vinculado y están en una
+       de sus aulas asignadas).
+    ───────────────────────────────────────────────────────── */
+    public List<AlumnoDisponibleDto> getAlumnosDisponibles(String codigoDocente) {
+
+        String sql = """
+                SELECT DISTINCT ON (al.id_alumno, pa.id_padre)
+                       al.id_alumno,
+                       al.nombre || ' ' || al.apellido     AS nombre_alumno,
+                       g.nombre                            AS grado,
+                       s.nombre                            AS seccion,
+                       pa.id_padre,
+                       pa.nombre || ' ' || pa.apellido     AS nombre_padre,
+                       u_pa.email                          AS email_padre,
+                       ac.id_aula_curso,
+                       c.nombre                            AS curso
+                FROM alumnos al
+                JOIN matriculas mat    ON mat.id_alumno    = al.id_alumno AND mat.estado = 'activa'
+                JOIN aulas a           ON a.id_aula        = mat.id_aula
+                JOIN grados g          ON g.id_grado       = a.id_grado
+                JOIN secciones s       ON s.id_seccion     = a.id_seccion
+                JOIN aula_cursos ac    ON ac.id_aula       = a.id_aula
+                JOIN cursos c          ON c.id_curso       = ac.id_curso
+                JOIN docente_asignaciones da ON da.id_aula_curso = ac.id_aula_curso
+                JOIN maestros mae       ON mae.id_maestro  = da.id_maestro
+                JOIN usuarios u         ON u.id_usuario    = mae.id_usuario
+                JOIN padre_hijo ph      ON ph.id_alumno    = al.id_alumno AND ph.es_principal = TRUE
+                JOIN padres pa          ON pa.id_padre     = ph.id_padre
+                JOIN usuarios u_pa      ON u_pa.id_usuario = pa.id_usuario
+                WHERE u.codigo = :codigo
+                ORDER BY al.id_alumno, pa.id_padre, ac.id_aula_curso
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery(sql)
+                .setParameter("codigo", codigoDocente)
+                .getResultList();
+
+        return rows.stream().map(r -> new AlumnoDisponibleDto(
+                ((Number) r[0]).longValue(),
+                (String)  r[1],
+                (String)  r[2],
+                (String)  r[3],
+                ((Number) r[4]).longValue(),
+                (String)  r[5],
+                (String)  r[6],
+                ((Number) r[7]).longValue(),
+                (String)  r[8]
+        )).toList();
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       iniciarChat: el docente crea un nuevo hilo de mensajes
+       dirigido al padre del alumno seleccionado.
+       Devuelve el id del mensaje creado.
+    ───────────────────────────────────────────────────────── */
+    @Transactional
+    public long iniciarChat(NuevoChatRequest req, String codigoDocente) {
+
+        /* Obtener id_maestro del docente autenticado */
+        @SuppressWarnings("unchecked")
+        List<Object> maeRows = em.createNativeQuery(
+                "SELECT mae.id_maestro FROM maestros mae JOIN usuarios u ON u.id_usuario=mae.id_usuario WHERE u.codigo=:codigo")
+                .setParameter("codigo", codigoDocente)
+                .getResultList();
+
+        if (maeRows.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Docente no encontrado");
+        }
+        long idMaestro = ((Number) maeRows.get(0)).longValue();
+
+        /* Insertar el mensaje y retornar su id */
+        @SuppressWarnings("unchecked")
+        List<Object> idRows = em.createNativeQuery("""
+                INSERT INTO mensajes (id_padre, id_maestro, id_alumno, id_aula_curso,
+                                      asunto, cuerpo, tipo, leido, iniciado_por_maestro, fecha_envio)
+                VALUES (:idPadre, :idMaestro, :idAlumno, :idAulaCurso,
+                        :asunto, :cuerpo, 'consulta', TRUE, TRUE, NOW())
+                RETURNING id_mensaje
+                """)
+                .setParameter("idPadre",    req.getIdPadre())
+                .setParameter("idMaestro",  idMaestro)
+                .setParameter("idAlumno",   req.getIdAlumno())
+                .setParameter("idAulaCurso",req.getIdAulaCurso())
+                .setParameter("asunto",     req.getAsunto())
+                .setParameter("cuerpo",     req.getCuerpo())
+                .getResultList();
+
+        return ((Number) idRows.get(0)).longValue();
     }
 
     /* ─────────────────────────────────────────────────────────
