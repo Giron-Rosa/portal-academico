@@ -82,9 +82,71 @@
     </aside>
 
     <!-- ── Main Content ── -->
-    <main class="pd-main">
+    <main class="pd-main" [class.pd-main--mensajes]="activeSection() === 'mensajes'">
 
       @if (activeSection() === 'inicio') {
+
+        <!-- ── Bienvenida + Resumen ── -->
+        <h2 class="pd-welcome-title">Bienvenido Profesor</h2>
+
+        <div class="pd-summary-cards">
+          <div class="pd-summary-card">
+            <div class="pd-summary-icon pd-si-cursos">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/>
+              </svg>
+            </div>
+            <div class="pd-summary-info">
+              <span class="pd-summary-label">Cursos</span>
+              <span class="pd-summary-value">{{ cursos().length }}</span>
+            </div>
+          </div>
+
+          <div class="pd-summary-card">
+            <div class="pd-summary-icon pd-si-pendientes">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+              </svg>
+            </div>
+            <div class="pd-summary-info">
+              <span class="pd-summary-label">Pendientes</span>
+              <span class="pd-summary-value">{{ pendientes().length }}</span>
+            </div>
+          </div>
+
+          <div class="pd-summary-card">
+            <div class="pd-summary-icon pd-si-clases">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <div class="pd-summary-info">
+              <span class="pd-summary-label">Clases de Hoy</span>
+              <span class="pd-summary-value">{{ clasesDeHoy().length }}</span>
+            </div>
+          </div>
+
+          <div class="pd-summary-card">
+            <div class="pd-summary-icon pd-si-riesgo">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="pd-summary-info">
+              <span class="pd-summary-label">Alumnos Riesgos</span>
+              <span class="pd-summary-value">{{ alertasCriticas().length }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Mis cursos ── -->
         <h2 class="pd-section-title">Mis cursos</h2>
 
         @if (errorCarga()) {
@@ -103,14 +165,6 @@
               </button>
             }
           </div>
-          <div class="pd-year-filter">
-            <label class="pd-year-label">Año</label>
-            <select class="pd-year-select" [value]="selectedYear()" (change)="setYear($any($event.target).value)">
-              @for (y of years; track y) {
-                <option [value]="y">{{ y }}</option>
-              }
-            </select>
-          </div>
         </div>
 
         <!-- Course grid -->
@@ -123,7 +177,7 @@
 
         @if (!cargando()) {
         <div class="pd-courses-grid">
-          @for (curso of filteredCursos(); track curso.nombre) {
+          @for (curso of filteredCursos(); track curso.idAulaCurso) {
             <div class="pd-course-card" [style.background-color]="curso.color"
                  (click)="abrirCurso(curso)" role="button" tabindex="0"
                  (keydown.enter)="abrirCurso(curso)">
@@ -198,10 +252,61 @@
             </div>
           }
           @if (filteredCursos().length === 0 && !errorCarga()) {
-            <p class="pd-empty">No hay cursos asignados para este período.</p>
+            @if (activeGrade() === 'Clases de Hoy') {
+              <p class="pd-empty">No hay clases programadas para hoy.</p>
+            } @else {
+              <p class="pd-empty">No hay cursos asignados para este grado.</p>
+            }
           }
         </div>
         }
+
+        <!-- ── Alertas Críticas ── -->
+        <div class="pd-alertas-section">
+          <div class="pd-alertas-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e67e22" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <h3 class="pd-alertas-titulo">Alertas Críticas</h3>
+            @if (alertasCriticas().length > 0) {
+              <span class="pd-alertas-count">{{ alertasCriticas().length }}</span>
+            }
+          </div>
+
+          @if (alertasCriticas().length === 0) {
+            <div class="pd-alertas-empty">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
+                <polyline points="9 11 12 14 22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
+              <span>Sin alertas críticas</span>
+            </div>
+          }
+
+          @for (alerta of alertasCriticas(); track alerta.idAlumno + alerta.tipo) {
+            <div class="pd-alerta-card">
+              <div class="pd-alerta-avatar" [style.border-color]="alerta.color">
+                <span [style.color]="alerta.color">{{ alerta.inicial }}</span>
+              </div>
+              <div class="pd-alerta-info">
+                <span class="pd-alerta-nombre">{{ alerta.nombre }}</span>
+                <span class="pd-alerta-desc">{{ alerta.descripcion }}</span>
+              </div>
+              <span class="pd-alerta-badge"
+                    [class.pd-alerta-rendimiento]="alerta.tipo === 'rendimiento'"
+                    [class.pd-alerta-asistencia]="alerta.tipo === 'asistencia'">
+                {{ alerta.tipo === 'rendimiento' ? 'Rendimiento' : 'Asistencia' }}
+              </span>
+              <svg class="pd-alerta-arrow" width="12" height="12" viewBox="0 0 24 24"
+                   fill="none" stroke="#9ca3af" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </div>
+          }
+        </div>
+
       }
 
       <!-- ═══ SECCIÓN: DETALLE DE CURSO ═══ -->
@@ -1884,22 +1989,7 @@
       <!-- ═══ SECCIÓN: MENSAJES ═══ -->
       @if (activeSection() === 'mensajes') {
 
-        <!-- Cabecera: título + contador de no leídos -->
-        <div class="msg-top-bar">
-          <h2 class="pd-section-title" style="margin-bottom:0">Mensajes</h2>
-          @if (noLeidos() > 0) {
-            <span class="msg-badge-total">{{ noLeidos() }} sin leer</span>
-          }
-          <!-- Botón para recargar la bandeja manualmente -->
-          <button class="msg-btn-reload" (click)="cargarMensajes()" title="Actualizar">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="23 4 23 10 17 10"/>
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Estado: cargando / error -->
+        <!-- Estado: cargando / error global -->
         @if (cargandoMensajes()) {
           <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando mensajes...</span></div>
         }
@@ -1907,77 +1997,94 @@
           <div class="pd-error-msg">{{ errorMensajes() }}</div>
         }
 
-        <!-- ── Layout de dos paneles ── -->
+        <!-- ── Layout completo tipo Messenger ── -->
         <div class="msg-layout">
 
-          <!-- ════ PANEL IZQUIERDO: bandeja de entrada ════ -->
+          <!-- ════ COLUMNA IZQUIERDA: búsqueda + lista ════ -->
           <aside class="msg-inbox">
 
-            <!-- Tabs de filtro por grado -->
-            <div class="msg-filter-tabs">
-              <!-- "Todos" siempre presente -->
-              <button class="msg-tab" [class.active]="filtroGradoMsg() === ''"
-                      (click)="filtroGradoMsg.set('')">Todos</button>
-              <!-- Un tab por cada grado encontrado en los mensajes -->
-              @for (g of gradosMensajes(); track g) {
-                <button class="msg-tab" [class.active]="filtroGradoMsg() === g"
-                        (click)="filtroGradoMsg.set(g)">
-                  <!-- Abreviamos el nombre del grado para que quepa en el tab -->
-                  {{ g.replace('Secundaria','Sec').replace('Primaria','Prim') }}
+            <!-- Barra de búsqueda -->
+            <div class="msg-search-bar">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input class="msg-search-input"
+                     type="text"
+                     placeholder="Buscar por Padre, Alumno o Salón..."
+                     [ngModel]="busquedaMsg()"
+                     (ngModelChange)="busquedaMsg.set($event)"/>
+              @if (busquedaMsg()) {
+                <button class="msg-search-clear" (click)="busquedaMsg.set('')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
                 </button>
               }
             </div>
 
-            <!-- Lista de mensajes filtrados -->
+            <!-- Botones: Actualizar + Nuevo Chat -->
+            <div class="msg-new-btn-wrap">
+              <button class="msg-btn-reload" (click)="cargarMensajes()" title="Actualizar bandeja">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="23 4 23 10 17 10"/>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                </svg>
+                Actualizar bandeja
+              </button>
+              <button class="msg-btn-nuevo-chat" (click)="abrirModalNuevoChat()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Nuevo chat
+              </button>
+            </div>
+
+            <!-- Lista de conversaciones -->
             <div class="msg-list">
               @if (mensajesFiltrados().length === 0) {
-                <p class="msg-empty-inbox">No hay mensajes.</p>
+                <p class="msg-empty-inbox">Sin resultados.</p>
               }
               @for (m of mensajesFiltrados(); track m.id) {
-                <!--
-                  Clase 'unread'  → mensaje aún no leído (punto azul + fondo levemente resaltado)
-                  Clase 'activo'  → mensaje seleccionado actualmente en el panel derecho
-                -->
                 <div class="msg-item"
                      [class.unread]="!m.leido"
                      [class.activo]="mensajeActivo()?.id === m.id"
                      (click)="abrirMensaje(m.id)">
 
-                  <!-- Indicador de no leído (punto) -->
-                  <div class="msg-unread-dot" [class.visible]="!m.leido"></div>
+                  <!-- Avatar con iniciales del padre -->
+                  <div class="msg-avatar"
+                       [style.background]="'#' + (m.nombrePadre.charCodeAt(0) % 6 === 0 ? '4361ee' : m.nombrePadre.charCodeAt(0) % 6 === 1 ? '06d6a0' : m.nombrePadre.charCodeAt(0) % 6 === 2 ? 'ef476f' : m.nombrePadre.charCodeAt(0) % 6 === 3 ? 'f4a261' : m.nombrePadre.charCodeAt(0) % 6 === 4 ? '7209b7' : 'f72585')">
+                    {{ m.nombrePadre.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase() }}
+                  </div>
 
                   <div class="msg-item-body">
                     <div class="msg-item-top">
-                      <!-- Nombre del padre remitente -->
                       <span class="msg-item-padre">{{ m.nombrePadre }}</span>
-                      <!-- Tiempo relativo (hace 2h, hace 3 días…) -->
                       <span class="msg-item-time">{{ tiempoRelativo(m.fechaEnvio) }}</span>
                     </div>
-                    <!-- Asunto del mensaje -->
-                    <p class="msg-item-asunto">{{ m.asunto }}</p>
-                    <div class="msg-item-meta">
-                      <!-- Alumno relacionado (si lo hay) -->
-                      @if (m.nombreAlumno) {
-                        <span class="msg-item-alumno">{{ m.nombreAlumno }}</span>
-                      }
-                      <!-- Badge del tipo: justificante / consulta / otro -->
-                      <span class="msg-tipo-badge" [attr.data-tipo]="m.tipo">
-                        @if (m.tipo === 'justificante') { Justificante }
-                        @else if (m.tipo === 'consulta') { Consulta }
-                        @else { Otro }
-                      </span>
-                    </div>
+                    @if (m.nombreAlumno) {
+                      <div class="msg-item-apoderado">
+                        Apoderado de: {{ m.nombreAlumno }}
+                        @if (m.grado) {
+                          ({{ m.grado.replace('Secundaria','').replace('Primaria','').trim() }}{{ m.seccion }})
+                        }
+                      </div>
+                    }
+                    <p class="msg-item-preview">{{ m.ultimaRespuesta }}</p>
                   </div>
+
+                  <!-- Badge de no leídos si hay respuestas nuevas -->
+                  @if (!m.leido && m.cantRespuestas > 0) {
+                    <span class="msg-unread-badge">{{ m.cantRespuestas }}</span>
+                  }
                 </div>
               }
             </div>
           </aside>
 
-          <!-- ════ PANEL DERECHO: detalle + hilo de conversación ════ -->
-          <section class="msg-detail">
+          <!-- ════ PANEL CENTRAL: hilo de chat ════ -->
+          <section class="msg-chat" [class.has-context]="mostrarContexto()">
 
             @if (!mensajeActivo()) {
-              <!-- Estado vacío: ningún mensaje seleccionado -->
               <div class="msg-detail-empty">
                 <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
                   <rect x="2" y="4" width="20" height="16" rx="2"/>
@@ -1988,84 +2095,291 @@
             }
 
             @if (mensajeActivo(); as msg) {
-              <!-- ── Encabezado del mensaje ── -->
-              <div class="msg-detail-header">
-                <div class="msg-detail-meta">
-                  <!-- Remitente y alumno -->
-                  <div class="msg-detail-from">
-                    <span class="msg-detail-label">De:</span>
-                    <strong>{{ msg.nombrePadre }}</strong>
-                    @if (msg.nombreAlumno) {
-                      <span class="msg-detail-sep">·</span>
-                      <span class="msg-detail-alumno">Alumno: {{ msg.nombreAlumno }}</span>
-                    }
+
+              <!-- Cabecera del chat -->
+              <div class="msg-chat-header">
+                <div class="msg-chat-who">
+                  <div class="msg-avatar msg-avatar-lg"
+                       [style.background]="'#' + (msg.nombrePadre.charCodeAt(0) % 6 === 0 ? '4361ee' : msg.nombrePadre.charCodeAt(0) % 6 === 1 ? '06d6a0' : msg.nombrePadre.charCodeAt(0) % 6 === 2 ? 'ef476f' : msg.nombrePadre.charCodeAt(0) % 6 === 3 ? 'f4a261' : msg.nombrePadre.charCodeAt(0) % 6 === 4 ? '7209b7' : 'f72585')">
+                    {{ msg.nombrePadre.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase() }}
                   </div>
-                  <!-- Curso y grado -->
-                  @if (msg.curso) {
-                    <div class="msg-detail-curso">
-                      <span class="msg-detail-label">Curso:</span>
-                      {{ msg.curso }}
-                      @if (msg.grado) { · {{ msg.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ msg.seccion }} }
+                  <div>
+                    <div class="msg-chat-nombre">{{ msg.nombrePadre }}</div>
+                    <div class="msg-chat-rol">
+                      Padre de Familia / Apoderado
+                      @if (msg.curso) {
+                        <span class="msg-curso-pill">{{ msg.curso }}</span>
+                      }
                     </div>
-                  }
-                  <!-- Fecha y tipo -->
-                  <div class="msg-detail-fecha-row">
-                    <span class="msg-detail-label">Fecha:</span>
-                    <span>{{ msg.fechaEnvio }}</span>
-                    <span class="msg-tipo-badge" [attr.data-tipo]="msg.tipo" style="margin-left:0.5rem">
-                      @if (msg.tipo === 'justificante') { Justificante médico }
-                      @else if (msg.tipo === 'consulta') { Consulta }
-                      @else { Otro }
-                    </span>
                   </div>
                 </div>
-                <!-- Asunto destacado -->
-                <h3 class="msg-detail-asunto">{{ msg.asunto }}</h3>
+                <div class="msg-chat-actions">
+                  @if (msg.idAlumno) {
+                    <button class="msg-btn-ficha">Ver Ficha del Alumno</button>
+                    <button class="msg-btn-contexto"
+                            [class.active]="mostrarContexto()"
+                            (click)="toggleContexto()">
+                      @if (mostrarContexto()) {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                        Contexto
+                      } @else {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                        Contexto
+                      }
+                    </button>
+                  }
+                </div>
               </div>
 
-              <!-- ── Cuerpo del mensaje original ── -->
-              <div class="msg-detail-cuerpo">{{ msg.cuerpo }}</div>
+              <!-- Área del hilo de mensajes -->
+              <div class="msg-chat-thread">
 
-              <!-- ── Hilo de respuestas ── -->
-              @if (msg.respuestas.length > 0) {
-                <div class="msg-thread">
-                  <span class="msg-thread-title">Respuestas</span>
-                  @for (r of msg.respuestas; track r.id) {
-                    <!--
-                      'docente'  → mensaje enviado por el maestro (derecha, azul)
-                      'padre'    → respuesta del padre (izquierda, gris)
-                    -->
-                    <div class="msg-bubble" [class.docente]="r.esMaestro" [class.padre]="!r.esMaestro">
-                      <div class="msg-bubble-author">{{ r.nombreAutor }}</div>
-                      <div class="msg-bubble-cuerpo">{{ r.cuerpo }}</div>
-                      <div class="msg-bubble-fecha">{{ r.fecha }}</div>
-                    </div>
-                  }
+                <!-- Mensaje original: clase según quién lo inició -->
+                <div class="msg-bubble" [class.docente]="msg.iniciadoPorDocente" [class.padre]="!msg.iniciadoPorDocente">
+                  <div class="msg-bubble-cuerpo">{{ msg.cuerpo }}</div>
+                  <div class="msg-bubble-fecha">{{ msg.fechaEnvio }}</div>
                 </div>
-              }
 
-              <!-- ── Formulario de respuesta ── -->
-              <div class="msg-reply-form">
-                <textarea class="msg-reply-input"
-                          placeholder="Escribe tu respuesta al padre de familia..."
-                          rows="3"
-                          [ngModel]="replyText()" (ngModelChange)="replyText.set($event)"
-                          [disabled]="enviandoReply()">
-                </textarea>
-                <div class="msg-reply-actions">
-                  <span class="msg-reply-hint">Presiona Enviar para que el padre reciba tu respuesta.</span>
-                  <button class="msg-reply-btn"
+                <!-- Respuestas del hilo -->
+                @for (r of msg.respuestas; track r.id) {
+                  <div class="msg-bubble" [class.docente]="r.esMaestro" [class.padre]="!r.esMaestro">
+                    <div class="msg-bubble-cuerpo">{{ r.cuerpo }}</div>
+                    <div class="msg-bubble-fecha">{{ r.fecha }}</div>
+                  </div>
+                }
+              </div>
+
+              <!-- Input de respuesta estilo chat -->
+              <div class="msg-reply-bar">
+                <input class="msg-reply-input-chat"
+                       type="text"
+                       placeholder="Escribe un mensaje..."
+                       [ngModel]="replyText()"
+                       (ngModelChange)="replyText.set($event)"
+                       (keyup.enter)="enviarRespuesta()"
+                       [disabled]="enviandoReply()"/>
+                <div class="msg-reply-bar-actions">
+                  <button class="msg-reply-icon-btn" title="Adjuntar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                    </svg>
+                  </button>
+                  <button class="msg-reply-icon-btn" title="Fecha">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                  </button>
+                  <button class="msg-reply-send"
                           (click)="enviarRespuesta()"
                           [disabled]="!replyText().trim() || enviandoReply()">
-                    @if (enviandoReply()) { Enviando… }
-                    @else { Enviar respuesta }
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
                   </button>
                 </div>
               </div>
             }
 
           </section>
+
+          <!-- ════ PANEL DERECHO: Contexto del Alumno ════ -->
+          @if (mostrarContexto() && mensajeActivo()?.idAlumno) {
+            <aside class="msg-context-panel">
+              @if (cargandoContexto()) {
+                <div class="msg-ctx-loading"><div class="pd-spinner"></div></div>
+              }
+              @if (contextoAlumno(); as ctx) {
+
+                <!-- Avatar y nombre del alumno -->
+                <div class="msg-ctx-header">
+                  <div class="msg-ctx-avatar">
+                    {{ ctx.nombre[0] }}{{ ctx.apellido[0] }}
+                  </div>
+                  <div class="msg-ctx-nombre">{{ ctx.nombre }} {{ ctx.apellido }}</div>
+                  <div class="msg-ctx-aula">{{ ctx.grado.replace('Secundaria','').replace('Primaria','').trim() }}{{ ctx.seccion }} · {{ ctx.curso }}</div>
+                </div>
+
+                <!-- Indicadores -->
+                <div class="msg-ctx-section-title">INDICADORES</div>
+                <div class="msg-ctx-indicators">
+                  <div class="msg-ctx-indicator" [class.warn]="ctx.tareasPendientes > 0">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                         [attr.stroke]="ctx.tareasPendientes > 0 ? '#f59e0b' : '#9ca3af'" stroke-width="2">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    @if (ctx.tareasPendientes > 0) {
+                      <span>{{ ctx.tareasPendientes }} Tarea{{ ctx.tareasPendientes > 1 ? 's' : '' }} pendiente{{ ctx.tareasPendientes > 1 ? 's' : '' }}</span>
+                    } @else {
+                      <span>Sin tareas pendientes</span>
+                    }
+                  </div>
+                  <div class="msg-ctx-indicator ok">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    <span>{{ pctAsistencia() }}% Asistencia</span>
+                  </div>
+                  <div class="msg-ctx-indicator">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2">
+                      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+                      <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <span>Promedio: {{ ctx.promedio }}</span>
+                  </div>
+                </div>
+
+                <!-- Acciones rápidas -->
+                <div class="msg-ctx-section-title">ACCIONES RÁPIDAS</div>
+                <div class="msg-ctx-actions">
+                  <button class="msg-ctx-action-btn">Enviar citación formal</button>
+                  <button class="msg-ctx-action-btn">Reportar inasistencia</button>
+                  <button class="msg-ctx-action-btn">Notificar bajo rendimiento</button>
+                  <button class="msg-ctx-action-btn">Confirmar recuperación</button>
+                </div>
+
+                <!-- Datos del alumno -->
+                <div class="msg-ctx-section-title">DATOS DEL ALUMNO</div>
+                <div class="msg-ctx-datos">
+                  <div class="msg-ctx-dato"><span>GRADO</span><strong>{{ ctx.grado.replace('Secundaria','').replace('Primaria','').trim() }}{{ ctx.seccion }}</strong></div>
+                  <div class="msg-ctx-dato"><span>SECCIÓN</span><strong>{{ ctx.seccion }}</strong></div>
+                  <div class="msg-ctx-dato"><span>APODERADO</span><strong>{{ ctx.nombrePadre }}</strong></div>
+                  <div class="msg-ctx-dato"><span>CORREO</span><strong>{{ ctx.emailPadre }}</strong></div>
+                </div>
+              }
+            </aside>
+          }
+
         </div><!-- /msg-layout -->
+
+        <!-- ══ MODAL: Nuevo Chat ══ -->
+        @if (modalNuevoChat()) {
+          <div class="nc-overlay" (click)="cerrarModalNuevoChat()"></div>
+          <div class="nc-modal" role="dialog" aria-modal="true" aria-labelledby="nc-title">
+
+            <!-- Cabecera del modal -->
+            <div class="nc-header">
+              <h3 class="nc-title" id="nc-title">Nuevo chat con apoderado</h3>
+              <button class="nc-close" (click)="cerrarModalNuevoChat()" aria-label="Cerrar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            @if (nuevoChatAlumnoSel() === null) {
+              <!-- PASO 1: seleccionar alumno -->
+              <div class="nc-body">
+
+                <!-- Filtros de grado / sección -->
+                <div class="nc-filters">
+                  <select class="nc-select"
+                          [ngModel]="nuevoChatGrado()"
+                          (ngModelChange)="nuevoChatGrado.set($event); nuevoChatSeccion.set('')">
+                    <option value="">Todos los grados</option>
+                    @for (g of gradosDisponibles(); track g) {
+                      <option [value]="g">{{ g }}</option>
+                    }
+                  </select>
+
+                  <select class="nc-select"
+                          [ngModel]="nuevoChatSeccion()"
+                          (ngModelChange)="nuevoChatSeccion.set($event)"
+                          [disabled]="!nuevoChatGrado()">
+                    <option value="">Todas las secciones</option>
+                    @for (s of seccionesDisponibles(); track s) {
+                      <option [value]="s">{{ s }}</option>
+                    }
+                  </select>
+
+                  <input class="nc-search"
+                         type="text"
+                         placeholder="Buscar alumno o apoderado..."
+                         [ngModel]="nuevoChatBusqueda()"
+                         (ngModelChange)="nuevoChatBusqueda.set($event)"/>
+                </div>
+
+                <!-- Lista de alumnos -->
+                @if (cargandoAlumnos()) {
+                  <div class="nc-loading">Cargando alumnos...</div>
+                } @else if (alumnosFiltradosModal().length === 0) {
+                  <div class="nc-empty">Sin alumnos que coincidan.</div>
+                } @else {
+                  <div class="nc-alumno-list">
+                    @for (a of alumnosFiltradosModal(); track a.idAlumno) {
+                      <button class="nc-alumno-item" (click)="seleccionarAlumnoModal(a)">
+                        <div class="nc-alumno-avatar"
+                             [style.background]="'#' + (a.nombreAlumno.charCodeAt(0) % 4 === 0 ? '4361ee' : a.nombreAlumno.charCodeAt(0) % 4 === 1 ? '06d6a0' : a.nombreAlumno.charCodeAt(0) % 4 === 2 ? 'ef476f' : 'f4a261')">
+                          {{ a.nombreAlumno.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase() }}
+                        </div>
+                        <div class="nc-alumno-info">
+                          <span class="nc-alumno-nombre">{{ a.nombreAlumno }}</span>
+                          <span class="nc-alumno-meta">{{ a.grado }} {{ a.seccion }} · {{ a.curso }}</span>
+                          <span class="nc-alumno-padre">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            {{ a.nombrePadre }}
+                          </span>
+                        </div>
+                        <svg class="nc-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+
+            } @else {
+              <!-- PASO 2: redactar mensaje -->
+              <div class="nc-body">
+
+                <!-- Alumno seleccionado (resumen) -->
+                <div class="nc-selected-alumno">
+                  <div class="nc-alumno-avatar sm"
+                       [style.background]="'#' + (nuevoChatAlumnoSel()!.nombreAlumno.charCodeAt(0) % 4 === 0 ? '4361ee' : nuevoChatAlumnoSel()!.nombreAlumno.charCodeAt(0) % 4 === 1 ? '06d6a0' : nuevoChatAlumnoSel()!.nombreAlumno.charCodeAt(0) % 4 === 2 ? 'ef476f' : 'f4a261')">
+                    {{ nuevoChatAlumnoSel()!.nombreAlumno.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase() }}
+                  </div>
+                  <div>
+                    <p class="nc-sel-nombre">{{ nuevoChatAlumnoSel()!.nombreAlumno }}</p>
+                    <p class="nc-sel-meta">{{ nuevoChatAlumnoSel()!.grado }} · Sec. {{ nuevoChatAlumnoSel()!.seccion }} · {{ nuevoChatAlumnoSel()!.curso }}</p>
+                    <p class="nc-sel-padre">Para: {{ nuevoChatAlumnoSel()!.nombrePadre }}</p>
+                  </div>
+                  <button class="nc-cambiar" (click)="nuevoChatAlumnoSel.set(null)">Cambiar</button>
+                </div>
+
+                <!-- Asunto -->
+                <div class="nc-field">
+                  <label class="nc-label">Asunto</label>
+                  <input class="nc-input"
+                         type="text"
+                         placeholder="Ej: Consulta sobre tarea de matemática"
+                         [ngModel]="nuevoChatAsunto()"
+                         (ngModelChange)="nuevoChatAsunto.set($event)"/>
+                </div>
+
+                <!-- Mensaje -->
+                <div class="nc-field">
+                  <label class="nc-label">Mensaje</label>
+                  <textarea class="nc-textarea"
+                            rows="5"
+                            placeholder="Escribe el mensaje que recibirá el apoderado..."
+                            [ngModel]="nuevoChatMensaje()"
+                            (ngModelChange)="nuevoChatMensaje.set($event)"></textarea>
+                </div>
+
+                <!-- Acciones -->
+                <div class="nc-actions">
+                  <button class="nc-btn-cancel" (click)="cerrarModalNuevoChat()">Cancelar</button>
+                  <button class="nc-btn-send"
+                          [disabled]="!nuevoChatAsunto().trim() || !nuevoChatMensaje().trim() || enviandoNuevoChat()"
+                          (click)="enviarNuevoChat()">
+                    @if (enviandoNuevoChat()) { Enviando... } @else { Iniciar chat }
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
 
       }<!-- /mensajes -->
 
@@ -2110,31 +2424,58 @@
               <!-- Tipo de evento -->
               <div class="com-form-group">
                 <label class="com-form-label">Tipo de evento <span class="com-req">*</span></label>
-                <select class="com-form-select"
-                        [ngModel]="formCom().tipo"
-                        (ngModelChange)="setFormCom('tipo', $event)">
-                  <option value="examen">Examen</option>
-                  <option value="actividad">Actividad en aula</option>
-                  <option value="reunion_padres">Reunión de padres</option>
-                  <option value="paseo">Paseo escolar</option>
-                  <option value="dia_festivo">Día festivo / No hay clases</option>
-                  <option value="general">General</option>
-                </select>
+                <div class="com-tipo-row">
+                  <select class="com-form-select"
+                          [ngModel]="formCom().tipo"
+                          (ngModelChange)="setFormCom('tipo', $event)">
+                    @for (t of tiposEvento(); track t.id) {
+                      <option [value]="t.nombre">{{ t.nombre }}</option>
+                    }
+                  </select>
+                  <button class="com-btn-new-tipo"
+                          type="button"
+                          title="Crear nuevo tipo de evento"
+                          (click)="setFormCom('mostrarNuevoTipo', !formCom().mostrarNuevoTipo)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                  </button>
+                </div>
+                @if (formCom().mostrarNuevoTipo) {
+                  <div class="com-nuevo-tipo-row">
+                    <input class="com-form-input"
+                           type="text"
+                           placeholder="Nombre del nuevo tipo..."
+                           [ngModel]="formCom().nuevoTipo"
+                           (ngModelChange)="setFormCom('nuevoTipo', $event)"
+                           maxlength="80"/>
+                    <button class="com-btn-save-tipo"
+                            type="button"
+                            [disabled]="!formCom().nuevoTipo.trim()"
+                            (click)="crearNuevoTipoEvento()">Guardar</button>
+                  </div>
+                }
               </div>
 
-              <!-- Grado destino -->
+              <!-- Grados destino (multi-selección con checkboxes) -->
               <div class="com-form-group">
-                <label class="com-form-label">¿Para qué grado?</label>
-                <select class="com-form-select"
-                        [ngModel]="formCom().idAula"
-                        (ngModelChange)="setFormCom('idAula', $event ? +$event : null)">
-                  <option [value]="null">Todos mis grados</option>
+                <label class="com-form-label">¿Para qué grados?</label>
+                <div class="com-aulas-check-list">
+                  <label class="com-aula-check-item">
+                    <input type="checkbox"
+                           [checked]="formCom().idAulas.length === 0"
+                           (change)="formCom().idAulas.length > 0 && resetIdAulas()"/>
+                    <span>Todos mis grados</span>
+                  </label>
                   @for (a of misAulas(); track a.id) {
-                    <option [value]="a.id">
-                      {{ a.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ a.seccion }}
-                    </option>
+                    <label class="com-aula-check-item">
+                      <input type="checkbox"
+                             [checked]="formCom().idAulas.includes(a.id)"
+                             (change)="toggleAulaFormCom(a.id)"/>
+                      <span>{{ a.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ a.seccion }}</span>
+                    </label>
                   }
-                </select>
+                </div>
               </div>
 
               <!-- Fecha del evento -->
@@ -2144,6 +2485,15 @@
                        type="date"
                        [ngModel]="formCom().fechaEvento"
                        (ngModelChange)="setFormCom('fechaEvento', $event)"/>
+              </div>
+
+              <!-- Hora del evento -->
+              <div class="com-form-group">
+                <label class="com-form-label">Hora <span class="com-optional">(opcional)</span></label>
+                <input class="com-form-input"
+                       type="time"
+                       [ngModel]="formCom().horaEvento"
+                       (ngModelChange)="setFormCom('horaEvento', $event)"/>
               </div>
 
               <!-- Descripción -->
@@ -2163,7 +2513,7 @@
               <button class="com-btn-cancel" (click)="toggleFormCom()">Cancelar</button>
               <button class="com-btn-submit"
                       (click)="enviarComunicado()"
-                      [disabled]="!formCom().titulo.trim() || enviandoCom()">
+                      [disabled]="!formCom().titulo.trim() || !formCom().tipo || enviandoCom()">
                 @if (enviandoCom()) { Publicando… }
                 @else { Publicar comunicado }
               </button>
@@ -2179,14 +2529,15 @@
           <div class="pd-error-msg">{{ errorComunicados() }}</div>
         }
 
-        <!-- Tabs de filtro por grado -->
+        <!-- Tabs de filtro por grado: muestra TODOS los grados asignados al docente -->
         <div class="com-filter-bar">
           <button class="com-tab" [class.active]="filtroGradoCom() === ''"
                   (click)="filtroGradoCom.set('')">Todos</button>
-          @for (g of gradosComunicados(); track g) {
-            <button class="com-tab" [class.active]="filtroGradoCom() === g"
-                    (click)="filtroGradoCom.set(g)">
-              {{ g.replace('Secundaria','Sec').replace('Primaria','Prim') }}
+          @for (a of misAulas(); track a.id) {
+            <button class="com-tab"
+                    [class.active]="filtroGradoCom() === a.grado + ' ' + a.seccion"
+                    (click)="filtroGradoCom.set(a.grado + ' ' + a.seccion)">
+              {{ a.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ a.seccion }}
             </button>
           }
           <!-- Botón recargar -->
@@ -2237,14 +2588,16 @@
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                       </svg>
-                      @if (c.idAula === null) {
+                      @if (c.idAulas.length === 0) {
                         Todos los grados
-                      } @else {
+                      } @else if (c.idAulas.length === 1) {
                         {{ c.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ c.seccion }}
+                      } @else {
+                        {{ c.idAulas.length }} grados
                       }
                     </span>
 
-                    <!-- Fecha del evento (si tiene) -->
+                    <!-- Fecha + hora del evento (si tiene) -->
                     @if (c.fechaEvento) {
                       <span class="com-card-fecha-evento">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2252,7 +2605,7 @@
                           <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
                           <line x1="3" y1="10" x2="21" y2="10"/>
                         </svg>
-                        {{ c.fechaEvento }}
+                        {{ c.fechaEvento }}{{ c.horaEvento ? ' · ' + c.horaEvento : '' }}
                       </span>
                     }
 
@@ -2290,14 +2643,11 @@
 
     </main>
 
+
     <!-- ── Right Sidebar ── -->
-    @if (activeSection() !== 'calendario') {
-    <aside class="pd-sidebar-right">
+    <aside class="pd-sidebar-right" [class.pd-sidebar-right--hidden]="activeSection() === 'refuerzos' || activeSection() === 'mensajes' || activeSection() === 'calendario'">
       <div class="pd-review-header">
-        <h3 class="pd-review-title">POR REVISAR</h3>
-        @if (pendientes().length > 0) {
-          <span class="pd-review-count">{{ pendientes().length }}</span>
-        }
+        <h3 class="pd-review-title">Pendientes</h3>
       </div>
 
       @if (pendientes().length === 0) {
@@ -2311,56 +2661,37 @@
       }
 
       @for (item of pendientes(); track item.idAulaCurso + item.titulo) {
-        <button class="pd-review-item" (click)="irAPendiente(item)">
-
-          <!-- Badge de tipo -->
-          <div class="pd-review-top">
-            <span class="pd-review-tipo"
-                  [class.pd-tipo-tarea]="item.tipo === 'tarea'"
-                  [class.pd-tipo-examen]="item.tipo === 'examen'">
-              {{ item.tipo === 'tarea' ? 'Tarea' : 'Examen' }}
-            </span>
-            <span class="pd-review-grado">{{ item.grado | slice:0:3 }} {{ item.seccion }}</span>
-          </div>
-
-          <!-- Curso + título -->
-          <div class="pd-review-curso">{{ item.curso }}</div>
-          <div class="pd-review-tarea">{{ item.titulo }}</div>
-
-          <!-- Contador de sin calificar -->
-          <div class="pd-review-footer">
-            <span class="pd-review-sin-cal">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
+        <div class="pd-pend-item">
+          <div class="pd-pend-row">
+            <!-- Checkbox visual -->
+            <span class="pd-pend-check">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
               </svg>
-              {{ item.sinCalificar }} sin calificar
             </span>
-            <span class="pd-review-de">de {{ item.totalAlumnos }}</span>
+
+            <!-- Texto -->
+            <div class="pd-pend-text">
+              <span class="pd-pend-desc">{{ item.titulo }}</span>
+              <span class="pd-pend-context">({{ item.sinCalificar }} entregas) · {{ item.curso }}</span>
+            </div>
+
+            <!-- Badge de prioridad -->
+            <span class="pd-pend-prio" [ngClass]="prioridadPendiente(item).css">
+              {{ prioridadPendiente(item).label }}
+            </span>
           </div>
 
-          <!-- Flecha de navegación -->
-          <svg class="pd-review-arrow" width="12" height="12" viewBox="0 0 24 24"
-               fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-
-        </button>
-      }
-
-      <!-- Recargar pendientes -->
-      @if (pendientes().length > 0) {
-        <button class="pd-review-refresh" (click)="cargarPendientes()" title="Actualizar">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="23 4 23 10 17 10"/>
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-          </svg>
-          Actualizar
-        </button>
+          <!-- Ir a la actividad -->
+          <button class="pd-pend-goto" (click)="irAPendiente(item)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+            Ir a actividad
+          </button>
+        </div>
       }
     </aside>
-    }
 
   </div>
 </div>

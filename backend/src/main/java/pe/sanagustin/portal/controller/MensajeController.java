@@ -6,12 +6,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import pe.sanagustin.portal.dto.AlumnoContextoDto;
+import pe.sanagustin.portal.dto.AlumnoDisponibleDto;
 import pe.sanagustin.portal.dto.MensajeDetalleDto;
 import pe.sanagustin.portal.dto.MensajeResumenDto;
+import pe.sanagustin.portal.dto.NuevoChatRequest;
 import pe.sanagustin.portal.dto.ResponderRequest;
 import pe.sanagustin.portal.service.MensajeService;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Endpoints de mensajería para el portal docente.
@@ -62,5 +66,41 @@ public class MensajeController {
             @AuthenticationPrincipal UserDetails userDetails) {
         mensajeService.responder(id, request.getCuerpo(), userDetails.getUsername());
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * GET /api/portal/docente/mensajes/alumno-contexto/{idAlumno}
+     * Devuelve el resumen del alumno para el panel lateral de mensajes.
+     */
+    @GetMapping("/alumno-contexto/{idAlumno}")
+    public ResponseEntity<AlumnoContextoDto> getContextoAlumno(
+            @PathVariable long idAlumno,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                mensajeService.getContextoAlumno(idAlumno, userDetails.getUsername()));
+    }
+
+    /**
+     * GET /api/portal/docente/mensajes/alumnos-disponibles
+     * Lista de alumnos que el docente puede contactar (tienen padre y están en sus aulas).
+     */
+    @GetMapping("/alumnos-disponibles")
+    public ResponseEntity<List<AlumnoDisponibleDto>> getAlumnosDisponibles(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                mensajeService.getAlumnosDisponibles(userDetails.getUsername()));
+    }
+
+    /**
+     * POST /api/portal/docente/mensajes/iniciar
+     * El docente inicia un nuevo hilo de mensajes con el padre de un alumno.
+     * Devuelve el id del mensaje creado.
+     */
+    @PostMapping("/iniciar")
+    public ResponseEntity<Map<String, Long>> iniciarChat(
+            @Valid @RequestBody NuevoChatRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        long id = mensajeService.iniciarChat(request, userDetails.getUsername());
+        return ResponseEntity.ok(Map.of("id", id));
     }
 }
