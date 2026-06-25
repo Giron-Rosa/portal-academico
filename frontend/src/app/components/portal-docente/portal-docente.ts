@@ -104,6 +104,15 @@ export interface Pendiente {
   totalAlumnos: number;
 }
 
+export interface AlertaCritica {
+  idAlumno: number;
+  nombre: string;
+  descripcion: string;
+  tipo: string;    // 'rendimiento' | 'asistencia'
+  inicial: string;
+  color: string;
+}
+
 /* ── Interfaces de detalle de curso ── */
 
 /** Material didáctico de una semana/clase */
@@ -329,7 +338,7 @@ export class PortalDocente {
   private http   = inject(HttpClient);
 
   activeSection = signal('inicio');
-  activeGrade   = signal('Todos');
+  activeGrade   = signal('Clases de Hoy');
   selectedYear  = signal('2026');
   dropdownOpen  = signal(false);
   cargando      = signal(false);
@@ -349,7 +358,8 @@ export class PortalDocente {
   years = ['2024', '2025', '2026'];
 
   cursos       = signal<Curso[]>([]);
-  pendientes   = signal<Pendiente[]>([]);
+  pendientes       = signal<Pendiente[]>([]);
+  alertasCriticas  = signal<AlertaCritica[]>([]);
 
   /* ── Signals de mensajería ── */
 
@@ -569,14 +579,31 @@ export class PortalDocente {
     { num: 5, corto: 'Vie', largo: 'Viernes'    },
   ];
 
+  clasesDeHoy = computed(() => {
+    const diaHoy = this.hoyDia();
+    if (diaHoy === 0) return [];
+    const bloques = this.horario().filter(h => h.dia === diaHoy);
+    const seen = new Set<string>();
+    const result: Curso[] = [];
+    for (const b of bloques) {
+      const key = `${b.curso}|${b.grado}|${b.seccion}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const curso = this.cursos().find(c =>
+        c.nombre === b.curso && c.grado === b.grado && c.seccion === b.seccion);
+      if (curso) result.push(curso);
+    }
+    return result;
+  });
+
   grades = computed(() => {
-    const base   = ['Todos'];
+    const base   = ['Clases de Hoy'];
     const unique = [...new Set(this.cursos().map(c => c.grado))];
     return [...base, ...unique];
   });
 
   filteredCursos = computed(() => {
-    if (this.activeGrade() === 'Todos') return this.cursos();
+    if (this.activeGrade() === 'Clases de Hoy') return this.clasesDeHoy();
     return this.cursos().filter(c => c.grado === this.activeGrade());
   });
 
@@ -1750,6 +1777,13 @@ export class PortalDocente {
   }
 
   /* ── Métodos de Pendientes ── */
+
+  prioridadPendiente(item: Pendiente): { label: string; css: string } {
+    const ratio = item.sinCalificar / (item.totalAlumnos || 1);
+    if (ratio > 0.5) return { label: 'ALTA', css: 'pd-prio-alta' };
+    if (ratio > 0.2) return { label: 'MEDIA', css: 'pd-prio-media' };
+    return { label: 'BAJA', css: 'pd-prio-baja' };
+  }
 
   cargarPendientes() {
     const token = this.auth.getToken();
