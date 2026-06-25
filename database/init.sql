@@ -194,6 +194,29 @@ CREATE TABLE horarios (
 );
 
 -- ============================================================
+-- TABLA: reservas_espacio
+-- Reservas de espacios (laboratorios, auditorios, salas) que
+-- realiza un docente para una clase, reunión de padres, etc.
+-- No se pueden superponer reservas del mismo espacio en el mismo
+-- horario. Pueden eliminarse por el docente que las creó.
+-- ============================================================
+
+CREATE TABLE reservas_espacio (
+    id_reserva     SERIAL       PRIMARY KEY,
+    id_maestro     INT          NOT NULL REFERENCES maestros(id_maestro) ON DELETE CASCADE,
+    espacio        VARCHAR(100) NOT NULL,
+    fecha          DATE         NOT NULL,
+    hora_inicio    TIME         NOT NULL,
+    hora_fin       TIME         NOT NULL,
+    id_aula_curso  INT          REFERENCES aula_cursos(id_aula_curso) ON DELETE SET NULL,
+    proposito      TEXT,
+    fecha_creacion TIMESTAMP    NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_reserva_horario CHECK (hora_fin > hora_inicio)
+);
+
+CREATE INDEX idx_reservas_espacio_fecha ON reservas_espacio (espacio, fecha);
+
+-- ============================================================
 -- TABLA: comunicados  (anuncios/eventos del docente por grado)
 -- El docente crea un comunicado que puede ser para una aula
 -- específica (id_aula) o para todas sus aulas (id_aula = NULL).

@@ -101,6 +101,33 @@ export interface ClaseHorario {
   curso:      string;
   grado:      string;
   seccion:    string;
+  idAulaCurso?: number;
+}
+
+/** Reserva de espacio (aula, laboratorio, etc.) creada por un docente */
+export interface Reserva {
+  id:             number;
+  idMaestro:      number;
+  espacio:        string;
+  fecha:          string;      // "YYYY-MM-DD"
+  horaInicio:     string;      // "HH:mm"
+  horaFin:        string;      // "HH:mm"
+  idAulaCurso:    number | null;
+  curso:          string | null;
+  grado:          string | null;
+  seccion:        string | null;
+  proposito:      string;
+  fechaCreacion:  string;
+}
+
+/** Estado del formulario de nueva reserva de espacio */
+export interface FormReserva {
+  espacio:     string;
+  fecha:       string;
+  horaInicio:  string;
+  horaFin:     string;
+  idAulaCurso: number | null;
+  proposito:   string;
 }
 
 /**
@@ -118,6 +145,15 @@ const CURSO_COLORS: Record<string, string> = {
   'personal social':                '#2ec4b6',
   'religión':                       '#8d99ae',
 };
+
+/** Espacios que se pueden reservar en el calendario */
+const ESPACIOS = [
+  'Lab. Ciencias A',
+  'Lab. Robótica',
+  'Auditorio Principal',
+  'Sala Multimedia Premium',
+  'Aula Virtual (Zoom)',
+];
 
 /** Hora en la que empieza la grilla del calendario (7:00 AM) */
 const CAL_HORA_INICIO = 7;
@@ -383,6 +419,10 @@ export class PortalDocente {
   private auth   = inject(AuthService);
   private http   = inject(HttpClient);
 
+  // Exponemos constantes usadas en el template
+  calPxPorHora = CAL_PX_POR_HORA;
+  ESPACIOS     = ESPACIOS;
+
   activeSection = signal('inicio');
   activeGrade   = signal('Clases de Hoy');
   selectedYear  = signal('2026');
@@ -638,6 +678,29 @@ export class PortalDocente {
   cargandoHorario  = signal(false);
   errorHorario     = signal('');
 
+  /** Tab activa dentro de la sección calendario: 'mis-clases' | 'reservas' */
+  calendarioTab = signal('mis-clases');
+
+  /** Lista de reservas de espacio del docente */
+  reservas = signal<Reserva[]>([]);
+  cargandoReservas = signal(false);
+  errorReservas = signal('');
+
+  /** Controla si el modal de Nueva Reserva está visible */
+  modalReserva = signal(false);
+  reservaEditando = signal<number | null>(null);
+  enviandoReserva = signal(false);
+  errorDisponibilidad = signal('');
+  okDisponibilidad = signal(false);
+  formReserva = signal<FormReserva>({
+    espacio:     ESPACIOS[0],
+    fecha:       '',
+    horaInicio:  '13:00',
+    horaFin:     '15:00',
+    idAulaCurso: null,
+    proposito:   '',
+  });
+
   /**
    * Fecha del Lunes de la semana actualmente visible.
    * Inicia en el Lunes de la semana actual.
@@ -721,6 +784,42 @@ export class PortalDocente {
     this.cargarMisAulas();
     this.cargarTiposEvento();
     this.cargarPendientes();
+    this.cargarReservas();
+  }
+
+  /* ══════════════════════════════════════════
+     RESERVAS DE ESPACIO
+  ══════════════════════════════════════════ */
+
+  /** Reservas de la semana actualmente visible (por rango de fechas) */
+  reservasForSemana = computed(() => {
+    const inicio = this.semanaInicio();
+    const fin = new Date(inicio);
+    fin.setDate(fin.getDate() + 4);
+    const inicioStr = this.formatISODate(inicio);
+    const finStr = this.formatISODate(fin);
+    return this.reservas().filter(r => r.fecha >= inicioStr && r.fecha <= finStr);
+  });
+
+  /** Reservas que caen en un día concreto (1-5) de la semana visible */
+  reservasDelDia(dia: number): Reserva[] {
+    const fecha = this.fechaDeDia(dia);
+    return this.reservasForSemana().filter(r => r.fecha === fecha);
+  }
+
+  /** Fecha ISO para un día de la semana visible (1=Lunes) */
+  fechaDeDia(dia: number): string {
+    const d = new Date(this.semanaInicio());
+    d.setDate(d.getDate() + (dia - 1));
+    return this.formatISODate(d);
+  }
+
+  /** Formato YYYY-MM-DD de una fecha local */
+  formatISODate(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   /* ══════════════════════════════════════════
@@ -794,6 +893,211 @@ export class PortalDocente {
    */
   cursoColor(curso: string): string {
     return CURSO_COLORS[curso.toLowerCase()] ?? '#94a3b8';
+  }
+
+  /* ══════════════════════════════════════════
+     RESERVAS DE ESPACIO — métodos
+  ══════════════════════════════════════════ */
+
+  /** Abre/cierra el modal de reserva y resetea el formulario */
+  toggleModalReserva(abrir: boolean, dia?: number, hora?: string, reserva?: Reserva) {
+    if (abrir) {
+      if (reserva) {
+        this.reservaEditando.set(reserva.id);
+        this.formReserva.set({
+          espacio:     reserva.espacio,
+          fecha:       reserva.fecha,
+          horaInicio:  reserva.horaInicio,
+          horaFin:     reserva.horaFin,
+          idAulaCurso: reserva.idAulaCurso,
+          proposito:   reserva.proposito || '',
+        });
+      } else {
+        this.reservaEditando.set(null);
+        const fecha = dia ? this.fechaDeDia(dia) : this.formatISODate(new Date());
+        const hIni = hora ? `${hora}:00` : '13:00';
+        const hFin = hora ? `${(Number(hora) + 1).toString().padStart(2, '0')}:00` : '15:00';
+        this.formReserva.set({
+          espacio:     ESPACIOS[0],
+          fecha,
+          horaInicio:  hIni,
+          horaFin:     hFin,
+          idAulaCurso: null,
+          proposito:   '',
+        });
+      }
+      this.errorDisponibilidad.set('');
+      this.okDisponibilidad.set(false);
+    } else {
+      this.reservaEditando.set(null);
+    }
+    this.modalReserva.set(abrir);
+  }
+
+  /** Abre el modal desde una celda vacía (dia + hora) */
+  abrirReservaEnHora(dia: number, hora: string) {
+    this.toggleModalReserva(true, dia, hora);
+  }
+
+  /** Abre el modal para editar una reserva existente */
+  editarReserva(reserva: Reserva) {
+    this.toggleModalReserva(true, undefined, undefined, reserva);
+  }
+
+  /** Actualiza un campo del formulario de reserva */
+  setFormReserva(campo: keyof FormReserva, valor: string | number | null) {
+    this.formReserva.update(f => ({ ...f, [campo]: valor }));
+    this.errorDisponibilidad.set('');
+    this.okDisponibilidad.set(false);
+  }
+
+  /** Carga todas las reservas del docente autenticado */
+  cargarReservas() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoReservas.set(true);
+    this.errorReservas.set('');
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Reserva[]>('http://localhost:8080/api/portal/docente/reservas', { headers })
+      .subscribe({
+        next: data => { this.reservas.set(data); this.cargandoReservas.set(false); },
+        error: () => { this.errorReservas.set('No se pudieron cargar las reservas.'); this.cargandoReservas.set(false); },
+      });
+  }
+
+  /** Verifica disponibilidad del espacio en el horario del formulario */
+  verificarDisponibilidad() {
+    const f = this.formReserva();
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.errorDisponibilidad.set('');
+    this.okDisponibilidad.set(false);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      espacio: f.espacio,
+      fecha: f.fecha,
+      horaInicio: f.horaInicio,
+      horaFin: f.horaFin,
+    };
+    this.http.post<{ disponible: boolean; mensaje: string }>(
+      'http://localhost:8080/api/portal/docente/reservas/verificar',
+      body, { headers }
+    ).subscribe({
+      next: res => {
+        if (res.disponible) {
+          this.okDisponibilidad.set(true);
+          this.errorDisponibilidad.set('');
+        } else {
+          this.errorDisponibilidad.set(res.mensaje || 'El espacio ya está reservado en ese horario.');
+        }
+      },
+      error: () => this.errorDisponibilidad.set('No se pudo verificar la disponibilidad.'),
+    });
+  }
+
+  /** Verifica si la reserva actual choca con una clase programada distinta a la seleccionada */
+  private tieneConflictoHorario(): boolean {
+    const f = this.formReserva();
+    if (!f.fecha || !f.horaInicio || !f.horaFin) return false;
+
+    const dia = new Date(f.fecha).getUTCDay(); // 1=Lunes … 5=Viernes
+    if (dia === 0 || dia === 6) return false;
+
+    const toMin = (h: string) => {
+      const [hh, mm] = h.split(':').map(Number);
+      return hh * 60 + mm;
+    };
+
+    const ini = toMin(f.horaInicio);
+    const fin = toMin(f.horaFin);
+
+    const clasesDelDia = this.horario().filter(c => c.dia === dia);
+    const claseEnHorario = clasesDelDia.find(c => {
+      const cIni = toMin(c.horaInicio);
+      const cFin = toMin(c.horaFin);
+      return cIni < fin && cFin > ini;
+    });
+
+    if (!claseEnHorario) return false;
+    return f.idAulaCurso !== claseEnHorario.idAulaCurso;
+  }
+
+  /** Crea o actualiza la reserva en el backend */
+  guardarReserva() {
+    const f = this.formReserva();
+    if (!f.espacio || !f.fecha || !f.horaInicio || !f.horaFin) return;
+
+    this.errorDisponibilidad.set('');
+    if (this.tieneConflictoHorario()) {
+      this.errorDisponibilidad.set('No puedes reservar en este horario porque tienes clase programada con otro grado/sección.');
+      return;
+    }
+
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoReserva.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      espacio: f.espacio,
+      fecha: f.fecha,
+      horaInicio: f.horaInicio,
+      horaFin: f.horaFin,
+      idAulaCurso: f.idAulaCurso,
+      proposito: f.proposito?.trim() || null,
+    };
+
+    const handleError = (err: any) => {
+      this.enviandoReserva.set(false);
+      let msg = err?.error?.message || err?.message || 'El espacio ya está reservado en ese horario. Selecciona otra hora o espacio.';
+      if (err?.status === 401) {
+        msg = 'Tu sesión expiró. Por favor, cierra sesión y vuelve a ingresar.';
+      }
+      this.errorDisponibilidad.set(msg);
+    };
+
+    const idEdit = this.reservaEditando();
+    if (idEdit) {
+      this.http.put<Reserva>(`http://localhost:8080/api/portal/docente/reservas/${idEdit}`, body, { headers })
+        .subscribe({
+          next: () => {
+            this.modalReserva.set(false);
+            this.reservaEditando.set(null);
+            this.enviandoReserva.set(false);
+            this.cargarReservas();
+          },
+          error: handleError,
+        });
+    } else {
+      this.http.post<Reserva>('http://localhost:8080/api/portal/docente/reservas', body, { headers })
+        .subscribe({
+          next: () => {
+            this.modalReserva.set(false);
+            this.enviandoReserva.set(false);
+            this.cargarReservas();
+          },
+          error: handleError,
+        });
+    }
+  }
+
+  /** Anula la reserva que se está editando */
+  anularReserva() {
+    const id = this.reservaEditando();
+    if (id) {
+      this.eliminarReserva(id);
+      this.modalReserva.set(false);
+      this.reservaEditando.set(null);
+    }
+  }
+
+  /** Elimina una reserva propia del docente */
+  eliminarReserva(id: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.reservas.update(list => list.filter(r => r.id !== id));
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.delete(`http://localhost:8080/api/portal/docente/reservas/${id}`, { headers })
+      .subscribe({ error: () => this.cargarReservas() });
   }
 
   /* ══════════════════════════════════════════

@@ -75,7 +75,8 @@ public class DocenteService {
                        TO_CHAR(h.hora_fin,    'HH24:MI') AS hora_fin,
                        c.nombre   AS curso,
                        g.nombre   AS grado,
-                       s.nombre   AS seccion
+                       s.nombre   AS seccion,
+                       ac.id_aula_curso
                 FROM horarios              h
                 JOIN aula_cursos           ac  ON ac.id_aula_curso = h.id_aula_curso
                 JOIN cursos                c   ON c.id_curso       = ac.id_curso
@@ -106,7 +107,8 @@ public class DocenteService {
                             (String) r[2],  /* hora_fin    "HH:MM"               */
                             (String) r[3],  /* nombre del curso                  */
                             (String) r[4],  /* nombre del grado                  */
-                            (String) r[5]   /* letra de sección                  */
+                            (String) r[5],  /* letra de sección                  */
+                            r[6] != null ? ((Number) r[6]).longValue() : null
                     );
                 })
                 .toList();
