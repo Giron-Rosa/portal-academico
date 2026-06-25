@@ -386,6 +386,7 @@
   padding: 1.5rem 1.1rem;
   overflow-y: auto;
   flex-shrink: 0;
+  &.pd-sidebar-right--hidden { display: none; }
 }
 
 /* ── Header POR REVISAR ── */
@@ -1533,6 +1534,91 @@
   font-size: 0.68rem;
   color: #9ca3af;
   margin-top: 2px;
+}
+
+/* Fila tipo-evento: select + botón "+" */
+.com-tipo-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+
+  .com-form-select { flex: 1; }
+}
+
+/* Botón "+" junto al select de tipo */
+.com-btn-new-tipo {
+  width: 32px;
+  height: 34px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover { background: #e5e7eb; border-color: #9ca3af; }
+}
+
+/* Fila inline para escribir nuevo tipo */
+.com-nuevo-tipo-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  align-items: center;
+
+  input { flex: 1; }
+}
+
+/* Botón guardar nuevo tipo */
+.com-btn-save-tipo {
+  padding: 0.4rem 0.75rem;
+  background: #0d1b2a;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+
+  &:hover { background: #1a2e45; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+/* Lista de checkboxes para selección de grados */
+.com-aulas-check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fafafa;
+}
+
+.com-aula-check-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  color: #374151;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    accent-color: #0d1b2a;
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+  }
+
+  &:hover span { color: #0d1b2a; }
 }
 
 /* Responsivo: 1 columna en pantallas pequeñas */

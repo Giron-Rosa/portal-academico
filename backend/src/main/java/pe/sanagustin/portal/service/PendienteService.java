@@ -31,8 +31,8 @@ public class PendienteService {
         String sql = """
                 SELECT ac.id_aula_curso,
                        'tarea'                              AS tipo,
-                       a.grado || ' ' || a.nivel            AS grado,
-                       a.seccion,
+                       g.nombre                             AS grado,
+                       s.nombre                             AS seccion,
                        c.nombre                             AS curso,
                        t.titulo,
                        COUNT(nt.id_nota_tarea)
@@ -42,17 +42,19 @@ public class PendienteService {
                 FROM tareas_curso t
                 JOIN aula_cursos          ac ON ac.id_aula_curso = t.id_aula_curso
                 JOIN aulas                a  ON a.id_aula        = ac.id_aula
+                JOIN grados               g  ON g.id_grado       = a.id_grado
+                JOIN secciones            s  ON s.id_seccion     = a.id_seccion
                 JOIN cursos               c  ON c.id_curso       = ac.id_curso
                 JOIN docente_asignaciones da ON da.id_aula_curso = ac.id_aula_curso
                 JOIN maestros             m  ON m.id_maestro     = da.id_maestro
                 JOIN usuarios             u  ON u.id_usuario     = m.id_usuario
                 JOIN notas_tarea          nt ON nt.id_tarea       = t.id_tarea
                 WHERE u.codigo = :codigo AND da.activo = true
-                GROUP BY ac.id_aula_curso, a.grado, a.nivel, a.seccion,
+                GROUP BY ac.id_aula_curso, g.nombre, s.nombre,
                          c.nombre, t.id_tarea, t.titulo
                 HAVING COUNT(nt.id_nota_tarea)
                        FILTER (WHERE nt.entregado = true AND nt.nota IS NULL) > 0
-                ORDER BY a.grado, a.seccion, t.titulo
+                ORDER BY g.nombre, s.nombre, t.titulo
                 """;
 
         @SuppressWarnings("unchecked")
@@ -77,8 +79,8 @@ public class PendienteService {
         String sql = """
                 SELECT ac.id_aula_curso,
                        'examen'                             AS tipo,
-                       a.grado || ' ' || a.nivel            AS grado,
-                       a.seccion,
+                       g.nombre                             AS grado,
+                       s.nombre                             AS seccion,
                        c.nombre                             AS curso,
                        e.titulo,
                        COUNT(ne.id_nota_examen)
@@ -88,17 +90,19 @@ public class PendienteService {
                 FROM examenes_curso e
                 JOIN aula_cursos          ac ON ac.id_aula_curso = e.id_aula_curso
                 JOIN aulas                a  ON a.id_aula        = ac.id_aula
+                JOIN grados               g  ON g.id_grado       = a.id_grado
+                JOIN secciones            s  ON s.id_seccion     = a.id_seccion
                 JOIN cursos               c  ON c.id_curso       = ac.id_curso
                 JOIN docente_asignaciones da ON da.id_aula_curso = ac.id_aula_curso
                 JOIN maestros             m  ON m.id_maestro     = da.id_maestro
                 JOIN usuarios             u  ON u.id_usuario     = m.id_usuario
                 JOIN notas_examen         ne ON ne.id_examen      = e.id_examen
                 WHERE u.codigo = :codigo AND da.activo = true
-                GROUP BY ac.id_aula_curso, a.grado, a.nivel, a.seccion,
+                GROUP BY ac.id_aula_curso, g.nombre, s.nombre,
                          c.nombre, e.id_examen, e.titulo
                 HAVING COUNT(ne.id_nota_examen)
                        FILTER (WHERE ne.asistio = true AND ne.nota IS NULL) > 0
-                ORDER BY a.grado, a.seccion, e.titulo
+                ORDER BY g.nombre, s.nombre, e.titulo
                 """;
 
         @SuppressWarnings("unchecked")

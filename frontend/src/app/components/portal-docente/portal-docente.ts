@@ -281,26 +281,39 @@ export interface AulaSimple {
   seccion: string;
 }
 
+/** Tipo de evento disponible */
+export interface TipoEvento {
+  id: number;
+  nombre: string;
+  colorFondo: string;
+  colorTexto: string;
+}
+
 /** Comunicado creado por el docente */
 export interface Comunicado {
   id: number;
   titulo: string;
   descripcion: string | null;
-  tipo: string;           // 'examen' | 'actividad' | 'reunion_padres' | 'paseo' | 'dia_festivo' | 'general'
+  tipo: string;
   fechaEvento: string | null;   // "DD/MM/YYYY"
+  horaEvento: string | null;    // "HH:MM"
   fechaCreacion: string;        // "DD/MM/YYYY HH:MM"
-  grado: string;                // grado o "Todos los grados"
+  grado: string;                // primer grado o "Todos los grados"
   seccion: string | null;
   idAula: number | null;
+  idAulas: number[];            // lista de aulas destino
 }
 
 /** Estado local del formulario de nuevo comunicado */
 export interface FormComunicado {
   titulo: string;
   tipo: string;
-  idAula: number | null;   // null = todos los grados
+  idAulas: number[];     // vacío = todos los grados
   descripcion: string;
-  fechaEvento: string;     // "YYYY-MM-DD" (formato input[type=date])
+  fechaEvento: string;   // "YYYY-MM-DD"
+  horaEvento: string;    // "HH:MM"
+  nuevoTipo: string;     // nombre del tipo personalizado (si aplica)
+  mostrarNuevoTipo: boolean;
 }
 
 const CARD_COLORS = ['#dce8f7', '#fde8e8', '#d5e5f5', '#fdd8d8', '#e8f0fc', '#fce8e8', '#e8f7ec', '#fef9e0'];
@@ -495,24 +508,35 @@ export class PortalDocente {
   enviandoCom          = signal(false);
   /** Filtro de grado en la lista de comunicados ('' = Todos) */
   filtroGradoCom       = signal('');
+  /** Tipos de evento disponibles (cargados del backend) */
+  tiposEvento        = signal<TipoEvento[]>([]);
   /** Estado del formulario de nuevo comunicado */
   formCom = signal<FormComunicado>({
-    titulo: '', tipo: 'examen', idAula: null, descripcion: '', fechaEvento: ''
+    titulo: '', tipo: '', idAulas: [], descripcion: '',
+    fechaEvento: '', horaEvento: '', nuevoTipo: '', mostrarNuevoTipo: false
   });
 
   /** Grados únicos en los comunicados para los tabs de filtro */
   gradosComunicados = computed(() => {
-    const grados = this.comunicados()
-      .map(c => c.grado)
-      .filter(g => g !== 'Todos los grados');
-    return [...new Set(grados)];
+    const todosGrados = new Set<string>();
+    this.comunicados().forEach(c => {
+      if (c.grado && c.grado !== 'Todos los grados') todosGrados.add(c.grado);
+    });
+    return [...todosGrados].sort();
   });
 
-  /** Comunicados filtrados por grado seleccionado */
+  /** Comunicados filtrados por grado+sección seleccionado */
   comunicadosFiltrados = computed(() => {
     const f = this.filtroGradoCom();
     if (!f) return this.comunicados();
-    return this.comunicados().filter(c => c.grado === f || c.idAula === null);
+    const [grado, seccion] = f.split(' ', 2).concat(['', '']);
+    return this.comunicados().filter(c =>
+      c.idAulas.length === 0 ||
+      c.idAulas.some(idA => {
+        const aula = this.misAulas().find(a => a.id === idA);
+        return aula && aula.grado === grado && aula.seccion === seccion;
+      })
+    );
   });
 
   /* ── Signals del calendario ── */
@@ -586,6 +610,7 @@ export class PortalDocente {
     this.cargarMensajes();
     this.cargarComunicados();
     this.cargarMisAulas();
+    this.cargarTiposEvento();
     this.cargarPendientes();
   }
 
@@ -796,18 +821,62 @@ export class PortalDocente {
       .subscribe({ next: data => this.misAulas.set(data) });
   }
 
+  /** Carga los tipos de evento desde el backend */
+  cargarTiposEvento() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<TipoEvento[]>(
+      'http://localhost:8080/api/portal/docente/comunicados/tipos-evento', { headers }
+    ).subscribe({ next: data => this.tiposEvento.set(data) });
+  }
+
   /** Abre/cierra el formulario y lo resetea al abrir */
   toggleFormCom() {
     const abrir = !this.mostrarFormCom();
     if (abrir) {
-      this.formCom.set({ titulo: '', tipo: 'examen', idAula: null, descripcion: '', fechaEvento: '' });
+      const primerTipo = this.tiposEvento()[0]?.nombre ?? '';
+      this.formCom.set({
+        titulo: '', tipo: primerTipo, idAulas: [], descripcion: '',
+        fechaEvento: '', horaEvento: '', nuevoTipo: '', mostrarNuevoTipo: false
+      });
+      if (this.tiposEvento().length === 0) this.cargarTiposEvento();
     }
     this.mostrarFormCom.set(abrir);
   }
 
   /** Actualiza un campo del formulario de comunicado de forma reactiva */
-  setFormCom(campo: keyof FormComunicado, valor: string | number | null) {
+  setFormCom(campo: keyof FormComunicado, valor: string | number | boolean | null | number[]) {
     this.formCom.update(f => ({ ...f, [campo]: valor }));
+  }
+
+  /** Limpia la selección de aulas (Todos los grados) */
+  resetIdAulas() { this.formCom.update(f => ({ ...f, idAulas: [] })); }
+
+  /** Agrega o quita un aula del selector multi-grado */
+  toggleAulaFormCom(idAula: number) {
+    this.formCom.update(f => {
+      const ya = f.idAulas.includes(idAula);
+      return { ...f, idAulas: ya ? f.idAulas.filter(id => id !== idAula) : [...f.idAulas, idAula] };
+    });
+  }
+
+  /** Crea un tipo de evento personalizado y lo selecciona en el form */
+  crearNuevoTipoEvento() {
+    const nombre = this.formCom().nuevoTipo.trim();
+    if (!nombre) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    this.http.post<TipoEvento>(
+      'http://localhost:8080/api/portal/docente/comunicados/tipos-evento',
+      { nombre }, { headers }
+    ).subscribe({
+      next: nuevo => {
+        this.tiposEvento.update(t => [...t, nuevo]);
+        this.formCom.update(f => ({ ...f, tipo: nuevo.nombre, nuevoTipo: '', mostrarNuevoTipo: false }));
+      }
+    });
   }
 
   /**
@@ -825,18 +894,17 @@ export class PortalDocente {
     const body = {
       titulo:      f.titulo.trim(),
       tipo:        f.tipo,
-      idAula:      f.idAula,
+      idAulas:     f.idAulas.length > 0 ? f.idAulas : [],
       descripcion: f.descripcion.trim() || null,
       fechaEvento: f.fechaEvento || null,
+      horaEvento:  f.horaEvento  || null,
     };
     this.http.post<Comunicado>('http://localhost:8080/api/portal/docente/comunicados', body, { headers })
       .subscribe({
-        next: nuevo => {
-          /* Insertar al principio y reordenar por fecha_evento */
-          this.comunicados.update(lista => [nuevo, ...lista]);
+        next: () => {
           this.mostrarFormCom.set(false);
           this.enviandoCom.set(false);
-          this.cargarComunicados(); /* recargar para tener orden correcto del backend */
+          this.cargarComunicados();
         },
         error: () => { this.enviandoCom.set(false); },
       });
@@ -855,43 +923,19 @@ export class PortalDocente {
       .subscribe({ error: () => this.cargarComunicados() /* revertir si falla */ });
   }
 
-  /** Devuelve el color CSS del tipo de comunicado para el badge */
+  /** Devuelve el color de fondo del badge según tipos_evento */
   colorTipo(tipo: string): string {
-    const mapa: Record<string, string> = {
-      examen:          '#fee2e2',
-      actividad:       '#dbeafe',
-      reunion_padres:  '#d1fae5',
-      paseo:           '#fef9c3',
-      dia_festivo:     '#ede9fe',
-      general:         '#f3f4f6',
-    };
-    return mapa[tipo] ?? '#f3f4f6';
+    return this.tiposEvento().find(t => t.nombre === tipo)?.colorFondo ?? '#f3f4f6';
   }
 
-  /** Devuelve el color de texto del badge de tipo */
+  /** Devuelve el color de texto del badge según tipos_evento */
   colorTipoTexto(tipo: string): string {
-    const mapa: Record<string, string> = {
-      examen:          '#991b1b',
-      actividad:       '#1e40af',
-      reunion_padres:  '#065f46',
-      paseo:           '#713f12',
-      dia_festivo:     '#4c1d95',
-      general:         '#374151',
-    };
-    return mapa[tipo] ?? '#374151';
+    return this.tiposEvento().find(t => t.nombre === tipo)?.colorTexto ?? '#374151';
   }
 
-  /** Devuelve el label legible del tipo de comunicado */
+  /** Devuelve el label legible del tipo (es el nombre directo) */
   labelTipo(tipo: string): string {
-    const mapa: Record<string, string> = {
-      examen:          'Examen',
-      actividad:       'Actividad',
-      reunion_padres:  'Reunión de Padres',
-      paseo:           'Paseo Escolar',
-      dia_festivo:     'Día Festivo',
-      general:         'General',
-    };
-    return mapa[tipo] ?? tipo;
+    return tipo;
   }
 
   /** Llama al endpoint /mi-horario y guarda los bloques en el signal `horario` */
