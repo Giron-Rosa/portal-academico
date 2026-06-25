@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.sanagustin.portal.dto.AulaDto;
 import pe.sanagustin.portal.dto.ComunicadoDto;
 import pe.sanagustin.portal.dto.NuevoComunicadoRequest;
+import pe.sanagustin.portal.dto.TipoEventoDto;
 import pe.sanagustin.portal.service.ComunicadoService;
 
 import java.util.List;
@@ -62,5 +63,22 @@ public class ComunicadoController {
             @PathVariable long id) {
         comunicadoService.eliminarComunicado(id, user.getUsername());
         return ResponseEntity.ok(Map.of("mensaje", "Comunicado eliminado"));
+    }
+
+    /** Devuelve todos los tipos de evento activos. */
+    @GetMapping("/tipos-evento")
+    public ResponseEntity<List<TipoEventoDto>> tiposEvento() {
+        return ResponseEntity.ok(comunicadoService.getTiposEvento());
+    }
+
+    /** Crea un nuevo tipo de evento personalizado. */
+    @PostMapping("/tipos-evento")
+    public ResponseEntity<TipoEventoDto> crearTipoEvento(
+            @RequestBody Map<String, String> body) {
+        String nombre = body.getOrDefault("nombre", "").trim();
+        if (nombre.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(comunicadoService.crearTipoEvento(nombre));
     }
 }

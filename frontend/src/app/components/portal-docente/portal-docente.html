@@ -2248,31 +2248,58 @@
               <!-- Tipo de evento -->
               <div class="com-form-group">
                 <label class="com-form-label">Tipo de evento <span class="com-req">*</span></label>
-                <select class="com-form-select"
-                        [ngModel]="formCom().tipo"
-                        (ngModelChange)="setFormCom('tipo', $event)">
-                  <option value="examen">Examen</option>
-                  <option value="actividad">Actividad en aula</option>
-                  <option value="reunion_padres">Reunión de padres</option>
-                  <option value="paseo">Paseo escolar</option>
-                  <option value="dia_festivo">Día festivo / No hay clases</option>
-                  <option value="general">General</option>
-                </select>
+                <div class="com-tipo-row">
+                  <select class="com-form-select"
+                          [ngModel]="formCom().tipo"
+                          (ngModelChange)="setFormCom('tipo', $event)">
+                    @for (t of tiposEvento(); track t.id) {
+                      <option [value]="t.nombre">{{ t.nombre }}</option>
+                    }
+                  </select>
+                  <button class="com-btn-new-tipo"
+                          type="button"
+                          title="Crear nuevo tipo de evento"
+                          (click)="setFormCom('mostrarNuevoTipo', !formCom().mostrarNuevoTipo)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                  </button>
+                </div>
+                @if (formCom().mostrarNuevoTipo) {
+                  <div class="com-nuevo-tipo-row">
+                    <input class="com-form-input"
+                           type="text"
+                           placeholder="Nombre del nuevo tipo..."
+                           [ngModel]="formCom().nuevoTipo"
+                           (ngModelChange)="setFormCom('nuevoTipo', $event)"
+                           maxlength="80"/>
+                    <button class="com-btn-save-tipo"
+                            type="button"
+                            [disabled]="!formCom().nuevoTipo.trim()"
+                            (click)="crearNuevoTipoEvento()">Guardar</button>
+                  </div>
+                }
               </div>
 
-              <!-- Grado destino -->
+              <!-- Grados destino (multi-selección con checkboxes) -->
               <div class="com-form-group">
-                <label class="com-form-label">¿Para qué grado?</label>
-                <select class="com-form-select"
-                        [ngModel]="formCom().idAula"
-                        (ngModelChange)="setFormCom('idAula', $event ? +$event : null)">
-                  <option [value]="null">Todos mis grados</option>
+                <label class="com-form-label">¿Para qué grados?</label>
+                <div class="com-aulas-check-list">
+                  <label class="com-aula-check-item">
+                    <input type="checkbox"
+                           [checked]="formCom().idAulas.length === 0"
+                           (change)="formCom().idAulas.length > 0 && resetIdAulas()"/>
+                    <span>Todos mis grados</span>
+                  </label>
                   @for (a of misAulas(); track a.id) {
-                    <option [value]="a.id">
-                      {{ a.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ a.seccion }}
-                    </option>
+                    <label class="com-aula-check-item">
+                      <input type="checkbox"
+                             [checked]="formCom().idAulas.includes(a.id)"
+                             (change)="toggleAulaFormCom(a.id)"/>
+                      <span>{{ a.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ a.seccion }}</span>
+                    </label>
                   }
-                </select>
+                </div>
               </div>
 
               <!-- Fecha del evento -->
@@ -2282,6 +2309,15 @@
                        type="date"
                        [ngModel]="formCom().fechaEvento"
                        (ngModelChange)="setFormCom('fechaEvento', $event)"/>
+              </div>
+
+              <!-- Hora del evento -->
+              <div class="com-form-group">
+                <label class="com-form-label">Hora <span class="com-optional">(opcional)</span></label>
+                <input class="com-form-input"
+                       type="time"
+                       [ngModel]="formCom().horaEvento"
+                       (ngModelChange)="setFormCom('horaEvento', $event)"/>
               </div>
 
               <!-- Descripción -->
@@ -2301,7 +2337,7 @@
               <button class="com-btn-cancel" (click)="toggleFormCom()">Cancelar</button>
               <button class="com-btn-submit"
                       (click)="enviarComunicado()"
-                      [disabled]="!formCom().titulo.trim() || enviandoCom()">
+                      [disabled]="!formCom().titulo.trim() || !formCom().tipo || enviandoCom()">
                 @if (enviandoCom()) { Publicando… }
                 @else { Publicar comunicado }
               </button>
@@ -2317,14 +2353,15 @@
           <div class="pd-error-msg">{{ errorComunicados() }}</div>
         }
 
-        <!-- Tabs de filtro por grado -->
+        <!-- Tabs de filtro por grado: muestra TODOS los grados asignados al docente -->
         <div class="com-filter-bar">
           <button class="com-tab" [class.active]="filtroGradoCom() === ''"
                   (click)="filtroGradoCom.set('')">Todos</button>
-          @for (g of gradosComunicados(); track g) {
-            <button class="com-tab" [class.active]="filtroGradoCom() === g"
-                    (click)="filtroGradoCom.set(g)">
-              {{ g.replace('Secundaria','Sec').replace('Primaria','Prim') }}
+          @for (a of misAulas(); track a.id) {
+            <button class="com-tab"
+                    [class.active]="filtroGradoCom() === a.grado + ' ' + a.seccion"
+                    (click)="filtroGradoCom.set(a.grado + ' ' + a.seccion)">
+              {{ a.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ a.seccion }}
             </button>
           }
           <!-- Botón recargar -->
@@ -2375,14 +2412,16 @@
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                       </svg>
-                      @if (c.idAula === null) {
+                      @if (c.idAulas.length === 0) {
                         Todos los grados
-                      } @else {
+                      } @else if (c.idAulas.length === 1) {
                         {{ c.grado.replace('Secundaria','Sec').replace('Primaria','Prim') }} {{ c.seccion }}
+                      } @else {
+                        {{ c.idAulas.length }} grados
                       }
                     </span>
 
-                    <!-- Fecha del evento (si tiene) -->
+                    <!-- Fecha + hora del evento (si tiene) -->
                     @if (c.fechaEvento) {
                       <span class="com-card-fecha-evento">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2390,7 +2429,7 @@
                           <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
                           <line x1="3" y1="10" x2="21" y2="10"/>
                         </svg>
-                        {{ c.fechaEvento }}
+                        {{ c.fechaEvento }}{{ c.horaEvento ? ' · ' + c.horaEvento : '' }}
                       </span>
                     }
 
@@ -2429,8 +2468,8 @@
     </main>
 
 
-    <!-- ── Right Sidebar (oculto en sección Mensajes) ── -->
-    <aside class="pd-sidebar-right" [class.hidden]="activeSection() === 'mensajes'">
+    <!-- ── Right Sidebar ── -->
+    <aside class="pd-sidebar-right" [class.pd-sidebar-right--hidden]="activeSection() === 'refuerzos' || activeSection() === 'mensajes'">
 
       <div class="pd-review-header">
         <h3 class="pd-review-title">Pendientes</h3>
