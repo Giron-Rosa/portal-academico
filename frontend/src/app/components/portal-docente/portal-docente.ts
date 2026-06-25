@@ -34,14 +34,17 @@ interface CursoApi {
 export interface MensajeResumen {
   id: number;
   asunto: string;
-  tipo: string;          // 'justificante' | 'consulta' | 'otro'
+  tipo: string;             // 'justificante' | 'consulta' | 'otro'
   leido: boolean;
-  fechaEnvio: string;    // "DD/MM/YYYY HH:MM"
+  fechaEnvio: string;       // "DD/MM/YYYY HH:MM"
   nombrePadre: string;
   nombreAlumno: string | null;
+  idAlumno: number | null;
   grado: string | null;
   seccion: string | null;
   curso: string | null;
+  cantRespuestas: number;
+  ultimaRespuesta: string | null;
 }
 
 /** Una respuesta dentro del hilo de un mensaje */
@@ -57,6 +60,36 @@ export interface RespuestaResumen {
 export interface MensajeDetalle extends MensajeResumen {
   cuerpo: string;
   respuestas: RespuestaResumen[];
+  iniciadoPorDocente: boolean;
+}
+
+/** Contexto del alumno para el panel lateral en mensajes */
+export interface AlumnoContexto {
+  idAlumno: number;
+  nombre: string;
+  apellido: string;
+  grado: string;
+  seccion: string;
+  curso: string;
+  nombrePadre: string;
+  emailPadre: string;
+  totalClases: number;
+  clasesPresente: number;
+  tareasPendientes: number;
+  promedio: number;
+}
+
+/** Alumno disponible para iniciar un nuevo chat */
+export interface AlumnoDisponible {
+  idAlumno: number;
+  nombreAlumno: string;
+  grado: string;
+  seccion: string;
+  idPadre: number;
+  nombrePadre: string;
+  emailPadre: string;
+  idAulaCurso: number;
+  curso: string;
 }
 
 /** Estructura que devuelve el endpoint GET /api/portal/docente/mi-horario */
@@ -68,6 +101,33 @@ export interface ClaseHorario {
   curso:      string;
   grado:      string;
   seccion:    string;
+  idAulaCurso?: number;
+}
+
+/** Reserva de espacio (aula, laboratorio, etc.) creada por un docente */
+export interface Reserva {
+  id:             number;
+  idMaestro:      number;
+  espacio:        string;
+  fecha:          string;      // "YYYY-MM-DD"
+  horaInicio:     string;      // "HH:mm"
+  horaFin:        string;      // "HH:mm"
+  idAulaCurso:    number | null;
+  curso:          string | null;
+  grado:          string | null;
+  seccion:        string | null;
+  proposito:      string;
+  fechaCreacion:  string;
+}
+
+/** Estado del formulario de nueva reserva de espacio */
+export interface FormReserva {
+  espacio:     string;
+  fecha:       string;
+  horaInicio:  string;
+  horaFin:     string;
+  idAulaCurso: number | null;
+  proposito:   string;
 }
 
 /**
@@ -86,6 +146,15 @@ const CURSO_COLORS: Record<string, string> = {
   'religión':                       '#8d99ae',
 };
 
+/** Espacios que se pueden reservar en el calendario */
+const ESPACIOS = [
+  'Lab. Ciencias A',
+  'Lab. Robótica',
+  'Auditorio Principal',
+  'Sala Multimedia Premium',
+  'Aula Virtual (Zoom)',
+];
+
 /** Hora en la que empieza la grilla del calendario (7:00 AM) */
 const CAL_HORA_INICIO = 7;
 /** Hora en la que termina la grilla del calendario (15:00 = 3 PM) */
@@ -102,6 +171,15 @@ export interface Pendiente {
   titulo:       string;
   sinCalificar: number;
   totalAlumnos: number;
+}
+
+export interface AlertaCritica {
+  idAlumno: number;
+  nombre: string;
+  descripcion: string;
+  tipo: string;    // 'rendimiento' | 'asistencia'
+  inicial: string;
+  color: string;
 }
 
 /* ── Interfaces de detalle de curso ── */
@@ -281,26 +359,39 @@ export interface AulaSimple {
   seccion: string;
 }
 
+/** Tipo de evento disponible */
+export interface TipoEvento {
+  id: number;
+  nombre: string;
+  colorFondo: string;
+  colorTexto: string;
+}
+
 /** Comunicado creado por el docente */
 export interface Comunicado {
   id: number;
   titulo: string;
   descripcion: string | null;
-  tipo: string;           // 'examen' | 'actividad' | 'reunion_padres' | 'paseo' | 'dia_festivo' | 'general'
+  tipo: string;
   fechaEvento: string | null;   // "DD/MM/YYYY"
+  horaEvento: string | null;    // "HH:MM"
   fechaCreacion: string;        // "DD/MM/YYYY HH:MM"
-  grado: string;                // grado o "Todos los grados"
+  grado: string;                // primer grado o "Todos los grados"
   seccion: string | null;
   idAula: number | null;
+  idAulas: number[];            // lista de aulas destino
 }
 
 /** Estado local del formulario de nuevo comunicado */
 export interface FormComunicado {
   titulo: string;
   tipo: string;
-  idAula: number | null;   // null = todos los grados
+  idAulas: number[];     // vacío = todos los grados
   descripcion: string;
-  fechaEvento: string;     // "YYYY-MM-DD" (formato input[type=date])
+  fechaEvento: string;   // "YYYY-MM-DD"
+  horaEvento: string;    // "HH:MM"
+  nuevoTipo: string;     // nombre del tipo personalizado (si aplica)
+  mostrarNuevoTipo: boolean;
 }
 
 const CARD_COLORS = ['#dce8f7', '#fde8e8', '#d5e5f5', '#fdd8d8', '#e8f0fc', '#fce8e8', '#e8f7ec', '#fef9e0'];
@@ -328,8 +419,12 @@ export class PortalDocente {
   private auth   = inject(AuthService);
   private http   = inject(HttpClient);
 
+  // Exponemos constantes usadas en el template
+  calPxPorHora = CAL_PX_POR_HORA;
+  ESPACIOS     = ESPACIOS;
+
   activeSection = signal('inicio');
-  activeGrade   = signal('Todos');
+  activeGrade   = signal('Clases de Hoy');
   selectedYear  = signal('2026');
   dropdownOpen  = signal(false);
   cargando      = signal(false);
@@ -349,7 +444,8 @@ export class PortalDocente {
   years = ['2024', '2025', '2026'];
 
   cursos       = signal<Curso[]>([]);
-  pendientes   = signal<Pendiente[]>([]);
+  pendientes       = signal<Pendiente[]>([]);
+  alertasCriticas  = signal<AlertaCritica[]>([]);
 
   /* ── Signals de mensajería ── */
 
@@ -359,11 +455,54 @@ export class PortalDocente {
   mensajeActivo      = signal<MensajeDetalle | null>(null);
   cargandoMensajes   = signal(false);
   errorMensajes      = signal('');
-  /** Filtro de grado activo en la bandeja ('' = Todos) */
-  filtroGradoMsg     = signal('');
+  /** Texto de búsqueda libre (padre, alumno o salón) */
+  busquedaMsg        = signal('');
   /** Texto que el docente está escribiendo como respuesta */
   replyText          = signal('');
   enviandoReply      = signal(false);
+  /** Panel contexto alumno: datos + estado de carga */
+  contextoAlumno     = signal<AlumnoContexto | null>(null);
+  cargandoContexto   = signal(false);
+  mostrarContexto    = signal(false);
+
+  /* ── Signals para "Nuevo Chat" ── */
+  modalNuevoChat       = signal(false);
+  alumnosDisponibles   = signal<AlumnoDisponible[]>([]);
+  cargandoAlumnos      = signal(false);
+  nuevoChatGrado       = signal('');
+  nuevoChatSeccion     = signal('');
+  nuevoChatBusqueda    = signal('');
+  nuevoChatAlumnoSel   = signal<AlumnoDisponible | null>(null);
+  nuevoChatAsunto      = signal('');
+  nuevoChatMensaje     = signal('');
+  enviandoNuevoChat    = signal(false);
+
+  /** Grados únicos de alumnos disponibles para el modal nuevo chat */
+  gradosDisponibles = computed(() =>
+    [...new Set(this.alumnosDisponibles().map(a => a.grado))].sort()
+  );
+
+  /** Secciones únicas para el grado seleccionado */
+  seccionesDisponibles = computed(() => {
+    const g = this.nuevoChatGrado();
+    const base = g
+      ? this.alumnosDisponibles().filter(a => a.grado === g)
+      : this.alumnosDisponibles();
+    return [...new Set(base.map(a => a.seccion))].sort();
+  });
+
+  /** Alumnos filtrados por grado + sección + búsqueda libre en el modal */
+  alumnosFiltradosModal = computed(() => {
+    const g  = this.nuevoChatGrado();
+    const s  = this.nuevoChatSeccion();
+    const q  = this.nuevoChatBusqueda().toLowerCase().trim();
+    return this.alumnosDisponibles().filter(a =>
+      (!g || a.grado === g) &&
+      (!s || a.seccion === s) &&
+      (!q || a.nombreAlumno.toLowerCase().includes(q) ||
+             a.nombrePadre.toLowerCase().includes(q))
+    );
+  });
 
   /** Grados únicos presentes en los mensajes, para los filtro-tabs */
   gradosMensajes = computed(() => {
@@ -373,11 +512,17 @@ export class PortalDocente {
     return [...new Set(grados)];
   });
 
-  /** Lista de mensajes filtrada por grado seleccionado */
+  /** Lista de mensajes filtrada por búsqueda libre */
   mensajesFiltrados = computed(() => {
-    const filtro = this.filtroGradoMsg();
-    if (!filtro) return this.mensajes();
-    return this.mensajes().filter(m => m.grado === filtro);
+    const q = this.busquedaMsg().toLowerCase().trim();
+    if (!q) return this.mensajes();
+    return this.mensajes().filter(m =>
+      m.nombrePadre.toLowerCase().includes(q) ||
+      (m.nombreAlumno ?? '').toLowerCase().includes(q) ||
+      (m.grado ?? '').toLowerCase().includes(q) ||
+      (m.seccion ?? '').toLowerCase().includes(q) ||
+      m.asunto.toLowerCase().includes(q)
+    );
   });
 
   /** Cantidad de mensajes no leídos (para el badge del sidebar) */
@@ -495,24 +640,35 @@ export class PortalDocente {
   enviandoCom          = signal(false);
   /** Filtro de grado en la lista de comunicados ('' = Todos) */
   filtroGradoCom       = signal('');
+  /** Tipos de evento disponibles (cargados del backend) */
+  tiposEvento        = signal<TipoEvento[]>([]);
   /** Estado del formulario de nuevo comunicado */
   formCom = signal<FormComunicado>({
-    titulo: '', tipo: 'examen', idAula: null, descripcion: '', fechaEvento: ''
+    titulo: '', tipo: '', idAulas: [], descripcion: '',
+    fechaEvento: '', horaEvento: '', nuevoTipo: '', mostrarNuevoTipo: false
   });
 
   /** Grados únicos en los comunicados para los tabs de filtro */
   gradosComunicados = computed(() => {
-    const grados = this.comunicados()
-      .map(c => c.grado)
-      .filter(g => g !== 'Todos los grados');
-    return [...new Set(grados)];
+    const todosGrados = new Set<string>();
+    this.comunicados().forEach(c => {
+      if (c.grado && c.grado !== 'Todos los grados') todosGrados.add(c.grado);
+    });
+    return [...todosGrados].sort();
   });
 
-  /** Comunicados filtrados por grado seleccionado */
+  /** Comunicados filtrados por grado+sección seleccionado */
   comunicadosFiltrados = computed(() => {
     const f = this.filtroGradoCom();
     if (!f) return this.comunicados();
-    return this.comunicados().filter(c => c.grado === f || c.idAula === null);
+    const [grado, seccion] = f.split(' ', 2).concat(['', '']);
+    return this.comunicados().filter(c =>
+      c.idAulas.length === 0 ||
+      c.idAulas.some(idA => {
+        const aula = this.misAulas().find(a => a.id === idA);
+        return aula && aula.grado === grado && aula.seccion === seccion;
+      })
+    );
   });
 
   /* ── Signals del calendario ── */
@@ -521,6 +677,29 @@ export class PortalDocente {
   horario          = signal<ClaseHorario[]>([]);
   cargandoHorario  = signal(false);
   errorHorario     = signal('');
+
+  /** Tab activa dentro de la sección calendario: 'mis-clases' | 'reservas' */
+  calendarioTab = signal('mis-clases');
+
+  /** Lista de reservas de espacio del docente */
+  reservas = signal<Reserva[]>([]);
+  cargandoReservas = signal(false);
+  errorReservas = signal('');
+
+  /** Controla si el modal de Nueva Reserva está visible */
+  modalReserva = signal(false);
+  reservaEditando = signal<number | null>(null);
+  enviandoReserva = signal(false);
+  errorDisponibilidad = signal('');
+  okDisponibilidad = signal(false);
+  formReserva = signal<FormReserva>({
+    espacio:     ESPACIOS[0],
+    fecha:       '',
+    horaInicio:  '13:00',
+    horaFin:     '15:00',
+    idAulaCurso: null,
+    proposito:   '',
+  });
 
   /**
    * Fecha del Lunes de la semana actualmente visible.
@@ -569,14 +748,31 @@ export class PortalDocente {
     { num: 5, corto: 'Vie', largo: 'Viernes'    },
   ];
 
+  clasesDeHoy = computed(() => {
+    const diaHoy = this.hoyDia();
+    if (diaHoy === 0) return [];
+    const bloques = this.horario().filter(h => h.dia === diaHoy);
+    const seen = new Set<string>();
+    const result: Curso[] = [];
+    for (const b of bloques) {
+      const key = `${b.curso}|${b.grado}|${b.seccion}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const curso = this.cursos().find(c =>
+        c.nombre === b.curso && c.grado === b.grado && c.seccion === b.seccion);
+      if (curso) result.push(curso);
+    }
+    return result;
+  });
+
   grades = computed(() => {
-    const base   = ['Todos'];
+    const base   = ['Clases de Hoy'];
     const unique = [...new Set(this.cursos().map(c => c.grado))];
     return [...base, ...unique];
   });
 
   filteredCursos = computed(() => {
-    if (this.activeGrade() === 'Todos') return this.cursos();
+    if (this.activeGrade() === 'Clases de Hoy') return this.clasesDeHoy();
     return this.cursos().filter(c => c.grado === this.activeGrade());
   });
 
@@ -586,7 +782,44 @@ export class PortalDocente {
     this.cargarMensajes();
     this.cargarComunicados();
     this.cargarMisAulas();
+    this.cargarTiposEvento();
     this.cargarPendientes();
+    this.cargarReservas();
+  }
+
+  /* ══════════════════════════════════════════
+     RESERVAS DE ESPACIO
+  ══════════════════════════════════════════ */
+
+  /** Reservas de la semana actualmente visible (por rango de fechas) */
+  reservasForSemana = computed(() => {
+    const inicio = this.semanaInicio();
+    const fin = new Date(inicio);
+    fin.setDate(fin.getDate() + 4);
+    const inicioStr = this.formatISODate(inicio);
+    const finStr = this.formatISODate(fin);
+    return this.reservas().filter(r => r.fecha >= inicioStr && r.fecha <= finStr);
+  });
+
+  /** Reservas que caen en un día concreto (1-5) de la semana visible */
+  reservasDelDia(dia: number): Reserva[] {
+    const fecha = this.fechaDeDia(dia);
+    return this.reservasForSemana().filter(r => r.fecha === fecha);
+  }
+
+  /** Fecha ISO para un día de la semana visible (1=Lunes) */
+  fechaDeDia(dia: number): string {
+    const d = new Date(this.semanaInicio());
+    d.setDate(d.getDate() + (dia - 1));
+    return this.formatISODate(d);
+  }
+
+  /** Formato YYYY-MM-DD de una fecha local */
+  formatISODate(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   /* ══════════════════════════════════════════
@@ -663,6 +896,211 @@ export class PortalDocente {
   }
 
   /* ══════════════════════════════════════════
+     RESERVAS DE ESPACIO — métodos
+  ══════════════════════════════════════════ */
+
+  /** Abre/cierra el modal de reserva y resetea el formulario */
+  toggleModalReserva(abrir: boolean, dia?: number, hora?: string, reserva?: Reserva) {
+    if (abrir) {
+      if (reserva) {
+        this.reservaEditando.set(reserva.id);
+        this.formReserva.set({
+          espacio:     reserva.espacio,
+          fecha:       reserva.fecha,
+          horaInicio:  reserva.horaInicio,
+          horaFin:     reserva.horaFin,
+          idAulaCurso: reserva.idAulaCurso,
+          proposito:   reserva.proposito || '',
+        });
+      } else {
+        this.reservaEditando.set(null);
+        const fecha = dia ? this.fechaDeDia(dia) : this.formatISODate(new Date());
+        const hIni = hora ? `${hora}:00` : '13:00';
+        const hFin = hora ? `${(Number(hora) + 1).toString().padStart(2, '0')}:00` : '15:00';
+        this.formReserva.set({
+          espacio:     ESPACIOS[0],
+          fecha,
+          horaInicio:  hIni,
+          horaFin:     hFin,
+          idAulaCurso: null,
+          proposito:   '',
+        });
+      }
+      this.errorDisponibilidad.set('');
+      this.okDisponibilidad.set(false);
+    } else {
+      this.reservaEditando.set(null);
+    }
+    this.modalReserva.set(abrir);
+  }
+
+  /** Abre el modal desde una celda vacía (dia + hora) */
+  abrirReservaEnHora(dia: number, hora: string) {
+    this.toggleModalReserva(true, dia, hora);
+  }
+
+  /** Abre el modal para editar una reserva existente */
+  editarReserva(reserva: Reserva) {
+    this.toggleModalReserva(true, undefined, undefined, reserva);
+  }
+
+  /** Actualiza un campo del formulario de reserva */
+  setFormReserva(campo: keyof FormReserva, valor: string | number | null) {
+    this.formReserva.update(f => ({ ...f, [campo]: valor }));
+    this.errorDisponibilidad.set('');
+    this.okDisponibilidad.set(false);
+  }
+
+  /** Carga todas las reservas del docente autenticado */
+  cargarReservas() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoReservas.set(true);
+    this.errorReservas.set('');
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Reserva[]>('http://localhost:8080/api/portal/docente/reservas', { headers })
+      .subscribe({
+        next: data => { this.reservas.set(data); this.cargandoReservas.set(false); },
+        error: () => { this.errorReservas.set('No se pudieron cargar las reservas.'); this.cargandoReservas.set(false); },
+      });
+  }
+
+  /** Verifica disponibilidad del espacio en el horario del formulario */
+  verificarDisponibilidad() {
+    const f = this.formReserva();
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.errorDisponibilidad.set('');
+    this.okDisponibilidad.set(false);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      espacio: f.espacio,
+      fecha: f.fecha,
+      horaInicio: f.horaInicio,
+      horaFin: f.horaFin,
+    };
+    this.http.post<{ disponible: boolean; mensaje: string }>(
+      'http://localhost:8080/api/portal/docente/reservas/verificar',
+      body, { headers }
+    ).subscribe({
+      next: res => {
+        if (res.disponible) {
+          this.okDisponibilidad.set(true);
+          this.errorDisponibilidad.set('');
+        } else {
+          this.errorDisponibilidad.set(res.mensaje || 'El espacio ya está reservado en ese horario.');
+        }
+      },
+      error: () => this.errorDisponibilidad.set('No se pudo verificar la disponibilidad.'),
+    });
+  }
+
+  /** Verifica si la reserva actual choca con una clase programada distinta a la seleccionada */
+  private tieneConflictoHorario(): boolean {
+    const f = this.formReserva();
+    if (!f.fecha || !f.horaInicio || !f.horaFin) return false;
+
+    const dia = new Date(f.fecha).getUTCDay(); // 1=Lunes … 5=Viernes
+    if (dia === 0 || dia === 6) return false;
+
+    const toMin = (h: string) => {
+      const [hh, mm] = h.split(':').map(Number);
+      return hh * 60 + mm;
+    };
+
+    const ini = toMin(f.horaInicio);
+    const fin = toMin(f.horaFin);
+
+    const clasesDelDia = this.horario().filter(c => c.dia === dia);
+    const claseEnHorario = clasesDelDia.find(c => {
+      const cIni = toMin(c.horaInicio);
+      const cFin = toMin(c.horaFin);
+      return cIni < fin && cFin > ini;
+    });
+
+    if (!claseEnHorario) return false;
+    return f.idAulaCurso !== claseEnHorario.idAulaCurso;
+  }
+
+  /** Crea o actualiza la reserva en el backend */
+  guardarReserva() {
+    const f = this.formReserva();
+    if (!f.espacio || !f.fecha || !f.horaInicio || !f.horaFin) return;
+
+    this.errorDisponibilidad.set('');
+    if (this.tieneConflictoHorario()) {
+      this.errorDisponibilidad.set('No puedes reservar en este horario porque tienes clase programada con otro grado/sección.');
+      return;
+    }
+
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoReserva.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      espacio: f.espacio,
+      fecha: f.fecha,
+      horaInicio: f.horaInicio,
+      horaFin: f.horaFin,
+      idAulaCurso: f.idAulaCurso,
+      proposito: f.proposito?.trim() || null,
+    };
+
+    const handleError = (err: any) => {
+      this.enviandoReserva.set(false);
+      let msg = err?.error?.message || err?.message || 'El espacio ya está reservado en ese horario. Selecciona otra hora o espacio.';
+      if (err?.status === 401) {
+        msg = 'Tu sesión expiró. Por favor, cierra sesión y vuelve a ingresar.';
+      }
+      this.errorDisponibilidad.set(msg);
+    };
+
+    const idEdit = this.reservaEditando();
+    if (idEdit) {
+      this.http.put<Reserva>(`http://localhost:8080/api/portal/docente/reservas/${idEdit}`, body, { headers })
+        .subscribe({
+          next: () => {
+            this.modalReserva.set(false);
+            this.reservaEditando.set(null);
+            this.enviandoReserva.set(false);
+            this.cargarReservas();
+          },
+          error: handleError,
+        });
+    } else {
+      this.http.post<Reserva>('http://localhost:8080/api/portal/docente/reservas', body, { headers })
+        .subscribe({
+          next: () => {
+            this.modalReserva.set(false);
+            this.enviandoReserva.set(false);
+            this.cargarReservas();
+          },
+          error: handleError,
+        });
+    }
+  }
+
+  /** Anula la reserva que se está editando */
+  anularReserva() {
+    const id = this.reservaEditando();
+    if (id) {
+      this.eliminarReserva(id);
+      this.modalReserva.set(false);
+      this.reservaEditando.set(null);
+    }
+  }
+
+  /** Elimina una reserva propia del docente */
+  eliminarReserva(id: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.reservas.update(list => list.filter(r => r.id !== id));
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.delete(`http://localhost:8080/api/portal/docente/reservas/${id}`, { headers })
+      .subscribe({ error: () => this.cargarReservas() });
+  }
+
+  /* ══════════════════════════════════════════
      CARGA DE DATOS
   ══════════════════════════════════════════ */
 
@@ -713,6 +1151,8 @@ export class PortalDocente {
     const token = this.auth.getToken();
     if (!token) return;
     this.mensajeActivo.set(null);
+    this.contextoAlumno.set(null);
+    this.mostrarContexto.set(false);
     this.replyText.set('');
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
     this.http.get<MensajeDetalle>(`http://localhost:8080/api/portal/docente/mensajes/${id}`, { headers })
@@ -723,8 +1163,114 @@ export class PortalDocente {
           this.mensajes.update(lista =>
             lista.map(m => m.id === id ? { ...m, leido: true } : m)
           );
+          /* Cargar contexto del alumno automáticamente si hay idAlumno */
+          if (data.idAlumno) {
+            this.cargarContextoAlumno(data.idAlumno);
+          }
         },
       });
+  }
+
+  /** Carga el resumen del alumno para el panel lateral */
+  cargarContextoAlumno(idAlumno: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoContexto.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<AlumnoContexto>(
+      `http://localhost:8080/api/portal/docente/mensajes/alumno-contexto/${idAlumno}`, { headers }
+    ).subscribe({
+      next: data => {
+        this.contextoAlumno.set(data);
+        this.cargandoContexto.set(false);
+        this.mostrarContexto.set(true);
+      },
+      error: () => { this.cargandoContexto.set(false); },
+    });
+  }
+
+  /** Alterna la visibilidad del panel de contexto del alumno */
+  toggleContexto() {
+    this.mostrarContexto.update(v => !v);
+  }
+
+  /** Abre el modal y carga la lista de alumnos disponibles */
+  abrirModalNuevoChat() {
+    this.modalNuevoChat.set(true);
+    this.nuevoChatGrado.set('');
+    this.nuevoChatSeccion.set('');
+    this.nuevoChatBusqueda.set('');
+    this.nuevoChatAlumnoSel.set(null);
+    this.nuevoChatAsunto.set('');
+    this.nuevoChatMensaje.set('');
+    if (this.alumnosDisponibles().length === 0) {
+      this.cargarAlumnosDisponibles();
+    }
+  }
+
+  /** Carga el listado de alumnos disponibles desde el backend */
+  cargarAlumnosDisponibles() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoAlumnos.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<AlumnoDisponible[]>(
+      'http://localhost:8080/api/portal/docente/mensajes/alumnos-disponibles', { headers }
+    ).subscribe({
+      next: data => { this.alumnosDisponibles.set(data); this.cargandoAlumnos.set(false); },
+      error: () => { this.cargandoAlumnos.set(false); },
+    });
+  }
+
+  /** Selecciona un alumno en el modal y rellena el asunto por defecto */
+  seleccionarAlumnoModal(a: AlumnoDisponible) {
+    this.nuevoChatAlumnoSel.set(a);
+    if (!this.nuevoChatAsunto()) {
+      this.nuevoChatAsunto.set(`Consulta sobre ${a.nombreAlumno}`);
+    }
+  }
+
+  /** Cierra el modal sin enviar */
+  cerrarModalNuevoChat() {
+    this.modalNuevoChat.set(false);
+  }
+
+  /** Envía el nuevo chat y abre el hilo creado */
+  enviarNuevoChat() {
+    const alumno  = this.nuevoChatAlumnoSel();
+    const asunto  = this.nuevoChatAsunto().trim();
+    const mensaje = this.nuevoChatMensaje().trim();
+    if (!alumno || !asunto || !mensaje) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.enviandoNuevoChat.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    this.http.post<{ id: number }>(
+      'http://localhost:8080/api/portal/docente/mensajes/iniciar',
+      {
+        idAlumno:    alumno.idAlumno,
+        idPadre:     alumno.idPadre,
+        idAulaCurso: alumno.idAulaCurso,
+        asunto,
+        cuerpo:      mensaje,
+      },
+      { headers }
+    ).subscribe({
+      next: res => {
+        this.enviandoNuevoChat.set(false);
+        this.cerrarModalNuevoChat();
+        this.cargarMensajes();
+        setTimeout(() => this.abrirMensaje(res.id), 400);
+      },
+      error: () => { this.enviandoNuevoChat.set(false); },
+    });
+  }
+
+  /** % de asistencia del alumno activo */
+  pctAsistencia(): number {
+    const ctx = this.contextoAlumno();
+    if (!ctx || ctx.totalClases === 0) return 0;
+    return Math.round((ctx.clasesPresente / ctx.totalClases) * 100);
   }
 
   /**
@@ -796,18 +1342,62 @@ export class PortalDocente {
       .subscribe({ next: data => this.misAulas.set(data) });
   }
 
+  /** Carga los tipos de evento desde el backend */
+  cargarTiposEvento() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<TipoEvento[]>(
+      'http://localhost:8080/api/portal/docente/comunicados/tipos-evento', { headers }
+    ).subscribe({ next: data => this.tiposEvento.set(data) });
+  }
+
   /** Abre/cierra el formulario y lo resetea al abrir */
   toggleFormCom() {
     const abrir = !this.mostrarFormCom();
     if (abrir) {
-      this.formCom.set({ titulo: '', tipo: 'examen', idAula: null, descripcion: '', fechaEvento: '' });
+      const primerTipo = this.tiposEvento()[0]?.nombre ?? '';
+      this.formCom.set({
+        titulo: '', tipo: primerTipo, idAulas: [], descripcion: '',
+        fechaEvento: '', horaEvento: '', nuevoTipo: '', mostrarNuevoTipo: false
+      });
+      if (this.tiposEvento().length === 0) this.cargarTiposEvento();
     }
     this.mostrarFormCom.set(abrir);
   }
 
   /** Actualiza un campo del formulario de comunicado de forma reactiva */
-  setFormCom(campo: keyof FormComunicado, valor: string | number | null) {
+  setFormCom(campo: keyof FormComunicado, valor: string | number | boolean | null | number[]) {
     this.formCom.update(f => ({ ...f, [campo]: valor }));
+  }
+
+  /** Limpia la selección de aulas (Todos los grados) */
+  resetIdAulas() { this.formCom.update(f => ({ ...f, idAulas: [] })); }
+
+  /** Agrega o quita un aula del selector multi-grado */
+  toggleAulaFormCom(idAula: number) {
+    this.formCom.update(f => {
+      const ya = f.idAulas.includes(idAula);
+      return { ...f, idAulas: ya ? f.idAulas.filter(id => id !== idAula) : [...f.idAulas, idAula] };
+    });
+  }
+
+  /** Crea un tipo de evento personalizado y lo selecciona en el form */
+  crearNuevoTipoEvento() {
+    const nombre = this.formCom().nuevoTipo.trim();
+    if (!nombre) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    this.http.post<TipoEvento>(
+      'http://localhost:8080/api/portal/docente/comunicados/tipos-evento',
+      { nombre }, { headers }
+    ).subscribe({
+      next: nuevo => {
+        this.tiposEvento.update(t => [...t, nuevo]);
+        this.formCom.update(f => ({ ...f, tipo: nuevo.nombre, nuevoTipo: '', mostrarNuevoTipo: false }));
+      }
+    });
   }
 
   /**
@@ -825,18 +1415,17 @@ export class PortalDocente {
     const body = {
       titulo:      f.titulo.trim(),
       tipo:        f.tipo,
-      idAula:      f.idAula,
+      idAulas:     f.idAulas.length > 0 ? f.idAulas : [],
       descripcion: f.descripcion.trim() || null,
       fechaEvento: f.fechaEvento || null,
+      horaEvento:  f.horaEvento  || null,
     };
     this.http.post<Comunicado>('http://localhost:8080/api/portal/docente/comunicados', body, { headers })
       .subscribe({
-        next: nuevo => {
-          /* Insertar al principio y reordenar por fecha_evento */
-          this.comunicados.update(lista => [nuevo, ...lista]);
+        next: () => {
           this.mostrarFormCom.set(false);
           this.enviandoCom.set(false);
-          this.cargarComunicados(); /* recargar para tener orden correcto del backend */
+          this.cargarComunicados();
         },
         error: () => { this.enviandoCom.set(false); },
       });
@@ -855,43 +1444,19 @@ export class PortalDocente {
       .subscribe({ error: () => this.cargarComunicados() /* revertir si falla */ });
   }
 
-  /** Devuelve el color CSS del tipo de comunicado para el badge */
+  /** Devuelve el color de fondo del badge según tipos_evento */
   colorTipo(tipo: string): string {
-    const mapa: Record<string, string> = {
-      examen:          '#fee2e2',
-      actividad:       '#dbeafe',
-      reunion_padres:  '#d1fae5',
-      paseo:           '#fef9c3',
-      dia_festivo:     '#ede9fe',
-      general:         '#f3f4f6',
-    };
-    return mapa[tipo] ?? '#f3f4f6';
+    return this.tiposEvento().find(t => t.nombre === tipo)?.colorFondo ?? '#f3f4f6';
   }
 
-  /** Devuelve el color de texto del badge de tipo */
+  /** Devuelve el color de texto del badge según tipos_evento */
   colorTipoTexto(tipo: string): string {
-    const mapa: Record<string, string> = {
-      examen:          '#991b1b',
-      actividad:       '#1e40af',
-      reunion_padres:  '#065f46',
-      paseo:           '#713f12',
-      dia_festivo:     '#4c1d95',
-      general:         '#374151',
-    };
-    return mapa[tipo] ?? '#374151';
+    return this.tiposEvento().find(t => t.nombre === tipo)?.colorTexto ?? '#374151';
   }
 
-  /** Devuelve el label legible del tipo de comunicado */
+  /** Devuelve el label legible del tipo (es el nombre directo) */
   labelTipo(tipo: string): string {
-    const mapa: Record<string, string> = {
-      examen:          'Examen',
-      actividad:       'Actividad',
-      reunion_padres:  'Reunión de Padres',
-      paseo:           'Paseo Escolar',
-      dia_festivo:     'Día Festivo',
-      general:         'General',
-    };
-    return mapa[tipo] ?? tipo;
+    return tipo;
   }
 
   /** Llama al endpoint /mi-horario y guarda los bloques en el signal `horario` */
@@ -1750,6 +2315,13 @@ export class PortalDocente {
   }
 
   /* ── Métodos de Pendientes ── */
+
+  prioridadPendiente(item: Pendiente): { label: string; css: string } {
+    const ratio = item.sinCalificar / (item.totalAlumnos || 1);
+    if (ratio > 0.5) return { label: 'ALTA', css: 'pd-prio-alta' };
+    if (ratio > 0.2) return { label: 'MEDIA', css: 'pd-prio-media' };
+    return { label: 'BAJA', css: 'pd-prio-baja' };
+  }
 
   cargarPendientes() {
     const token = this.auth.getToken();

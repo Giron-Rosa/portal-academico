@@ -20,5 +20,6 @@ public record HorarioDocenteDto(
         String horaFin,
         String curso,
         String grado,
-        String seccion
+        String seccion,
+        Long   idAulaCurso
 ) {}
