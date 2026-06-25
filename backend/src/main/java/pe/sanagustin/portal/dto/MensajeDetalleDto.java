@@ -15,9 +15,11 @@ public record MensajeDetalleDto(
         String fechaEnvio,
         String nombrePadre,
         String nombreAlumno,
+        Long   idAlumno,
         String grado,
         String seccion,
         String curso,
         String cuerpo,
-        List<RespuestaResumenDto> respuestas
+        List<RespuestaResumenDto> respuestas,
+        boolean iniciadoPorDocente
 ) {}
