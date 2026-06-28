@@ -1,11 +1,14 @@
 import { Component, inject, signal, OnInit, HostListener } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { CursoDetalle } from './curso-detalle/curso-detalle';
 
 type Seccion = 'inicio' | 'calendario' | 'kanban' | 'refuerzo' | 'recursos';
 
 interface CursoApi {
+  idAulaCurso: number;
   nombre: string;
   area: string;
   horasSemana: number;
@@ -17,6 +20,7 @@ interface CursoApi {
 }
 
 export interface Curso {
+  idAulaCurso: number;
   nombre: string;
   grado: string;
   seccion: string;
@@ -37,7 +41,7 @@ interface Actividad {
 
 @Component({
   selector: 'app-portal-alumno',
-  imports: [],
+  imports: [CommonModule, CursoDetalle],
   templateUrl: './portal-alumno.html',
   styleUrl: './portal-alumno.scss',
 })
@@ -54,6 +58,9 @@ export class PortalAlumno implements OnInit {
   cargando = signal(true);
   errorCarga = signal('');
   cursos = signal<Curso[]>([]);
+
+  /** Curso activo para la vista de detalle (null = mostrar grid) */
+  cursoActivo = signal<Curso | null>(null);
 
   nombre = this.auth.getNombre() ?? 'Estudiante';
   codigo = this.auth.getCodigo() ?? '';
@@ -107,6 +114,7 @@ export class PortalAlumno implements OnInit {
       next: (data) => {
         if (data.length > 0) this.periodo.set(data[0].periodo);
         this.cursos.set(data.map(d => ({
+          idAulaCurso: d.idAulaCurso,
           nombre: d.nombre,
           grado: d.grado,
           seccion: d.seccion,
@@ -125,8 +133,22 @@ export class PortalAlumno implements OnInit {
     });
   }
 
-  setSeccion(id: Seccion) { this.seccionActiva.set(id); this.dropdownOpen.set(false); }
+  setSeccion(id: Seccion) {
+    this.seccionActiva.set(id);
+    this.cursoActivo.set(null);   // cerrar cualquier detalle abierto
+    this.dropdownOpen.set(false);
+  }
   toggleDropdown() { this.dropdownOpen.update(v => !v); }
+
+  /** Abre la vista de detalle para el curso seleccionado */
+  abrirDetalleCurso(curso: Curso) {
+    this.cursoActivo.set(curso);
+  }
+
+  /** Vuelve a la grid de cursos */
+  volverAInicio() {
+    this.cursoActivo.set(null);
+  }
 
   pendientes = () => this.actividades.filter(a => a.estado === 'pendiente').length;
 

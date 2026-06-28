@@ -2,11 +2,15 @@ package pe.sanagustin.portal.service;
 
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import pe.sanagustin.portal.dto.DisponibilidadResponse;
 import pe.sanagustin.portal.dto.NuevaReservaRequest;
 import pe.sanagustin.portal.dto.ReservaDto;
+import pe.sanagustin.portal.entity.EspacioReserva;
+import pe.sanagustin.portal.repository.EspacioReservaRepository;
 
 import java.sql.Date;
 import java.sql.Time;
@@ -20,6 +24,7 @@ import java.util.List;
 public class ReservaService {
 
     private final EntityManager em;
+    private final EspacioReservaRepository espacioReservaRepository;
 
     @Transactional(readOnly = true)
     public List<ReservaDto> getReservas(String codigoDocente) {
@@ -70,26 +75,72 @@ public class ReservaService {
     }
 
     @Transactional(readOnly = true)
-    public DisponibilidadResponse verificarDisponibilidad(String codigoDocente, NuevaReservaRequest req) {
+    public List<EspacioReserva> getEspaciosDisponibles(String codigoDocente) {
+        String sql = """
+                SELECT DISTINCT c.area
+                FROM docente_asignaciones da
+                JOIN aula_cursos ac ON ac.id_aula_curso = da.id_aula_curso
+                JOIN cursos c ON c.id_curso = ac.id_curso
+                JOIN maestros mae ON mae.id_maestro = da.id_maestro
+                JOIN usuarios u ON u.id_usuario = mae.id_usuario
+                WHERE u.codigo = :codigo AND da.activo = true
+                """;
+        @SuppressWarnings("unchecked")
+        List<String> areas = em.createNativeQuery(sql)
+                .setParameter("codigo", codigoDocente)
+                .getResultList();
+
+        if (areas.isEmpty()) {
+            return espacioReservaRepository.findByAreasOrGeneral(List.of());
+        }
+        return espacioReservaRepository.findByAreasOrGeneral(areas);
+    }
+
+    private void validarReserva(Long idReserva, String codigoDocente, NuevaReservaRequest req) {
+        String[] startParts = req.horaInicio().split(":");
+        String[] endParts = req.horaFin().split(":");
+        int startMin = Integer.parseInt(startParts[0]) * 60 + Integer.parseInt(startParts[1]);
+        int endMin = Integer.parseInt(endParts[0]) * 60 + Integer.parseInt(endParts[1]);
+        int durationMin = endMin - startMin;
+        
+        if (durationMin <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La hora de fin debe ser posterior a la hora de inicio.");
+        }
+
+        EspacioReserva espacio = espacioReservaRepository.findByNombre(req.espacio())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "El espacio seleccionado no existe."));
+        
+        if (durationMin > espacio.getLimiteMinutos()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                    "El tiempo solicitado (" + durationMin + " minutos) excede el límite permitido para este espacio (" + espacio.getLimiteMinutos() + " minutos).");
+        }
+
         if (hayConflictoConHorario(codigoDocente, req)) {
-            return new DisponibilidadResponse(false,
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
                     "No puedes reservar en este horario porque tienes clase programada con otro grado/sección.");
         }
-        if (hayConflicto(null, req.espacio(), req.fecha(), req.horaInicio(), req.horaFin())) {
-            return new DisponibilidadResponse(false,
-                    "El " + req.espacio() + " ya está reservado en ese horario. Selecciona otra hora o espacio.");
+
+        if (hayConflicto(idReserva, req.espacio(), req.fecha(), req.horaInicio(), req.horaFin())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                    "El espacio ya se encuentra reservado en ese horario por otro docente.");
         }
-        return new DisponibilidadResponse(true, "Espacio disponible para la fecha seleccionada.");
+    }
+
+    @Transactional(readOnly = true)
+    public DisponibilidadResponse verificarDisponibilidad(String codigoDocente, NuevaReservaRequest req) {
+        try {
+            validarReserva(null, codigoDocente, req);
+            return new DisponibilidadResponse(true, "Espacio disponible para la fecha seleccionada.");
+        } catch (ResponseStatusException e) {
+            return new DisponibilidadResponse(false, e.getReason());
+        } catch (Exception e) {
+            return new DisponibilidadResponse(false, "Error de validación al comprobar disponibilidad.");
+        }
     }
 
     @Transactional
     public ReservaDto crearReserva(String codigoDocente, NuevaReservaRequest req) {
-        if (hayConflictoConHorario(codigoDocente, req)) {
-            throw new IllegalStateException("No puedes reservar en este horario porque tienes clase programada con otro grado/sección.");
-        }
-        if (hayConflicto(null, req.espacio(), req.fecha(), req.horaInicio(), req.horaFin())) {
-            throw new IllegalStateException("El espacio ya está reservado en ese horario.");
-        }
+        validarReserva(null, codigoDocente, req);
 
         String idMaestroSql = """
                 SELECT m.id_maestro
@@ -124,12 +175,7 @@ public class ReservaService {
 
     @Transactional
     public ReservaDto actualizarReserva(long idReserva, String codigoDocente, NuevaReservaRequest req) {
-        if (hayConflictoConHorario(codigoDocente, req)) {
-            throw new IllegalStateException("No puedes reservar en este horario porque tienes clase programada con otro grado/sección.");
-        }
-        if (hayConflicto(idReserva, req.espacio(), req.fecha(), req.horaInicio(), req.horaFin())) {
-            throw new IllegalStateException("El espacio ya está reservado en ese horario.");
-        }
+        validarReserva(idReserva, codigoDocente, req);
 
         String sql = """
                 UPDATE reservas_espacio r
@@ -159,7 +205,7 @@ public class ReservaService {
                 .executeUpdate();
 
         if (updated == 0) {
-            throw new IllegalStateException("No se encontró la reserva o no tienes permiso para editarla.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No se encontró la reserva o no tienes permiso para editarla.");
         }
 
         return getReservaById(idReserva);

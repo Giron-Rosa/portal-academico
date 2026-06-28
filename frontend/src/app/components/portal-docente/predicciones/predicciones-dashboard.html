@@ -1,0 +1,137 @@
+<div class="pred-wrapper">
+
+  <!-- ── HEADER ──────────────────────────────────────────────────── -->
+  <div class="pred-header">
+    <div class="pred-header-left">
+      <div class="pred-icon-badge">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
+          <path d="M12 8v4l3 3"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="pred-title">Alertas Tempranas de Deserción</h2>
+        <p class="pred-subtitle">Clasificador de riesgo basado en Asistencia (60%) y Calificaciones (40%)</p>
+      </div>
+    </div>
+    <div class="pred-filtros">
+      <button class="pred-filtro-btn" [class.active]="filtroRiesgo() === 'todos'" (click)="setFiltro('todos')">Todos</button>
+      <button class="pred-filtro-btn rojo"  [class.active]="filtroRiesgo() === 'alto'"  (click)="setFiltro('alto')">🔴 Alto</button>
+      <button class="pred-filtro-btn naranja" [class.active]="filtroRiesgo() === 'medio'" (click)="setFiltro('medio')">🟡 Medio</button>
+      <button class="pred-filtro-btn verde"  [class.active]="filtroRiesgo() === 'bajo'"  (click)="setFiltro('bajo')">🟢 Bajo</button>
+    </div>
+  </div>
+
+  <!-- ── TARJETAS RESUMEN ─────────────────────────────────────────── -->
+  <div class="pred-stats-row">
+    <div class="pred-stat pred-stat--total">
+      <span class="pred-stat-num">{{ totalAlumnos() }}</span>
+      <span class="pred-stat-label">Total Alumnos</span>
+    </div>
+    <div class="pred-stat pred-stat--alto">
+      <span class="pred-stat-icon">🔴</span>
+      <span class="pred-stat-num">{{ enRiesgoAlto() }}</span>
+      <span class="pred-stat-label">Riesgo Alto</span>
+    </div>
+    <div class="pred-stat pred-stat--medio">
+      <span class="pred-stat-icon">🟡</span>
+      <span class="pred-stat-num">{{ enRiesgoMedio() }}</span>
+      <span class="pred-stat-label">Riesgo Medio</span>
+    </div>
+    <div class="pred-stat pred-stat--bajo">
+      <span class="pred-stat-icon">🟢</span>
+      <span class="pred-stat-num">{{ enRiesgoBajo() }}</span>
+      <span class="pred-stat-label">Riesgo Bajo</span>
+    </div>
+  </div>
+
+  <!-- ── ESTADOS ─────────────────────────────────────────────────── -->
+  @if (cargando()) {
+    <div class="pred-loading">
+      <div class="pred-spinner"></div>
+      <span>Analizando datos de alumnos…</span>
+    </div>
+  }
+  @if (errorMsg()) {
+    <div class="pred-error">{{ errorMsg() }}</div>
+  }
+
+  <!-- ── LISTA DE ALUMNOS ─────────────────────────────────────────── -->
+  @if (!cargando() && !errorMsg()) {
+    <div class="pred-lista">
+      @for (alumno of alumnosFiltrados(); track alumno.idAlumno + '-' + alumno.idAulaCurso) {
+        <div class="pred-card" [class]="'pred-card--' + alumno.nivelRiesgo">
+
+          <!-- Cabecera de la tarjeta -->
+          <div class="pred-card-header">
+            <div class="pred-avatar" [class]="'pred-avatar--' + alumno.nivelRiesgo">
+              {{ alumno.nombre[0] }}{{ alumno.apellido[0] }}
+            </div>
+            <div class="pred-card-info">
+              <span class="pred-card-nombre">{{ alumno.nombre }} {{ alumno.apellido }}</span>
+              <span class="pred-card-aula">{{ alumno.grado }} {{ alumno.seccion }} · {{ alumno.curso }}</span>
+            </div>
+            <!-- Medidor de riesgo circular -->
+            <div class="pred-risk-badge" [class]="'pred-risk-badge--' + alumno.nivelRiesgo">
+              <span class="pred-risk-pct">{{ alumno.indiceRiesgo }}%</span>
+              <span class="pred-risk-label">Riesgo</span>
+            </div>
+          </div>
+
+          <!-- Métricas -->
+          <div class="pred-card-metrics">
+            <!-- Asistencia -->
+            <div class="pred-metric">
+              <div class="pred-metric-header">
+                <span class="pred-metric-label">Asistencia</span>
+                <span class="pred-metric-value">{{ alumno.porcentajeAsistencia }}%</span>
+              </div>
+              <div class="pred-bar-track">
+                <div class="pred-bar-fill pred-bar-fill--asistencia"
+                     [style.width.%]="alumno.porcentajeAsistencia"
+                     [class.low]="alumno.porcentajeAsistencia < 70"></div>
+              </div>
+              <span class="pred-metric-sub">{{ alumno.clasesPresente }} / {{ alumno.totalClases }} clases</span>
+            </div>
+            <!-- Calificación -->
+            <div class="pred-metric">
+              <div class="pred-metric-header">
+                <span class="pred-metric-label">Promedio</span>
+                <span class="pred-metric-value">{{ alumno.promedio | number:'1.1-1' }}</span>
+              </div>
+              <div class="pred-bar-track">
+                <div class="pred-bar-fill pred-bar-fill--nota"
+                     [style.width.%]="alumno.promedio * 5"
+                     [class.low]="alumno.promedio < 10.5"></div>
+              </div>
+              <span class="pred-metric-sub">Sobre 20 puntos</span>
+            </div>
+          </div>
+
+          <!-- Causas de riesgo -->
+          <div class="pred-causas">
+            @for (causa of alumno.causas; track causa) {
+              <span class="pred-causa-pill" [class]="'pred-causa-pill--' + alumno.nivelRiesgo">
+                @if (alumno.nivelRiesgo === 'alto')  { ⚠️ }
+                @if (alumno.nivelRiesgo === 'medio') { ℹ️ }
+                @if (alumno.nivelRiesgo === 'bajo')  { ✅ }
+                {{ causa }}
+              </span>
+            }
+          </div>
+
+        </div>
+      }
+
+      @if (alumnosFiltrados().length === 0) {
+        <div class="pred-empty">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
+          </svg>
+          <p>No hay alumnos en este nivel de riesgo.</p>
+        </div>
+      }
+    </div>
+  }
+
+</div>

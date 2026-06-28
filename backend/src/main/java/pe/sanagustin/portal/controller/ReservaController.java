@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.sanagustin.portal.dto.DisponibilidadResponse;
 import pe.sanagustin.portal.dto.NuevaReservaRequest;
 import pe.sanagustin.portal.dto.ReservaDto;
+import pe.sanagustin.portal.entity.EspacioReserva;
 import pe.sanagustin.portal.service.ReservaService;
 
 import java.util.List;
@@ -32,6 +33,12 @@ public class ReservaController {
     public ResponseEntity<List<ReservaDto>> listar(
             @AuthenticationPrincipal UserDetails user) {
         return ResponseEntity.ok(reservaService.getReservas(user.getUsername()));
+    }
+
+    @GetMapping("/reservas/espacios-disponibles")
+    public ResponseEntity<List<EspacioReserva>> getEspaciosDisponibles(
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(reservaService.getEspaciosDisponibles(user.getUsername()));
     }
 
     @PostMapping("/reservas/verificar")

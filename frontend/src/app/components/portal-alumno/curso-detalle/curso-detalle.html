@@ -1,0 +1,489 @@
+<div class="cd-wrapper">
+
+  <!-- ══════════════════════════════════════════════════
+       BREADCRUMB + HEADER DEL CURSO
+  ══════════════════════════════════════════════════ -->
+  <div class="cd-header">
+    <button class="cd-back-btn" (click)="volver.emit()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Volver a mis cursos
+    </button>
+
+    <div class="cd-curso-info" [style.border-left-color]="curso.color">
+      <div class="cd-curso-badge" [style.background]="curso.color">
+        <span class="cd-curso-icon">
+          @if (curso.areaKey === 'mat') { ∑ }
+          @if (curso.areaKey === 'com') { Aa }
+          @if (curso.areaKey === 'cie') { ⚗ }
+          @if (curso.areaKey === 'his') { 🌍 }
+          @if (curso.areaKey === 'ing') { EN }
+          @if (curso.areaKey === 'art') { 🎨 }
+          @if (curso.areaKey === 'efi') { ⚽ }
+          @if (curso.areaKey === 'rel') { ✝ }
+          @if (!['mat','com','cie','his','ing','art','efi','rel'].includes(curso.areaKey)) { 📚 }
+        </span>
+      </div>
+      <div class="cd-curso-texto">
+        <h2 class="cd-curso-nombre">{{ curso.nombre }}</h2>
+        <p class="cd-curso-meta">
+          {{ curso.grado }} · Sección {{ curso.seccion }} · Turno {{ curso.turno }}
+          <span class="cd-sep">·</span>
+          <span class="cd-docente">{{ curso.docente }}</span>
+        </p>
+      </div>
+      <div class="cd-curso-horas">
+        <span class="cd-horas-num">{{ curso.horasSemana }}</span>
+        <span class="cd-horas-label">h/sem</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       BARRA DE TABS
+  ══════════════════════════════════════════════════ -->
+  <nav class="cd-tabs">
+    @for (tab of tabs; track tab.id) {
+      <button class="cd-tab-btn"
+              [class.active]="tabActiva() === tab.id"
+              (click)="setTab(tab.id)">
+        <span class="cd-tab-icon">
+          @if (tab.icono === 'check-circle') {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          }
+          @if (tab.icono === 'folder') {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+          }
+          @if (tab.icono === 'clipboard') {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+            </svg>
+          }
+          @if (tab.icono === 'zap') {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          }
+          @if (tab.icono === 'file-text') {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
+          }
+        </span>
+        {{ tab.label }}
+      </button>
+    }
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════
+       ÁREA DE CONTENIDO
+  ══════════════════════════════════════════════════ -->
+  <div class="cd-body">
+
+    <!-- LOADING -->
+    @if (cargando()) {
+      <div class="cd-loading">
+        <div class="cd-spinner"></div>
+        <span>Cargando información…</span>
+      </div>
+    }
+
+    <!-- ERROR -->
+    @if (!cargando() && error()) {
+      <div class="cd-error">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        {{ error() }}
+        <button class="cd-retry" (click)="setTab(tabActiva())">Reintentar</button>
+      </div>
+    }
+
+    <!-- ══════════════════════════════════════════════
+         TAB 1: ASISTENCIA
+    ══════════════════════════════════════════════ -->
+    @if (!cargando() && !error() && tabActiva() === 'asistencia') {
+      <div class="cd-section">
+        @if (asistencia(); as a) {
+
+          <!-- Gráfico + métricas resumen -->
+          <div class="cd-asistencia-hero">
+
+            <!-- Donut chart SVG -->
+            <div class="cd-donut-wrapper">
+              <svg viewBox="0 0 100 100" class="cd-donut">
+                <!-- Track -->
+                <circle cx="50" cy="50" r="44" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+                <!-- Progress -->
+                <circle cx="50" cy="50" r="44" fill="none"
+                        [attr.stroke]="a.porcentajeAsistencia >= 80 ? '#22c55e' : a.porcentajeAsistencia >= 70 ? '#f59e0b' : '#ef4444'"
+                        stroke-width="10"
+                        stroke-linecap="round"
+                        stroke-dasharray="276.46"
+                        [attr.stroke-dashoffset]="asistenciaOffset(a.porcentajeAsistencia)"
+                        transform="rotate(-90 50 50)"/>
+                <text x="50" y="47" text-anchor="middle" class="cd-donut-pct">
+                  {{ a.porcentajeAsistencia | number:'1.0-0' }}%
+                </text>
+                <text x="50" y="60" text-anchor="middle" class="cd-donut-label">Asistencia</text>
+              </svg>
+            </div>
+
+            <!-- Chips de resumen -->
+            <div class="cd-asist-chips">
+              <div class="cd-chip cd-chip--verde">
+                <span class="cd-chip-num">{{ a.presente }}</span>
+                <span class="cd-chip-label">Presente</span>
+              </div>
+              <div class="cd-chip cd-chip--ambar">
+                <span class="cd-chip-num">{{ a.tardanza }}</span>
+                <span class="cd-chip-label">Tardanza</span>
+              </div>
+              <div class="cd-chip cd-chip--rojo">
+                <span class="cd-chip-num">{{ a.falta }}</span>
+                <span class="cd-chip-label">Falta</span>
+              </div>
+              <div class="cd-chip cd-chip--azul">
+                <span class="cd-chip-num">{{ a.justificado }}</span>
+                <span class="cd-chip-label">Justificado</span>
+              </div>
+            </div>
+
+            <!-- Alerta si asistencia baja -->
+            @if (a.porcentajeAsistencia < 80) {
+              <div class="cd-asist-alerta" [class.rojo]="a.porcentajeAsistencia < 70">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                @if (a.porcentajeAsistencia < 70) {
+                  Tu asistencia está en zona de riesgo. Podrías ser inhabilitado en este curso.
+                } @else {
+                  Tu asistencia está por debajo del 80%. Recomendamos mejorarla.
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Historial de asistencia -->
+          <div class="cd-subseccion">
+            <h3 class="cd-subseccion-titulo">Historial de clases</h3>
+            @if (a.historial.length === 0) {
+              <div class="cd-empty">No hay registros de asistencia todavía.</div>
+            }
+            <div class="cd-asist-lista">
+              @for (reg of a.historial; track reg.fecha) {
+                <div class="cd-asist-fila">
+                  <span class="cd-asist-fecha">{{ reg.fecha }}</span>
+                  <span class="cd-asist-badge" [class]="'cd-badge--' + estadoClass(reg.estado)">
+                    {{ estadoLabel(reg.estado) }}
+                  </span>
+                  @if (reg.justificante) {
+                    <span class="cd-asist-just" title="{{ reg.justificante }}">
+                      📎 Justificante
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="cd-empty">No hay datos de asistencia disponibles.</div>
+        }
+      </div>
+    }
+
+    <!-- ══════════════════════════════════════════════
+         TAB 2: CONTENIDO
+    ══════════════════════════════════════════════ -->
+    @if (!cargando() && !error() && tabActiva() === 'contenido') {
+      <div class="cd-section">
+        @if (contenidoArbol().length === 0) {
+          <div class="cd-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <p>Aún no hay materiales en este curso.</p>
+          </div>
+        }
+        @for (semana of contenidoArbol(); track semana.semana) {
+          <div class="cd-semana">
+            <button class="cd-semana-header" (click)="toggleSemana(semana.semana)">
+              <div class="cd-semana-titulo">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                Semana {{ semana.semana | number:'2.0-0' }}
+              </div>
+              <svg class="cd-chevron" [class.open]="isSemanaAbierta(semana.semana)"
+                   width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+
+            @if (isSemanaAbierta(semana.semana)) {
+              <div class="cd-semana-body">
+                @for (clase of semana.clases; track clase.clase) {
+                  <div class="cd-clase">
+                    <button class="cd-clase-header" (click)="toggleClase(semana.semana, clase.clase)">
+                      <span>Clase {{ clase.clase }}</span>
+                      <svg class="cd-chevron" [class.open]="isClaseAbierta(semana.semana, clase.clase)"
+                           width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </button>
+                    @if (isClaseAbierta(semana.semana, clase.clase)) {
+                      <div class="cd-materiales-lista">
+                        @for (mat of clase.items; track mat.idMaterial) {
+                          <div class="cd-material-item">
+                            <span class="cd-mat-icon">{{ tipoIcon(mat.tipo) }}</span>
+                            <div class="cd-mat-info">
+                              <span class="cd-mat-titulo">{{ mat.titulo }}</span>
+                              <span class="cd-mat-meta">{{ mat.tipo.toUpperCase() }} · {{ mat.fechaCreacion }}</span>
+                            </div>
+                            @if (mat.url) {
+                              <a class="cd-mat-link" [href]="mat.url" target="_blank" rel="noopener">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                  <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                                </svg>
+                                Abrir
+                              </a>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ══════════════════════════════════════════════
+         TAB 3: TAREAS
+    ══════════════════════════════════════════════ -->
+    @if (!cargando() && !error() && tabActiva() === 'tareas') {
+      <div class="cd-section">
+
+        <!-- Chips de resumen -->
+        @if (tareas().length > 0) {
+          <div class="cd-tareas-resumen">
+            <div class="cd-tresumen-chip">
+              <span class="cd-tr-num">{{ tareas().length }}</span>
+              <span class="cd-tr-label">Total</span>
+            </div>
+            <div class="cd-tresumen-chip cd-tc--verde">
+              <span class="cd-tr-num">{{ tareasEntregadas() }}</span>
+              <span class="cd-tr-label">Entregadas</span>
+            </div>
+            <div class="cd-tresumen-chip cd-tc--azul">
+              <span class="cd-tr-num">{{ tareasConNota() }}</span>
+              <span class="cd-tr-label">Calificadas</span>
+            </div>
+            @if (promedioTareas() !== null) {
+              <div class="cd-tresumen-chip cd-tc--violeta">
+                <span class="cd-tr-num">{{ promedioTareas() | number:'1.1-1' }}</span>
+                <span class="cd-tr-label">Promedio</span>
+              </div>
+            }
+          </div>
+        }
+
+        @if (tareas().length === 0) {
+          <div class="cd-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+            </svg>
+            <p>No hay tareas publicadas en este curso.</p>
+          </div>
+        }
+
+        <div class="cd-tareas-lista">
+          @for (tarea of tareas(); track tarea.idTarea) {
+            <div class="cd-tarea-card" [class.entregada]="tarea.entregado" [class.sin-nota]="!tarea.entregado">
+              <div class="cd-tarea-top">
+                <div class="cd-tarea-header">
+                  <span class="cd-tarea-num">T{{ tarea.numeroTarea }}</span>
+                  <span class="cd-tarea-titulo">{{ tarea.titulo }}</span>
+                </div>
+                <!-- Badge estado -->
+                @if (tarea.nota !== null) {
+                  <div class="cd-nota-badge" [class]="'cd-nota--' + notaColor(tarea.nota, tarea.notaMaxima)">
+                    {{ tarea.nota | number:'1.1-1' }}/{{ tarea.notaMaxima }}
+                  </div>
+                } @else if (tarea.entregado) {
+                  <span class="cd-estado-badge cd-estado--azul">Entregado</span>
+                } @else {
+                  <span class="cd-estado-badge cd-estado--gris">Pendiente</span>
+                }
+              </div>
+
+              <div class="cd-tarea-meta">
+                <span class="cd-meta-pill">Sem {{ tarea.semana }} / Clase {{ tarea.clase }}</span>
+                @if (tarea.fechaEntrega) {
+                  <span class="cd-meta-pill cd-meta-fecha">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+                      <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    Entrega: {{ tarea.fechaEntrega }}
+                  </span>
+                }
+                @if (tarea.tipoEntregable) {
+                  <span class="cd-meta-pill">{{ tarea.tipoEntregable }}</span>
+                }
+              </div>
+
+              @if (tarea.descripcion) {
+                <p class="cd-tarea-desc">{{ tarea.descripcion }}</p>
+              }
+
+              <!-- Barra de progreso nota -->
+              @if (tarea.nota !== null) {
+                <div class="cd-nota-bar-track">
+                  <div class="cd-nota-bar-fill"
+                       [class]="'nota-' + notaColor(tarea.nota, tarea.notaMaxima)"
+                       [style.width.%]="(tarea.nota / tarea.notaMaxima) * 100">
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ══════════════════════════════════════════════
+         TAB 4: ACTIVIDADES
+    ══════════════════════════════════════════════ -->
+    @if (!cargando() && !error() && tabActiva() === 'actividades') {
+      <div class="cd-section">
+
+        @if (actividades().length > 0 && promedioActividades() !== null) {
+          <div class="cd-act-resumen">
+            <div class="cd-tresumen-chip cd-tc--violeta">
+              <span class="cd-tr-num">{{ promedioActividades() | number:'1.1-1' }}</span>
+              <span class="cd-tr-label">Promedio evaluaciones</span>
+            </div>
+            <div class="cd-tresumen-chip cd-tc--verde">
+              <span class="cd-tr-num">{{ actividades().length }}</span>
+              <span class="cd-tr-label">Total evaluaciones</span>
+            </div>
+          </div>
+        }
+
+        @if (actividades().length === 0) {
+          <div class="cd-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            <p>No hay evaluaciones registradas en este curso.</p>
+          </div>
+        }
+
+        <div class="cd-act-lista">
+          @for (act of actividades(); track act.idExamen) {
+            <div class="cd-act-card">
+              <div class="cd-act-top">
+                <div class="cd-act-info">
+                  <span class="cd-act-num">E{{ act.numeroExamen }}</span>
+                  <div>
+                    <p class="cd-act-titulo">{{ act.titulo }}</p>
+                    <div class="cd-act-meta-row">
+                      <span class="cd-tipo-badge cd-tipo--{{ act.tipo }}">{{ tipoActividadLabel(act.tipo) }}</span>
+                      @if (act.fechaExamen) {
+                        <span class="cd-meta-pill">
+                          📅 {{ act.fechaExamen }}
+                        </span>
+                      }
+                      @if (act.duracionMinutos) {
+                        <span class="cd-meta-pill">⏱ {{ act.duracionMinutos }} min</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+                <div class="cd-act-nota-col">
+                  @if (!act.asistio) {
+                    <span class="cd-estado-badge cd-estado--rojo">No asistió</span>
+                  } @else if (act.nota !== null) {
+                    <div class="cd-nota-badge" [class]="'cd-nota--' + notaColor(act.nota, act.notaMaxima)">
+                      {{ act.nota | number:'1.1-1' }}/{{ act.notaMaxima }}
+                    </div>
+                  } @else {
+                    <span class="cd-estado-badge cd-estado--azul">Por calificar</span>
+                  }
+                </div>
+              </div>
+
+              @if (act.descripcion) {
+                <p class="cd-tarea-desc">{{ act.descripcion }}</p>
+              }
+
+              @if (act.nota !== null && act.asistio) {
+                <div class="cd-nota-bar-track">
+                  <div class="cd-nota-bar-fill"
+                       [class]="'nota-' + notaColor(act.nota, act.notaMaxima)"
+                       [style.width.%]="(act.nota / act.notaMaxima) * 100">
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ══════════════════════════════════════════════
+         TAB 5: REPORTES
+    ══════════════════════════════════════════════ -->
+    @if (!cargando() && !error() && tabActiva() === 'reportes') {
+      <div class="cd-section">
+        @if (reportes().length === 0) {
+          <div class="cd-empty cd-empty--reportes">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <p>No hay reportes del docente para este curso.</p>
+            <span class="cd-empty-sub">Los reportes aparecerán cuando el docente los comparta contigo.</span>
+          </div>
+        }
+        <div class="cd-reportes-lista">
+          @for (rep of reportes(); track rep.idReporte) {
+            <div class="cd-reporte-card" [class]="'cd-rep--' + tipoReporteClass(rep.tipo)">
+              <div class="cd-rep-header">
+                <span class="cd-rep-icon">{{ tipoReporteIcon(rep.tipo) }}</span>
+                <div class="cd-rep-info">
+                  <span class="cd-rep-titulo">{{ rep.titulo }}</span>
+                  <span class="cd-rep-fecha">{{ rep.fecha }}</span>
+                </div>
+                <span class="cd-rep-tipo-badge cd-rep-badge--{{ tipoReporteClass(rep.tipo) }}">
+                  {{ rep.tipo.replace('_', ' ') | titlecase }}
+                </span>
+              </div>
+              @if (rep.descripcion) {
+                <p class="cd-rep-desc">{{ rep.descripcion }}</p>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+  </div><!-- /cd-body -->
+</div><!-- /cd-wrapper -->

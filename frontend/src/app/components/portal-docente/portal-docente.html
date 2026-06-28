@@ -1915,10 +1915,16 @@
                 <select class="cd-modal-input"
                         [ngModel]="formReserva().espacio"
                         (ngModelChange)="setFormReserva('espacio', $event)">
-                  @for (e of ESPACIOS; track e) {
-                    <option [value]="e">{{ e }}</option>
+                  @for (e of espaciosDisponibles(); track e.idEspacio) {
+                    <option [value]="e.nombre">{{ e.nombre }}</option>
+                  }
+                  @if (espaciosDisponibles().length === 0) {
+                    <option value="">Cargando espacios…</option>
                   }
                 </select>
+                @if (limiteTiempoSeleccionado()) {
+                  <span class="cd-modal-hint">⏱ {{ limiteTiempoSeleccionado() }}</span>
+                }
               </div>
 
               <!-- Fecha -->
@@ -2641,11 +2647,18 @@
 
       }<!-- /refuerzos -->
 
+      <!-- ═══════════════════════════════════════════════════
+           PREDICCIONES / ALERTAS TEMPRANAS
+      ═══════════════════════════════════════════════════ -->
+      @if (activeSection() === 'predicciones') {
+        <app-predicciones-dashboard />
+      }<!-- /predicciones -->
+
     </main>
 
 
     <!-- ── Right Sidebar ── -->
-    <aside class="pd-sidebar-right" [class.pd-sidebar-right--hidden]="activeSection() === 'refuerzos' || activeSection() === 'mensajes' || activeSection() === 'calendario'">
+    <aside class="pd-sidebar-right" [class.pd-sidebar-right--hidden]="activeSection() === 'refuerzos' || activeSection() === 'mensajes' || activeSection() === 'calendario' || activeSection() === 'predicciones'">
       <div class="pd-review-header">
         <h3 class="pd-review-title">Pendientes</h3>
       </div>

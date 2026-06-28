@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { PrediccionesDashboard } from './predicciones/predicciones-dashboard';
 
 export interface Curso {
   idAulaCurso: number;
@@ -146,14 +147,13 @@ const CURSO_COLORS: Record<string, string> = {
   'religión':                       '#8d99ae',
 };
 
-/** Espacios que se pueden reservar en el calendario */
-const ESPACIOS = [
-  'Lab. Ciencias A',
-  'Lab. Robótica',
-  'Auditorio Principal',
-  'Sala Multimedia Premium',
-  'Aula Virtual (Zoom)',
-];
+/** Espacio disponible para reserva (shape del endpoint) */
+export interface EspacioReserva {
+  idEspacio: number;
+  nombre: string;
+  area: string;
+  limiteMinutos: number;
+}
 
 /** Hora en la que empieza la grilla del calendario (7:00 AM) */
 const CAL_HORA_INICIO = 7;
@@ -410,7 +410,7 @@ const ICON_MAP: Record<string, string> = {
 
 @Component({
   selector: 'app-portal-docente',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PrediccionesDashboard],
   templateUrl: './portal-docente.html',
   styleUrl: './portal-docente.scss',
 })
@@ -421,7 +421,19 @@ export class PortalDocente {
 
   // Exponemos constantes usadas en el template
   calPxPorHora = CAL_PX_POR_HORA;
-  ESPACIOS     = ESPACIOS;
+
+  /** Espacios que el backend autoriza para este docente */
+  espaciosDisponibles = signal<EspacioReserva[]>([]);
+
+  /** Límite de tiempo (en horas y minutos) del espacio seleccionado en el modal */
+  limiteTiempoSeleccionado = computed(() => {
+    const nombre = this.formReserva().espacio;
+    const espacio = this.espaciosDisponibles().find(e => e.nombre === nombre);
+    if (!espacio) return null;
+    const h = Math.floor(espacio.limiteMinutos / 60);
+    const m = espacio.limiteMinutos % 60;
+    return m === 0 ? `Límite: ${h} h` : `Límite: ${h} h ${m} min`;
+  });
 
   activeSection = signal('inicio');
   activeGrade   = signal('Clases de Hoy');
@@ -435,10 +447,11 @@ export class PortalDocente {
   iniciales = this.nombre.split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase();
 
   navItems = [
-    { id: 'inicio',      label: 'Inicio'     },
-    { id: 'calendario',  label: 'Calendario' },
-    { id: 'mensajes',    label: 'Mensajes'   },
-    { id: 'refuerzos',   label: 'Refuerzos'  },
+    { id: 'inicio',        label: 'Inicio'        },
+    { id: 'calendario',    label: 'Calendario'    },
+    { id: 'mensajes',      label: 'Mensajes'      },
+    { id: 'refuerzos',     label: 'Refuerzos'     },
+    { id: 'predicciones',  label: 'Predicciones'  },
   ];
 
   years = ['2024', '2025', '2026'];
@@ -693,7 +706,7 @@ export class PortalDocente {
   errorDisponibilidad = signal('');
   okDisponibilidad = signal(false);
   formReserva = signal<FormReserva>({
-    espacio:     ESPACIOS[0],
+    espacio:     '',
     fecha:       '',
     horaInicio:  '13:00',
     horaFin:     '15:00',
@@ -785,11 +798,30 @@ export class PortalDocente {
     this.cargarTiposEvento();
     this.cargarPendientes();
     this.cargarReservas();
+    this.cargarEspaciosDisponibles();
   }
 
   /* ══════════════════════════════════════════
      RESERVAS DE ESPACIO
   ══════════════════════════════════════════ */
+
+  /** Carga los espacios disponibles para el docente autenticado */
+  cargarEspaciosDisponibles() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<EspacioReserva[]>(
+      'http://localhost:8080/api/portal/docente/reservas/espacios-disponibles', { headers }
+    ).subscribe({
+      next: data => {
+        this.espaciosDisponibles.set(data);
+        if (data.length > 0 && !this.formReserva().espacio) {
+          this.formReserva.update(f => ({ ...f, espacio: data[0].nombre }));
+        }
+      },
+      error: () => { /* no bloquea la UI si falla */ },
+    });
+  }
 
   /** Reservas de la semana actualmente visible (por rango de fechas) */
   reservasForSemana = computed(() => {
@@ -918,7 +950,7 @@ export class PortalDocente {
         const hIni = hora ? `${hora}:00` : '13:00';
         const hFin = hora ? `${(Number(hora) + 1).toString().padStart(2, '0')}:00` : '15:00';
         this.formReserva.set({
-          espacio:     ESPACIOS[0],
+          espacio:     this.espaciosDisponibles()[0]?.nombre ?? '',
           fecha,
           horaInicio:  hIni,
           horaFin:     hFin,

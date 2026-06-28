@@ -108,6 +108,15 @@
 
       <!-- ========== INICIO ========== -->
       @if (seccionActiva() === 'inicio') {
+
+        <!-- Detalle de curso activo -->
+        @if (cursoActivo()) {
+          <app-curso-detalle
+            [curso]="cursoActivo()!"
+            (volver)="volverAInicio()">
+          </app-curso-detalle>
+        } @else {
+
         <div class="pa-inicio">
 
           <!-- Panel izquierdo: Mis cursos -->
@@ -149,7 +158,7 @@
               @for (curso of cursos(); track curso.nombre) {
                 <div class="pa-curso-card">
 
-                  <!-- Área de imagen / color -->
+                   <!-- Área de imagen / color -->
                   <div class="pa-card-visual" [style.background]="curso.color">
                     <!-- Ilustración SVG decorativa -->
                     <svg class="pa-card-deco" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -218,6 +227,14 @@
                       </svg>
                       <span>{{ curso.docente }}</span>
                     </div>
+
+                    <!-- Botón Ver detalle -->
+                    <button class="pa-card-detalle-btn" (click)="abrirDetalleCurso(curso)">
+                      Ver detalle
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                    </button>
                   </div>
 
                 </div>
@@ -262,7 +279,8 @@
             </div>
           </aside>
 
-        </div>
+        </div><!-- /pa-inicio -->
+        }<!-- @else -->
       }
 
       <!-- ========== CALENDARIO ========== -->

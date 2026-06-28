@@ -1,6 +1,7 @@
 package pe.sanagustin.portal.dto;
 
 public record CursoAlumnoDto(
+        Long idAulaCurso,
         String nombre,
         String area,
         Integer horasSemana,

@@ -3,6 +3,7 @@ package pe.sanagustin.portal.service;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import pe.sanagustin.portal.dto.AlumnoPrediccionDto;
 import pe.sanagustin.portal.dto.CursoDocenteDto;
 import pe.sanagustin.portal.dto.HorarioDocenteDto;
 
@@ -113,4 +114,72 @@ public class DocenteService {
                 })
                 .toList();
     }
+
+    /**
+     * Dashboard de Predicciones / Alertas Tempranas de deserción escolar.
+     * Devuelve un consolidado de asistencia y calificaciones de TODOS los alumnos
+     * matriculados en las aulas que dicta el docente autenticado.
+     * La lógica de clasificación de riesgo (semáforo) se calcula en el frontend
+     * para poder ajustar los umbrales de forma dinámica.
+     */
+    public List<AlumnoPrediccionDto> getPredicciones(String codigoDocente) {
+        String sql = """
+                SELECT al.id_alumno,
+                       al.nombre,
+                       al.apellido,
+                       ac.id_aula_curso,
+                       c.nombre                                         AS curso,
+                       g.nombre                                         AS grado,
+                       s.nombre                                         AS seccion,
+                       COUNT(aa.id_asistencia)                          AS total_clases,
+                       COUNT(aa.id_asistencia) FILTER (
+                           WHERE aa.estado IN ('presente','tardanza','justificado')
+                       )                                                AS clases_presente,
+                       COALESCE(
+                           ROUND(AVG(nt.nota)::numeric, 1), 0
+                       )                                                AS promedio
+                FROM docente_asignaciones da
+                JOIN aula_cursos          ac  ON ac.id_aula_curso = da.id_aula_curso
+                JOIN cursos               c   ON c.id_curso       = ac.id_curso
+                JOIN aulas                a   ON a.id_aula        = ac.id_aula
+                JOIN grados               g   ON g.id_grado       = a.id_grado
+                JOIN secciones            s   ON s.id_seccion     = a.id_seccion
+                JOIN matriculas           mat ON mat.id_aula      = a.id_aula
+                                             AND mat.estado        = 'activa'
+                JOIN alumnos              al  ON al.id_alumno     = mat.id_alumno
+                JOIN maestros             mae ON mae.id_maestro   = da.id_maestro
+                JOIN usuarios             u   ON u.id_usuario     = mae.id_usuario
+                LEFT JOIN asistencia_alumno aa ON aa.id_alumno    = al.id_alumno
+                                              AND aa.id_aula_curso = ac.id_aula_curso
+                LEFT JOIN notas_tarea      nt  ON nt.id_alumno    = al.id_alumno
+                    AND nt.id_tarea IN (
+                        SELECT id_tarea FROM tareas_curso
+                        WHERE id_aula_curso = ac.id_aula_curso
+                    )
+                WHERE u.codigo = :codigo AND da.activo = true
+                GROUP BY al.id_alumno, al.nombre, al.apellido,
+                         ac.id_aula_curso, c.nombre, g.nombre, s.nombre
+                ORDER BY g.nombre, s.nombre, al.apellido, al.nombre
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = entityManager
+                .createNativeQuery(sql)
+                .setParameter("codigo", codigoDocente)
+                .getResultList();
+
+        return rows.stream().map(r -> new AlumnoPrediccionDto(
+                ((Number) r[0]).longValue(),
+                (String)  r[1],
+                (String)  r[2],
+                ((Number) r[3]).longValue(),
+                (String)  r[4],
+                (String)  r[5],
+                (String)  r[6],
+                ((Number) r[7]).intValue(),
+                ((Number) r[8]).intValue(),
+                r[9] != null ? ((Number) r[9]).doubleValue() : 0.0
+        )).toList();
+    }
 }
+

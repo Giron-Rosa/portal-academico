@@ -194,6 +194,16 @@ CREATE TABLE horarios (
 );
 
 -- ============================================================
+-- TABLA: espacios_reserva (Catálogo de espacios y límites de tiempo)
+-- ============================================================
+CREATE TABLE espacios_reserva (
+    id_espacio     SERIAL       PRIMARY KEY,
+    nombre         VARCHAR(100) NOT NULL UNIQUE,
+    area           VARCHAR(60)  NOT NULL, -- 'Matemática', 'Comunicación', 'Ciencias', 'Educación Física', 'Arte', 'General'
+    limite_minutos INT          NOT NULL DEFAULT 120
+);
+
+-- ============================================================
 -- TABLA: reservas_espacio
 -- Reservas de espacios (laboratorios, auditorios, salas) que
 -- realiza un docente para una clase, reunión de padres, etc.
@@ -754,3 +764,103 @@ INSERT INTO materiales_curso (id_aula_curso, semana, clase, titulo, tipo, url, f
     (17, 1, 1, 'Video: Contando con deditos',             'youtube', 'https://www.youtube.com/watch?v=example2', NOW() - INTERVAL '19 days'),
     -- 1ro Prim A — Semana 1, Clase 2
     (17, 1, 2, 'Suma y resta básica',                     'pdf',     NULL, NOW() - INTERVAL '17 days');
+
+-- ------ espacios_reserva ------
+INSERT INTO espacios_reserva (nombre, area, limite_minutos) VALUES
+    ('Lab. de Computación A', 'Matemática', 90),
+    ('Lab. de Computación B', 'Matemática', 90),
+    ('Biblioteca Principal',  'Comunicación', 120),
+    ('Aula de Debate',        'Comunicación', 60),
+    ('Lab. Ciencias A',       'Ciencias', 120),
+    ('Lab. Ciencias B',       'Ciencias', 120),
+    ('Losa Deportiva Norte',  'Educación Física', 90),
+    ('Gimnasio Cubierto',    'Educación Física', 90),
+    ('Taller de Arte',        'Arte', 120),
+    ('Salón de Música',       'Arte', 60),
+    ('Auditorio Principal',   'General', 180),
+    ('Sala de Reuniones',     'General', 60);
+
+-- ═══════════════════════════════════════════════════════════════
+--  FASE II: Tablas del portal del alumno (detalle de curso)
+-- ═══════════════════════════════════════════════════════════════
+
+-- TABLA: tareas_curso  (Tareas / trabajos creados por el docente)
+CREATE TABLE IF NOT EXISTS tareas_curso (
+    id_tarea        BIGSERIAL PRIMARY KEY,
+    id_aula_curso   BIGINT        NOT NULL REFERENCES aula_cursos(id_aula_curso) ON DELETE CASCADE,
+    numero_tarea    INTEGER       NOT NULL DEFAULT 1,
+    semana          INTEGER       NOT NULL DEFAULT 1,
+    clase           INTEGER       NOT NULL DEFAULT 1,
+    titulo          VARCHAR(200)  NOT NULL,
+    descripcion     TEXT,
+    tipo_entregable VARCHAR(50),                        -- 'archivo' | 'url' | 'texto' | 'ninguno'
+    fecha_entrega   DATE,
+    nota_maxima     INTEGER       NOT NULL DEFAULT 20,
+    intentos        INTEGER       NOT NULL DEFAULT 1,
+    url             TEXT,
+    fecha_creacion  TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+
+-- TABLA: notas_tarea  (Calificaciones individuales por tarea)
+CREATE TABLE IF NOT EXISTS notas_tarea (
+    id_nota         BIGSERIAL PRIMARY KEY,
+    id_tarea        BIGINT      NOT NULL REFERENCES tareas_curso(id_tarea) ON DELETE CASCADE,
+    id_alumno       BIGINT      NOT NULL REFERENCES alumnos(id_alumno) ON DELETE CASCADE,
+    entregado       BOOLEAN     NOT NULL DEFAULT FALSE,
+    nota            NUMERIC(5,2),
+    fecha_entrega   TIMESTAMPTZ,
+    url_entrega     TEXT,
+    UNIQUE (id_tarea, id_alumno)
+);
+
+-- TABLA: examenes_curso  (Exámenes / evaluaciones del docente)
+CREATE TABLE IF NOT EXISTS examenes_curso (
+    id_examen       BIGSERIAL PRIMARY KEY,
+    id_aula_curso   BIGINT       NOT NULL REFERENCES aula_cursos(id_aula_curso) ON DELETE CASCADE,
+    numero_examen   INTEGER      NOT NULL DEFAULT 1,
+    semana          INTEGER      NOT NULL DEFAULT 1,
+    clase           INTEGER      NOT NULL DEFAULT 1,
+    titulo          VARCHAR(200) NOT NULL,
+    descripcion     TEXT,
+    tipo            VARCHAR(30)  NOT NULL DEFAULT 'escrito',  -- escrito | oral | online | practico
+    fecha_examen    DATE,
+    duracion_minutos INTEGER,
+    nota_maxima     INTEGER      NOT NULL DEFAULT 20,
+    url             TEXT,
+    fecha_creacion  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+-- TABLA: notas_examen  (Calificaciones individuales de exámenes)
+CREATE TABLE IF NOT EXISTS notas_examen (
+    id_nota_examen  BIGSERIAL PRIMARY KEY,
+    id_examen       BIGINT      NOT NULL REFERENCES examenes_curso(id_examen) ON DELETE CASCADE,
+    id_alumno       BIGINT      NOT NULL REFERENCES alumnos(id_alumno) ON DELETE CASCADE,
+    asistio         BOOLEAN     NOT NULL DEFAULT TRUE,
+    nota            NUMERIC(5,2),
+    UNIQUE (id_examen, id_alumno)
+);
+
+-- TABLA: asistencia_alumno  (Registro de asistencia por clase)
+CREATE TABLE IF NOT EXISTS asistencia_alumno (
+    id_asistencia   BIGSERIAL PRIMARY KEY,
+    id_alumno       BIGINT      NOT NULL REFERENCES alumnos(id_alumno) ON DELETE CASCADE,
+    id_aula_curso   BIGINT      NOT NULL REFERENCES aula_cursos(id_aula_curso) ON DELETE CASCADE,
+    fecha           DATE        NOT NULL,
+    estado          VARCHAR(20) NOT NULL DEFAULT 'presente',  -- presente | falta | tardanza | justificado
+    justificante    TEXT,
+    UNIQUE (id_alumno, id_aula_curso, fecha)
+);
+
+-- TABLA: reportes_alumno  (Reportes / anotaciones del docente sobre un alumno)
+CREATE TABLE IF NOT EXISTS reportes_alumno (
+    id_reporte      BIGSERIAL PRIMARY KEY,
+    id_alumno       BIGINT      NOT NULL REFERENCES alumnos(id_alumno) ON DELETE CASCADE,
+    id_aula_curso   BIGINT      NOT NULL REFERENCES aula_cursos(id_aula_curso) ON DELETE CASCADE,
+    id_maestro      BIGINT      NOT NULL REFERENCES maestros(id_maestro) ON DELETE CASCADE,
+    tipo            VARCHAR(30) NOT NULL DEFAULT 'anotacion',  -- pendiente | anotacion | llamada_atencion | felicitacion | otro
+    titulo          VARCHAR(200) NOT NULL,
+    descripcion     TEXT,
+    fecha           DATE        NOT NULL DEFAULT CURRENT_DATE,
+    visible_padre   BOOLEAN     NOT NULL DEFAULT TRUE,
+    fecha_creacion  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
