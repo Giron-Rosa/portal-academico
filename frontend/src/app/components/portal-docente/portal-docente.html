@@ -792,6 +792,7 @@
                   <label class="cd-modal-label">Fecha de Entrega</label>
                   <input class="cd-modal-input" type="date"
                          [ngModel]="formTarea().fechaEntrega"
+                         [min]="today"
                          (ngModelChange)="setFormTarea('fechaEntrega', $event)"/>
                 </div>
 
@@ -1107,6 +1108,7 @@
                   <label class="cd-modal-label">Fecha del Examen</label>
                   <input class="cd-modal-input" type="date"
                          [ngModel]="formExamen().fechaExamen"
+                         [min]="today"
                          (ngModelChange)="setFormExamen('fechaExamen', $event)"/>
                 </div>
 
@@ -1456,6 +1458,7 @@
                     <label class="cd-modal-label">Fecha</label>
                     <input class="cd-modal-input" type="date"
                            [ngModel]="formReporte().fecha"
+                           [min]="today"
                            (ngModelChange)="setFormReporte('fecha', $event)"/>
                   </div>
                 </div>
@@ -2008,6 +2011,7 @@
                 <label class="cd-modal-label">Fecha</label>
                 <input class="cd-modal-input" type="date"
                        [ngModel]="formReserva().fecha"
+                       [min]="today"
                        (ngModelChange)="setFormReserva('fecha', $event)"/>
               </div>
 
@@ -2564,8 +2568,9 @@
               <div class="com-form-group">
                 <label class="com-form-label">Fecha del evento</label>
                 <input class="com-form-input"
-                       type="date"
-                       [ngModel]="formCom().fechaEvento"
+                        type="date"
+                        [min]="today"
+                        [ngModel]="formCom().fechaEvento"
                        (ngModelChange)="setFormCom('fechaEvento', $event)"/>
               </div>
 

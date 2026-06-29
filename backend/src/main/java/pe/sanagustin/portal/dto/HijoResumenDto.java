@@ -11,5 +11,10 @@ public record HijoResumenDto(
         String            turno,
         String            periodo,
         String            parentesco,
+        double            promedio,
+        double            asistencia,
+        int               cursosRiesgo,
+        double            entregaTareas,
+        String            estado,
         List<CursoHijoDto> cursos
 ) {}

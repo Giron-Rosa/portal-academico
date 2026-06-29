@@ -1,0 +1,571 @@
+<div class="portal-admin-container">
+
+  <!-- ===== HEADER SUPERIOR ===== -->
+  <header class="admin-header">
+    <div class="logo-area">
+      <div class="logo-square">SA</div>
+      <span class="logo-text">San Agustín <strong class="sub-logo">Campus Admin</strong></span>
+    </div>
+    <div class="header-right">
+      <div class="admin-profile">
+        <div class="profile-info">
+          <span class="profile-name">{{ nombreAdmin }}</span>
+          <span class="profile-role">Administrador</span>
+        </div>
+        <div class="profile-avatar">{{ iniciales }}</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== LAYOUT PRINCIPAL ===== -->
+  <div class="main-layout">
+
+    <!-- SIDEBAR VERTICAL -->
+    <aside class="sidebar">
+      <button class="sidebar-item" [class.active]="seccionActiva() === 'dashboard'" (click)="setSeccion('dashboard')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/>
+          <rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>
+        </svg>
+        <span class="sidebar-label">Dashboard</span>
+      </button>
+
+      <button class="sidebar-item" [class.active]="seccionActiva() === 'estudiantes'" (click)="setSeccion('estudiantes')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span class="sidebar-label">Estudiantes</span>
+      </button>
+
+      <button class="sidebar-item" [class.active]="seccionActiva() === 'docentes'" (click)="setSeccion('docentes')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <span class="sidebar-label">Docentes</span>
+      </button>
+
+      <button class="sidebar-item" [class.active]="seccionActiva() === 'padres'" (click)="setSeccion('padres')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        </svg>
+        <span class="sidebar-label">Apoderados</span>
+      </button>
+
+      <button class="sidebar-item" [class.active]="seccionActiva() === 'kanban'" (click)="setSeccion('kanban')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
+        </svg>
+        <span class="sidebar-label">Kanban Notas</span>
+      </button>
+
+      <div class="sidebar-spacer"></div>
+
+      <button class="sidebar-item btn-logout" (click)="logout()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <span class="sidebar-label">Cerrar Sesión</span>
+      </button>
+    </aside>
+
+    <!-- ÁREA DE CONTENIDO DINÁMICO -->
+    <main class="content-area">
+
+      @if (cargando()) {
+        <div class="loading-overlay">
+          <div class="spinner"></div>
+          <span>Cargando datos del portal...</span>
+        </div>
+      }
+
+      @if (errorCarga()) {
+        <div class="error-banner">{{ errorCarga() }}</div>
+      }
+
+      <!-- ========== SECCIÓN: DASHBOARD ========== -->
+      @if (seccionActiva() === 'dashboard') {
+        <div class="seccion-dashboard">
+          <h1 class="page-title">Panel Administrativo</h1>
+          <p class="page-subtitle">Monitorea y gestiona las operaciones globales de San Agustín Campus</p>
+
+          <div class="kpis-grid">
+            <div class="kpi-card azul">
+              <div class="kpi-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                </svg>
+              </div>
+              <div class="kpi-data">
+                <span class="kpi-val">{{ kpis().totalEstudiantes }}</span>
+                <span class="kpi-lbl">Estudiantes Matriculados</span>
+              </div>
+            </div>
+
+            <div class="kpi-card esmeralda">
+              <div class="kpi-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/>
+                  <polyline points="17 11 19 13 23 9"/>
+                </svg>
+              </div>
+              <div class="kpi-data">
+                <span class="kpi-val">{{ kpis().totalDocentes }}</span>
+                <span class="kpi-lbl">Docentes Activos</span>
+              </div>
+            </div>
+
+            <div class="kpi-card naranja">
+              <div class="kpi-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+              </div>
+              <div class="kpi-data">
+                <span class="kpi-val">{{ kpis().totalCursos }}</span>
+                <span class="kpi-lbl">Asignaturas Programadas</span>
+              </div>
+            </div>
+
+            <div class="kpi-card rojo">
+              <div class="kpi-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+              </div>
+              <div class="kpi-data">
+                <span class="kpi-val">{{ kpis().morosidadPct }}%</span>
+                <span class="kpi-lbl">Índice de Morosidad</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="charts-and-recent mt-lg">
+            <div class="recent-card">
+              <h3>Distribución Académica</h3>
+              <p>Clasificación del alumnado matriculado en el periodo lectivo activo.</p>
+              <div class="distribution-list">
+                <div class="dist-item"><span class="lbl">5to Secundaria</span><span class="bar bar-5"><span class="fill w-80"></span></span><span class="pct">32 alumnos</span></div>
+                <div class="dist-item"><span class="lbl">3ro Secundaria</span><span class="bar bar-3"><span class="fill w-60"></span></span><span class="pct">24 alumnos</span></div>
+                <div class="dist-item"><span class="lbl">1ro Primaria</span><span class="bar bar-1"><span class="fill w-40"></span></span><span class="pct">18 alumnos</span></div>
+              </div>
+            </div>
+
+            <div class="recent-card">
+              <h3>Actividad Reciente</h3>
+              <p>Últimos registros y actualizaciones del campus.</p>
+              <ul class="activity-feed">
+                <li><span class="dot azul"></span><strong>Matrícula Registrada:</strong> Diego Martínez en 1ro Primaria A.</li>
+                <li><span class="dot verde"></span><strong>Nueva Asignación:</strong> Oscar Castillo en Matemática (3ro A).</li>
+                <li><span class="dot naranja"></span><strong>Alerta de Reserva:</strong> Auditorio ocupado el Miércoles 10:00 AM.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ========== SECCIÓN: ESTUDIANTES ========== -->
+      @if (seccionActiva() === 'estudiantes') {
+        <div class="seccion-crud">
+          <div class="crud-header">
+            <div>
+              <h1 class="page-title">Gestión de Estudiantes</h1>
+              <p class="page-subtitle">Administra los expedientes y matrículas de todos los alumnos</p>
+            </div>
+            <div class="crud-actions">
+              <button type="button" class="btn-export excel" (click)="exportarEstudiantes('excel')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Excel
+              </button>
+              <button type="button" class="btn-export pdf" (click)="exportarEstudiantes('pdf')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                PDF
+              </button>
+              <button class="btn-primary" (click)="abrirNuevo('estudiante')">+ Nueva Matrícula</button>
+            </div>
+          </div>
+
+          <div class="table-container mt-md">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Estudiante</th>
+                  <th>Grado y Sección</th>
+                  <th>Email institucional</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (est of estudiantes(); track est.idAlumno) {
+                  <tr>
+                    <td><strong>{{ est.codigo }}</strong></td>
+                    <td>{{ est.apellido }}, {{ est.nombre }}</td>
+                    <td>{{ est.grado }} · {{ est.seccion }}</td>
+                    <td>{{ est.email }}</td>
+                    <td><span class="status-badge" [class]="est.estado">{{ est.estado }}</span></td>
+                    <td>
+                      <div class="action-buttons">
+                        <button class="btn-edit" (click)="abrirEditar('estudiante', est)">Editar</button>
+                        <button class="btn-delete" (click)="eliminar('estudiante', est.idAlumno)">Eliminar</button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+
+      <!-- ========== SECCIÓN: DOCENTES ========== -->
+      @if (seccionActiva() === 'docentes') {
+        <div class="seccion-crud">
+          <div class="crud-header">
+            <div>
+              <h1 class="page-title">Gestión de Docentes</h1>
+              <p class="page-subtitle">Administra los perfiles de la plana docente y especialidades</p>
+            </div>
+            <button class="btn-primary" (click)="abrirNuevo('docente')">+ Nuevo Docente</button>
+          </div>
+
+          <div class="table-container mt-md">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Código DOC</th>
+                  <th>Nombre y Apellido</th>
+                  <th>Especialidad</th>
+                  <th>Departamento</th>
+                  <th>Email</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (doc of docentes(); track doc.idMaestro) {
+                  <tr>
+                    <td><strong>{{ doc.codigo }}</strong></td>
+                    <td>{{ doc.apellido }}, {{ doc.nombre }}</td>
+                    <td>{{ doc.especialidad }}</td>
+                    <td>{{ doc.departamento }}</td>
+                    <td>{{ doc.email }}</td>
+                    <td><span class="status-badge" [class]="doc.activo ? 'activo' : 'retirado'">{{ doc.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                    <td>
+                      <div class="action-buttons">
+                        <button class="btn-edit" (click)="abrirEditar('docente', doc)">Editar</button>
+                        <button class="btn-delete" (click)="eliminar('docente', doc.idMaestro)">Eliminar</button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+
+      <!-- ========== SECCIÓN: APODERADOS ========== -->
+      @if (seccionActiva() === 'padres') {
+        <div class="seccion-crud">
+          <div class="crud-header">
+            <div>
+              <h1 class="page-title">Gestión de Padres y Apoderados</h1>
+              <p class="page-subtitle">Vincula padres con estudiantes matriculados para accesos de comunicación</p>
+            </div>
+            <button class="btn-primary" (click)="abrirNuevo('padre')">+ Nuevo Apoderado</button>
+          </div>
+
+          <div class="table-container mt-md">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Apoderado</th>
+                  <th>DNI</th>
+                  <th>Teléfono</th>
+                  <th>Email de contacto</th>
+                  <th>Hijos Vinculados</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (pad of padres(); track pad.idPadre) {
+                  <tr>
+                    <td><strong>{{ pad.codigo }}</strong></td>
+                    <td>{{ pad.apellido }}, {{ pad.nombre }}</td>
+                    <td>{{ pad.dni }}</td>
+                    <td>{{ pad.telefono }}</td>
+                    <td>{{ pad.email }}</td>
+                    <td><span class="hijo-chip">{{ pad.hijosVinculados || 'Ninguno' }}</span></td>
+                    <td>
+                      <div class="action-buttons">
+                        <button class="btn-edit" (click)="abrirEditar('padre', pad)">Editar</button>
+                        <button class="btn-delete" (click)="eliminar('padre', pad.idPadre)">Eliminar</button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+
+      <!-- ========== SECCIÓN: KANBAN DE NOTAS ========== -->
+      @if (seccionActiva() === 'kanban') {
+        <div class="seccion-kanban">
+          <div class="crud-header">
+            <div>
+              <h1 class="page-title">Tareas y Notas Administrativas</h1>
+              <p class="page-subtitle">Organiza las prioridades operativas de la secretaría y dirección del campus</p>
+            </div>
+            <button class="btn-primary" (click)="abrirNuevo('nota')">+ Crear Nota</button>
+          </div>
+
+          <div class="kanban-board mt-md">
+            <!-- Columna: Pendiente -->
+            <div class="kanban-column">
+              <div class="column-header label-pendiente">Pendientes ({{ notasPendientes().length }})</div>
+              <div class="card-list">
+                @for (nota of notasPendientes(); track nota.idNota) {
+                  <div class="kanban-card" [class]="'prio-' + nota.prioridad">
+                    <div class="card-prio-badge">{{ nota.prioridad }}</div>
+                    <h4>{{ nota.titulo }}</h4>
+                    <p>{{ nota.descripcion }}</p>
+                    <div class="card-tags">
+                      @for (tag of nota.etiquetas.split(','); track tag) {
+                        <span class="tag-chip">{{ tag }}</span>
+                      }
+                    </div>
+                    <div class="card-meta">
+                      <span class="lbl-resp">Resp: {{ nota.responsable }}</span>
+                      <span class="lbl-venc text-red">Límite: {{ nota.fechaLimite }}</span>
+                    </div>
+                    <div class="card-actions">
+                      <button class="btn-move" (click)="cambiarEstadoNota(nota, 'en_progreso')">En Progreso ➔</button>
+                      <button class="btn-n-edit" (click)="abrirEditar('nota', nota)">✎</button>
+                      <button class="btn-n-del" (click)="eliminar('nota', nota.idNota!)">🗑</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Columna: En Progreso -->
+            <div class="kanban-column">
+              <div class="column-header label-progreso">En Progreso ({{ notasEnProgreso().length }})</div>
+              <div class="card-list">
+                @for (nota of notasEnProgreso(); track nota.idNota) {
+                  <div class="kanban-card" [class]="'prio-' + nota.prioridad">
+                    <div class="card-prio-badge">{{ nota.prioridad }}</div>
+                    <h4>{{ nota.titulo }}</h4>
+                    <p>{{ nota.descripcion }}</p>
+                    <div class="card-tags">
+                      @for (tag of nota.etiquetas.split(','); track tag) {
+                        <span class="tag-chip">{{ tag }}</span>
+                      }
+                    </div>
+                    <div class="card-meta">
+                      <span class="lbl-resp">Resp: {{ nota.responsable }}</span>
+                      <span class="lbl-venc">Límite: {{ nota.fechaLimite }}</span>
+                    </div>
+                    <div class="card-actions">
+                      <button class="btn-move back" (click)="cambiarEstadoNota(nota, 'pendiente')">⬅ Pendiente</button>
+                      <button class="btn-move" (click)="cambiarEstadoNota(nota, 'completada')">Completar ➔</button>
+                      <button class="btn-n-edit" (click)="abrirEditar('nota', nota)">✎</button>
+                      <button class="btn-n-del" (click)="eliminar('nota', nota.idNota!)">🗑</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Columna: Completada -->
+            <div class="kanban-column">
+              <div class="column-header label-completada">Completadas ({{ notasCompletadas().length }})</div>
+              <div class="card-list">
+                @for (nota of notasCompletadas(); track nota.idNota) {
+                  <div class="kanban-card completada" [class]="'prio-' + nota.prioridad">
+                    <div class="card-prio-badge">{{ nota.prioridad }}</div>
+                    <h4>{{ nota.titulo }}</h4>
+                    <p>{{ nota.descripcion }}</p>
+                    <div class="card-tags">
+                      @for (tag of nota.etiquetas.split(','); track tag) {
+                        <span class="tag-chip">{{ tag }}</span>
+                      }
+                    </div>
+                    <div class="card-meta">
+                      <span class="lbl-resp">Resp: {{ nota.responsable }}</span>
+                      <span class="lbl-venc">Completado</span>
+                    </div>
+                    <div class="card-actions">
+                      <button class="btn-move back" (click)="cambiarEstadoNota(nota, 'en_progreso')">⬅ En Progreso</button>
+                      <button class="btn-n-edit" (click)="abrirEditar('nota', nota)">✎</button>
+                      <button class="btn-n-del" (click)="eliminar('nota', nota.idNota!)">🗑</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+    </main>
+
+  </div>
+
+  <!-- ===== MODAL DINÁMICO DE CREACIÓN/EDICIÓN ===== -->
+  @if (modalAbierto()) {
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>{{ modoEdicion() ? 'Editar ' : 'Nuevo ' }}{{ modalAbierto() }}</h2>
+          <button class="btn-close" (click)="cerrarModal()">×</button>
+        </div>
+        <form (ngSubmit)="guardar()" class="modal-form">
+
+          <!-- Form: Estudiante -->
+          @if (modalAbierto() === 'estudiante') {
+            <div class="form-group">
+              <label>Nombre</label>
+              <input type="text" [(ngModel)]="formEstudiante.nombre" name="estNombre" required />
+            </div>
+            <div class="form-group">
+              <label>Apellido</label>
+              <input type="text" [(ngModel)]="formEstudiante.apellido" name="estApellido" required />
+            </div>
+            <div class="form-group">
+              <label>Email Institucional</label>
+              <input type="email" [(ngModel)]="formEstudiante.email" name="estEmail" required />
+            </div>
+            <div class="form-group-row">
+              <div class="form-group">
+                <label>Grado</label>
+                <select [(ngModel)]="formEstudiante.grado" name="estGrado">
+                  <option>1ro Primaria</option>
+                  <option>2do Primaria</option>
+                  <option>3ro Primaria</option>
+                  <option>1ro Secundaria</option>
+                  <option>3ro Secundaria</option>
+                  <option>5to Secundaria</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Sección</label>
+                <select [(ngModel)]="formEstudiante.seccion" name="estSeccion">
+                  <option>A</option>
+                  <option>B</option>
+                  <option>C</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Fecha de Nacimiento</label>
+              <input type="date" [(ngModel)]="formEstudiante.fechaNacimiento" name="estFechaNac" required />
+            </div>
+          }
+
+          <!-- Form: Docente -->
+          @if (modalAbierto() === 'docente') {
+            <div class="form-group">
+              <label>Nombre</label>
+              <input type="text" [(ngModel)]="formDocente.nombre" name="docNombre" required />
+            </div>
+            <div class="form-group">
+              <label>Apellido</label>
+              <input type="text" [(ngModel)]="formDocente.apellido" name="docApellido" required />
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" [(ngModel)]="formDocente.email" name="docEmail" required />
+            </div>
+            <div class="form-group">
+              <label>Especialidad</label>
+              <input type="text" [(ngModel)]="formDocente.especialidad" name="docEspecialidad" required />
+            </div>
+            <div class="form-group">
+              <label>Departamento</label>
+              <select [(ngModel)]="formDocente.departamento" name="docDep">
+                <option>Académico</option>
+                <option>Ciencias</option>
+                <option>Humanidades</option>
+                <option>Educación Física</option>
+              </select>
+            </div>
+          }
+
+          <!-- Form: Padre -->
+          @if (modalAbierto() === 'padre') {
+            <div class="form-group">
+              <label>Nombre</label>
+              <input type="text" [(ngModel)]="formPadre.nombre" name="padNombre" required />
+            </div>
+            <div class="form-group">
+              <label>Apellido</label>
+              <input type="text" [(ngModel)]="formPadre.apellido" name="padApellido" required />
+            </div>
+            <div class="form-group">
+              <label>DNI</label>
+              <input type="text" [(ngModel)]="formPadre.dni" name="padDni" required />
+            </div>
+            <div class="form-group">
+              <label>Teléfono</label>
+              <input type="text" [(ngModel)]="formPadre.telefono" name="padTelf" required />
+            </div>
+            <div class="form-group">
+              <label>Email de Contacto</label>
+              <input type="email" [(ngModel)]="formPadre.email" name="padEmail" required />
+            </div>
+          }
+
+          <!-- Form: Nota Kanban -->
+          @if (modalAbierto() === 'nota') {
+            <div class="form-group">
+              <label>Título</label>
+              <input type="text" [(ngModel)]="formNota.titulo" name="notaTitulo" required />
+            </div>
+            <div class="form-group">
+              <label>Descripción</label>
+              <textarea [(ngModel)]="formNota.descripcion" name="notaDesc" rows="3" required></textarea>
+            </div>
+            <div class="form-group-row">
+              <div class="form-group">
+                <label>Prioridad</label>
+                <select [(ngModel)]="formNota.prioridad" name="notaPrio">
+                  <option value="alta">Alta</option>
+                  <option value="media">Media</option>
+                  <option value="baja">Baja</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Responsable</label>
+                <input type="text" [(ngModel)]="formNota.responsable" name="notaResp" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Fecha Límite</label>
+              <input type="date" [(ngModel)]="formNota.fechaLimite" name="notaFecha" [min]="today" required />
+            </div>
+            <div class="form-group">
+              <label>Etiquetas (Separadas por coma)</label>
+              <input type="text" [(ngModel)]="formNota.etiquetas" name="notaTags" placeholder="e.g. Finanzas,Caja" required />
+            </div>
+          }
+
+          <div class="modal-footer mt-md">
+            <button type="button" class="btn-cancel" (click)="cerrarModal()">Cancelar</button>
+            <button type="submit" class="btn-save">Guardar Cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+</div>

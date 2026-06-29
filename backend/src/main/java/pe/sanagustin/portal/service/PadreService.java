@@ -46,7 +46,16 @@ public class PadreService {
                 SELECT c.nombre,
                        c.area,
                        ac.horas_semana,
-                       COALESCE(mae.nombre || ' ' || mae.apellido, 'Sin asignar') AS docente
+                       COALESCE(mae.nombre || ' ' || mae.apellido, 'Sin asignar') AS docente,
+                       (SELECT COUNT(*) FROM tareas_curso WHERE id_aula_curso = ac.id_aula_curso) AS total_tareas,
+                       (SELECT COUNT(*) FROM notas_tarea nt 
+                        JOIN tareas_curso tc ON tc.id_tarea = nt.id_tarea 
+                        WHERE nt.id_alumno = :idAlumno AND tc.id_aula_curso = ac.id_aula_curso AND nt.entregado = true) AS entregadas,
+                       COALESCE((SELECT ROUND(AVG(nt.nota)::numeric, 1) FROM notas_tarea nt 
+                                 JOIN tareas_curso tc ON tc.id_tarea = nt.id_tarea 
+                                 WHERE nt.id_alumno = :idAlumno AND tc.id_aula_curso = ac.id_aula_curso AND nt.entregado = true AND nt.nota IS NOT NULL), 0.0) AS promedio,
+                       (SELECT COUNT(*) FROM asistencia_alumno WHERE id_alumno = :idAlumno AND id_aula_curso = ac.id_aula_curso) AS asist_total,
+                       (SELECT COUNT(*) FROM asistencia_alumno WHERE id_alumno = :idAlumno AND id_aula_curso = ac.id_aula_curso AND estado IN ('presente', 'tardanza', 'justificado')) AS asist_pres
                 FROM matriculas m
                 JOIN aula_cursos         ac  ON ac.id_aula       = m.id_aula
                 JOIN cursos              c   ON c.id_curso       = ac.id_curso
@@ -76,14 +85,54 @@ public class PadreService {
                     .setParameter("idAlumno", idAlumno)
                     .getResultList();
 
-            List<CursoHijoDto> cursos = cursoRows.stream()
-                    .map(c -> new CursoHijoDto(
-                            (String)  c[0],
-                            (String)  c[1],
-                            (Integer) c[2],
-                            (String)  c[3]
-                    ))
-                    .toList();
+            List<CursoHijoDto> cursos = new ArrayList<>();
+            double sumPromedio = 0;
+            double sumAsistencia = 0;
+            int totalEntregadas = 0;
+            int totalTareas = 0;
+            int cursosRiesgo = 0;
+
+            for (Object[] c : cursoRows) {
+                String cNombre = (String) c[0];
+                String cArea = (String) c[1];
+                Integer cHoras = (Integer) c[2];
+                String cDocente = (String) c[3];
+                int tTotal = ((Number) c[4]).intValue();
+                int tEntregadas = ((Number) c[5]).intValue();
+                double cPromedio = ((Number) c[6]).doubleValue();
+                long aTotal = ((Number) c[7]).longValue();
+                long aPres = ((Number) c[8]).longValue();
+
+                double cAsistencia = aTotal == 0 ? 100.0 : Math.round((aPres * 100.0) / aTotal * 10.0) / 10.0;
+                int cProgreso = tTotal == 0 ? 100 : (tEntregadas * 100) / tTotal;
+
+                if (cPromedio < 11.0 && tTotal > 0) {
+                    cursosRiesgo++;
+                }
+
+                sumPromedio += cPromedio;
+                sumAsistencia += cAsistencia;
+                totalEntregadas += tEntregadas;
+                totalTareas += tTotal;
+
+                cursos.add(new CursoHijoDto(
+                        cNombre, cArea, cHoras, cDocente,
+                        cProgreso, tEntregadas, tTotal, cPromedio, cAsistencia
+                ));
+            }
+
+            int nCursos = cursos.size();
+            double promedioGral = nCursos == 0 ? 0.0 : Math.round((sumPromedio / nCursos) * 10.0) / 10.0;
+            double asistenciaGral = nCursos == 0 ? 100.0 : Math.round((sumAsistencia / nCursos) * 10.0) / 10.0;
+            double entregaGral = totalTareas == 0 ? 100.0 : Math.round((totalEntregadas * 100.0) / totalTareas * 10.0) / 10.0;
+
+            // Determinar estado de riesgo
+            String estado = "bueno";
+            if (asistenciaGral < 80.0 || cursosRiesgo > 0) {
+                estado = "riesgo";
+            } else if (asistenciaGral < 90.0 || promedioGral < 13.0) {
+                estado = "observacion";
+            }
 
             resultado.add(new HijoResumenDto(
                     (String) r[1],
@@ -94,6 +143,11 @@ public class PadreService {
                     (String) r[6],
                     (String) r[7],
                     (String) r[8],
+                    promedioGral,
+                    asistenciaGral,
+                    cursosRiesgo,
+                    entregaGral,
+                    estado,
                     cursos
             ));
         }

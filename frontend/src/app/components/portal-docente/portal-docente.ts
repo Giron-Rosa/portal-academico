@@ -435,6 +435,7 @@ export class PortalDocente {
 
   // Exponemos constantes usadas en el template
   calPxPorHora = CAL_PX_POR_HORA;
+  today = new Date().toISOString().substring(0, 10);
 
   /** Espacios que el backend autoriza para este docente */
   espaciosDisponibles = signal<EspacioReserva[]>([]);

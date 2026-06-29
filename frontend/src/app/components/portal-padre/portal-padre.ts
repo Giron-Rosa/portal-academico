@@ -14,6 +14,7 @@ interface CursoDetalle {
   totalTareas: number;
   puntualidad: number;
   docente?: string;
+  promedioCurso: number;
 }
 
 interface Hijo {
@@ -32,6 +33,18 @@ interface Hijo {
   eventos: string[];
 }
 
+interface CursoDetalleApi {
+  nombre: string;
+  area: string;
+  horasSemana: number;
+  docente: string;
+  progreso: number;
+  tareasEntregadas: number;
+  totalTareas: number;
+  promedioCurso: number;
+  asistenciaCurso: number;
+}
+
 interface HijoApi {
   nombre: string;
   apellido: string;
@@ -41,7 +54,12 @@ interface HijoApi {
   turno: string;
   periodo: string;
   parentesco: string;
-  cursos: { nombre: string; area: string; horasSemana: number; docente: string }[];
+  promedio: number;
+  asistencia: number;
+  cursosRiesgo: number;
+  entregaTareas: number;
+  estado: Estado;
+  cursos: CursoDetalleApi[];
 }
 
 @Component({
@@ -111,11 +129,12 @@ export class PortalPadre {
   private mapHijo(h: HijoApi, idx: number): Hijo {
     const cursos: CursoDetalle[] = h.cursos.map(c => ({
       nombre:           c.nombre,
-      progreso:         0,
-      tareasEntregadas: 0,
-      totalTareas:      0,
-      puntualidad:      0,
+      progreso:         c.progreso,
+      tareasEntregadas: c.tareasEntregadas,
+      totalTareas:      c.totalTareas,
+      puntualidad:      c.asistenciaCurso,
       docente:          c.docente,
+      promedioCurso:    c.promedioCurso,
     }));
 
     return {
@@ -123,13 +142,13 @@ export class PortalPadre {
       nombre:        `${h.nombre} ${h.apellido}`,
       grado:         `${h.grado} · Sec. ${h.seccion}`,
       codigo:        h.codigo,
-      estado:        'observacion',
-      promedio:      0,
-      asistencia:    0,
-      cursosRiesgo:  0,
-      entregaTareas: 0,
-      descripcion:   `Período ${h.periodo} · Turno ${h.turno}. Datos académicos próximamente.`,
-      cursosMonitor: cursos.slice(0, 3).map(c => ({ nombre: c.nombre, progreso: 0 })),
+      estado:        h.estado,
+      promedio:      h.promedio,
+      asistencia:    h.asistencia,
+      cursosRiesgo:  h.cursosRiesgo,
+      entregaTareas: h.entregaTareas,
+      descripcion:   `Período ${h.periodo} · Turno ${h.turno}.`,
+      cursosMonitor: cursos.slice(0, 3).map(c => ({ nombre: c.nombre, progreso: c.progreso })),
       cursos,
       eventos:       [],
     };

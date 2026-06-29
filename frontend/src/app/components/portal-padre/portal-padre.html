@@ -332,12 +332,16 @@
                   </div>
                   <div class="cdc-footer">
                     <div class="cdc-stat">
-                      <span class="cdc-stat-lbl">Tareas entregadas</span>
+                      <span class="cdc-stat-lbl">Tareas</span>
                       <span class="cdc-stat-val">{{ curso.tareasEntregadas }}/{{ curso.totalTareas }}</span>
                     </div>
                     <div class="cdc-stat">
-                      <span class="cdc-stat-lbl">Puntualidad</span>
+                      <span class="cdc-stat-lbl">Asistencia</span>
                       <span class="cdc-stat-val" [class.val-verde]="curso.puntualidad >= 80">{{ curso.puntualidad }}%</span>
+                    </div>
+                    <div class="cdc-stat">
+                      <span class="cdc-stat-lbl">Promedio</span>
+                      <span class="cdc-stat-val" [class.val-verde]="curso.promedioCurso >= 11">{{ curso.promedioCurso }}</span>
                     </div>
                   </div>
                 </div>
