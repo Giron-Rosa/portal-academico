@@ -3,6 +3,8 @@ package pe.sanagustin.portal.service;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import pe.sanagustin.portal.dto.AsistenciaDetalleHijoDto;
+import pe.sanagustin.portal.dto.AsistenciaHijoDto;
 import pe.sanagustin.portal.dto.CursoDetalleHijoDto;
 import pe.sanagustin.portal.dto.CursoHijoDto;
 import pe.sanagustin.portal.dto.ExamenHijoDto;
@@ -317,5 +319,86 @@ public class PadreService {
         }
 
         return resultado;
+    }
+
+    /**
+     * getAsistenciaDetalle: devuelve el historial completo de asistencia del alumno
+     * con métricas generales y de cada curso.
+     * Solo permitido si el padre autenticado tiene relación con el alumno.
+     */
+    public AsistenciaDetalleHijoDto getAsistenciaDetalle(String codigoPadre, String codigoAlumno) {
+        // Verificar relación padre-hijo
+        @SuppressWarnings("unchecked")
+        List<?> check = entityManager.createNativeQuery("""
+                SELECT 1
+                FROM padre_hijo ph
+                JOIN padres   p   ON p.id_padre     = ph.id_padre
+                JOIN usuarios u_p ON u_p.id_usuario = p.id_usuario
+                JOIN alumnos  a   ON a.id_alumno    = ph.id_alumno
+                JOIN usuarios u_a ON u_a.id_usuario = a.id_usuario
+                WHERE u_p.codigo = :codPadre AND u_a.codigo = :codAlumno
+                """)
+                .setParameter("codPadre",  codigoPadre)
+                .setParameter("codAlumno", codigoAlumno)
+                .getResultList();
+
+        if (check.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Acceso no autorizado");
+        }
+
+        // Obtener id_alumno
+        Long idAlumno = ((Number) entityManager.createNativeQuery(
+                "SELECT a.id_alumno FROM alumnos a JOIN usuarios u ON u.id_usuario=a.id_usuario WHERE u.codigo=:cod")
+                .setParameter("cod", codigoAlumno)
+                .getSingleResult()).longValue();
+
+        // Obtener historial de asistencia
+        String sqlAsistencia = """
+                SELECT TO_CHAR(aa.fecha, 'DD/MM/YYYY') AS fecha_formateada,
+                       aa.estado,
+                       c.nombre AS curso,
+                       aa.justificante
+                FROM asistencia_alumno aa
+                JOIN aula_cursos ac ON ac.id_aula_curso = aa.id_aula_curso
+                JOIN cursos      c  ON c.id_curso       = ac.id_curso
+                WHERE aa.id_alumno = :idAlumno
+                ORDER BY aa.fecha DESC
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = entityManager.createNativeQuery(sqlAsistencia)
+                .setParameter("idAlumno", idAlumno)
+                .getResultList();
+
+        List<AsistenciaHijoDto> historial = new ArrayList<>();
+        int presente = 0;
+        int tardanza = 0;
+        int falta = 0;
+        int justificado = 0;
+
+        for (Object[] r : rows) {
+            String fecha = (String) r[0];
+            String estado = (String) r[1];
+            String curso = (String) r[2];
+            String justificante = (String) r[3];
+
+            historial.add(new AsistenciaHijoDto(fecha, estado, curso, justificante));
+
+            if ("presente".equalsIgnoreCase(estado)) {
+                presente++;
+            } else if ("tardanza".equalsIgnoreCase(estado)) {
+                tardanza++;
+            } else if ("falta".equalsIgnoreCase(estado) || "falto".equalsIgnoreCase(estado)) {
+                falta++;
+            } else if ("justificado".equalsIgnoreCase(estado)) {
+                justificado++;
+            }
+        }
+
+        int total = historial.size();
+        double porcentaje = total == 0 ? 100.0 : Math.round((presente + tardanza + justificado) * 100.0 / total * 10.0) / 10.0;
+
+        return new AsistenciaDetalleHijoDto(historial, total, presente, tardanza, falta, justificado, porcentaje);
     }
 }

@@ -148,6 +148,24 @@ export interface CursoDetalleCompleto {
   examenes: ExamenHijo[];
 }
 
+/* ── Fase 3: Asistencia ── */
+export interface AsistenciaRegistro {
+  fecha: string;
+  estado: string;
+  curso: string;
+  justificante: string;
+}
+
+export interface AsistenciaDetalleCompleto {
+  historial: AsistenciaRegistro[];
+  total: number;
+  presente: number;
+  tardanza: number;
+  falta: number;
+  justificado: number;
+  porcentaje: number;
+}
+
 @Component({
   selector: 'app-portal-padre',
   imports: [CommonModule, FormsModule],
@@ -197,6 +215,11 @@ export class PortalPadre implements OnDestroy {
   errorCursos           = signal<string>('');
   cursoExpandido        = signal<number>(-1); // índice del curso expandido (-1 = ninguno)
   tabCurso              = signal<'tareas' | 'examenes'>('tareas'); // tab activa en el detalle
+
+  /* ── Fase 3: Señales de Asistencia ── */
+  asistenciaHijo        = signal<AsistenciaDetalleCompleto | null>(null);
+  cargandoAsistencia    = signal<boolean>(false);
+  errorAsistencia       = signal<string>('');
 
   nombrePadre    = this.auth.getNombre() ?? 'Padre';
   codigoPadre    = this.auth.getCodigo() ?? '';
@@ -291,6 +314,10 @@ export class PortalPadre implements OnDestroy {
       const hijo = this.hijoActual();
       if (hijo) this.cargarCursos(hijo.codigo);
     }
+    if (s === 'asistencia') {
+      const hijo = this.hijoActual();
+      if (hijo) this.cargarAsistencia(hijo.codigo);
+    }
   }
 
   verDetalle(idx: number) {
@@ -335,6 +362,44 @@ export class PortalPadre implements OnDestroy {
     const hijo = this.hijos()[idx];
     if (hijo) this.cargarCursos(hijo.codigo);
   }
+
+  /* ════════════════════════════════════════════════
+     FASE 3 — Asistencia del hijo
+  ════════════════════════════════════════════════ */
+
+  cargarAsistencia(codigoAlumno: string): void {
+    this.cargandoAsistencia.set(true);
+    this.errorAsistencia.set('');
+    this.http.get<AsistenciaDetalleCompleto>(
+      `http://localhost:8080/api/portal/padre/asistencia/${codigoAlumno}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.asistenciaHijo.set(data);
+        this.cargandoAsistencia.set(false);
+      },
+      error: () => {
+        this.errorAsistencia.set('No se pudo cargar el historial de asistencia.');
+        this.cargandoAsistencia.set(false);
+      },
+    });
+  }
+
+  cambiarHijoAsistencia(idx: number): void {
+    this.hijoIdx.set(idx);
+    const hijo = this.hijos()[idx];
+    if (hijo) this.cargarAsistencia(hijo.codigo);
+  }
+
+  getEstadoAsistenciaLabel(est: string): string {
+    const e = est.toLowerCase();
+    if (e === 'presente') return 'Presente';
+    if (e === 'tardanza') return 'Tardanza';
+    if (e === 'falta' || e === 'falto') return 'Inasistencia';
+    if (e === 'justificado') return 'Justificado';
+    return est;
+  }
+
 
   getNotaColor(nota: number | null, max: number): string {
     if (nota === null) return '#94a3b8';

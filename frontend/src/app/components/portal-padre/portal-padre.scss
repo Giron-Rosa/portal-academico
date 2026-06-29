@@ -1960,3 +1960,187 @@ $amarillo:   #eab308;
   padding: 1.5rem;
   margin: 0;
 }
+
+/* -----------------------------------------------------------
+   FASE 3 — ASISTENCIA del portal padre
+----------------------------------------------------------- */
+
+.asistencia-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.asistencia-kpis {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .asistencia-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+.asist-kpi-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.asist-kpi-card--percentage {
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(to bottom, #fff, #f8fafc);
+}
+
+.kpi-circle-wrap {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 6px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.kpi-pct-text {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #003566;
+}
+
+.kpi-info {
+  h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  p {
+    margin: 0.25rem 0 0;
+    font-size: 0.72rem;
+    color: #64748b;
+    line-height: 1.3;
+  }
+}
+
+.asist-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+@media (max-width: 576px) {
+  .asist-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.kpi-subcard {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.15rem;
+}
+
+.kpi-sub-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.kpi-sub-lbl {
+  font-size: 0.65rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Colores para las sub-tarjetas de asistencia */
+.kpi-subcard--presente {
+  border-left: 4px solid #22c55e;
+  .kpi-sub-num { color: #16a34a; }
+}
+.kpi-subcard--tardanza {
+  border-left: 4px solid #eab308;
+  .kpi-sub-num { color: #d97706; }
+}
+.kpi-subcard--falta {
+  border-left: 4px solid #ef4444;
+  .kpi-sub-num { color: #dc2626; }
+}
+.kpi-subcard--justificado {
+  border-left: 4px solid #3b82f6;
+  .kpi-sub-num { color: #2563eb; }
+}
+
+.asist-list-wrap {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  padding: 1.25rem;
+}
+
+.asist-list-title {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.asist-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  min-width: 80px;
+
+  &.asist-badge--presente {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+  &.asist-badge--tardanza {
+    background: #fef9c3;
+    color: #ca8a04;
+  }
+  &.asist-badge--falta {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  &.asist-badge--justificado {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+}
+
+.asist-justificante {
+  font-size: 0.75rem;
+  color: #475569;
+  font-style: italic;
+}
+
+.asist-no-justificante {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+}

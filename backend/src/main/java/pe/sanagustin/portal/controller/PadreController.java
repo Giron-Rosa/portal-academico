@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import pe.sanagustin.portal.dto.AsistenciaDetalleHijoDto;
 import pe.sanagustin.portal.dto.CursoDetalleHijoDto;
 import pe.sanagustin.portal.dto.HijoResumenDto;
 import pe.sanagustin.portal.service.PadreService;
@@ -36,5 +37,16 @@ public class PadreController {
             @PathVariable String codigoAlumno) {
         return ResponseEntity.ok(
                 padreService.getCursosDetalle(userDetails.getUsername(), codigoAlumno));
+    }
+
+    /** GET /api/portal/padre/asistencia/{codigoAlumno}
+     *  Devuelve el historial detallado de asistencia y resumen de métricas del estudiante.
+     */
+    @GetMapping("/asistencia/{codigoAlumno}")
+    public ResponseEntity<AsistenciaDetalleHijoDto> getAsistenciaDetalle(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String codigoAlumno) {
+        return ResponseEntity.ok(
+                padreService.getAsistenciaDetalle(userDetails.getUsername(), codigoAlumno));
     }
 }

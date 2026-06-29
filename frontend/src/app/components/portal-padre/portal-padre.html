@@ -598,16 +598,115 @@
 
       <!-- ========== SECCIÓN: ASISTENCIA ========== -->
       @if (seccionActiva() === 'asistencia') {
-        <div class="seccion-placeholder">
-          <div class="placeholder-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
-              <polyline points="9 11 12 14 22 4"/>
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-            </svg>
-          </div>
-          <h2>Asistencia</h2>
-          <p>Registro de asistencias, tardanzas y faltas justificadas de tus hijos.</p>
-          <span class="badge-pronto">Próximamente</span>
+        <div class="asistencia-layout">
+          <!-- Selector de hijo (si hay más de uno) -->
+          @if (hijos().length > 1) {
+            <div class="hijo-tabs">
+              @for (h of hijos(); track h.codigo; let i = $index) {
+                <button class="hijo-tab" [class.hijo-tab--active]="hijoIdx() === i" (click)="cambiarHijoAsistencia(i)">
+                  <span class="hijo-tab-avatar">{{ h.nombre[0] }}</span>
+                  <span>{{ h.nombre }}</span>
+                </button>
+              }
+            </div>
+          }
+
+          <!-- Estado de carga / error -->
+          @if (cargandoAsistencia()) {
+            <div class="cursos-loading">
+              <div class="curso-spinner"></div>
+              <span>Cargando registro de asistencia...</span>
+            </div>
+          } @else if (errorAsistencia()) {
+            <div class="cursos-error">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="1.8">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <p>{{ errorAsistencia() }}</p>
+              <button class="btn-retry" (click)="cargarAsistencia(hijoActual()?.codigo ?? '')">Reintentar</button>
+            </div>
+          } @else if (!asistenciaHijo() || asistenciaHijo()!.total === 0) {
+            <div class="cursos-empty">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2">
+                <polyline points="9 11 12 14 22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
+              <p>No se encontraron registros de asistencia para este alumno.</p>
+            </div>
+          } @else {
+            <!-- Tarjetas de métricas de asistencia -->
+            <div class="asistencia-kpis">
+              <div class="asist-kpi-card asist-kpi-card--percentage">
+                <div class="kpi-circle-wrap">
+                  <div class="kpi-pct-text" [style.color]="getBarColor(asistenciaHijo()!.porcentaje)">
+                    {{ asistenciaHijo()!.porcentaje }}%
+                  </div>
+                </div>
+                <div class="kpi-info">
+                  <h4>Asistencia General</h4>
+                  <p>Clases asistidas de un total de {{ asistenciaHijo()!.total }} registros.</p>
+                </div>
+              </div>
+
+              <div class="asist-kpi-grid">
+                <div class="kpi-subcard kpi-subcard--presente">
+                  <span class="kpi-sub-num">{{ asistenciaHijo()!.presente }}</span>
+                  <span class="kpi-sub-lbl">Asistencias</span>
+                </div>
+                <div class="kpi-subcard kpi-subcard--tardanza">
+                  <span class="kpi-sub-num">{{ asistenciaHijo()!.tardanza }}</span>
+                  <span class="kpi-sub-lbl">Tardanzas</span>
+                </div>
+                <div class="kpi-subcard kpi-subcard--falta">
+                  <span class="kpi-sub-num">{{ asistenciaHijo()!.falta }}</span>
+                  <span class="kpi-sub-lbl">Inasistencias</span>
+                </div>
+                <div class="kpi-subcard kpi-subcard--justificado">
+                  <span class="kpi-sub-num">{{ asistenciaHijo()!.justificado }}</span>
+                  <span class="kpi-sub-lbl">Justificados</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detalle de registros de asistencia -->
+            <div class="asist-list-wrap">
+              <h3 class="asist-list-title">Historial de Clases</h3>
+              <table class="notas-tabla">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Curso</th>
+                    <th>Estado</th>
+                    <th>Detalle / Justificante</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (reg of asistenciaHijo()!.historial; track reg.fecha + reg.curso) {
+                    <tr>
+                      <td class="nt-fecha">{{ reg.fecha }}</td>
+                      <td class="nt-titulo">{{ reg.curso }}</td>
+                      <td>
+                        <span class="asist-badge"
+                              [class.asist-badge--presente]="reg.estado.toLowerCase() === 'presente'"
+                              [class.asist-badge--tardanza]="reg.estado.toLowerCase() === 'tardanza'"
+                              [class.asist-badge--falta]="reg.estado.toLowerCase() === 'falta' || reg.estado.toLowerCase() === 'falto'"
+                              [class.asist-badge--justificado]="reg.estado.toLowerCase() === 'justificado'">
+                          {{ getEstadoAsistenciaLabel(reg.estado) }}
+                        </span>
+                      </td>
+                      <td>
+                        @if (reg.justificante) {
+                          <span class="asist-justificante">📝 {{ reg.justificante }}</span>
+                        } @else {
+                          <span class="asist-no-justificante">—</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         </div>
       }
 
