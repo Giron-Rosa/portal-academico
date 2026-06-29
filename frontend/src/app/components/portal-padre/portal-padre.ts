@@ -1,4 +1,6 @@
 import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -63,9 +65,59 @@ interface HijoApi {
   cursos: CursoDetalleApi[];
 }
 
+export interface MensajeResumen {
+  id: number;
+  asunto: string;
+  tipo: string;
+  leido: boolean;
+  fechaEnvio: string;
+  nombrePadre: string; // docente en el portal de padres
+  nombreAlumno: string;
+  idAlumno: number;
+  grado: string;
+  seccion: string;
+  curso: string;
+  cantRespuestas: number;
+  ultimaRespuesta: string;
+}
+
+export interface RespuestaResumen {
+  id: number;
+  cuerpo: string;
+  fecha: string;
+  autor: string;
+  esMaestro: boolean;
+}
+
+export interface MensajeDetalle {
+  id: number;
+  asunto: string;
+  tipo: string;
+  leido: boolean;
+  fechaEnvio: string;
+  nombrePadre: string; // docente en el portal de padres
+  nombreAlumno: string;
+  idAlumno: number;
+  grado: string;
+  seccion: string;
+  curso: string;
+  cuerpo: string;
+  respuestas: RespuestaResumen[];
+  iniciadoPorDocente: boolean;
+}
+
+export interface DocenteDisponible {
+  idMaestro: number;
+  nombreMaestro: string;
+  curso: string;
+  nombreAlumno: string;
+  idAlumno: number;
+  idAulaCurso: number;
+}
+
 @Component({
   selector: 'app-portal-padre',
-  imports: [],
+  imports: [CommonModule, FormsModule],
   templateUrl: './portal-padre.html',
   styleUrl: './portal-padre.scss',
 })
@@ -81,6 +133,30 @@ export class PortalPadre implements OnDestroy {
   menuUsuario    = signal(false);
   cargando       = signal(false);
   errorCarga     = signal('');
+
+  /* ── Signals para la sección de Mensajes ── */
+  mensajes              = signal<MensajeResumen[]>([]);
+  mensajeActivo         = signal<MensajeDetalle | null>(null);
+  respuestasActivas     = signal<RespuestaResumen[]>([]);
+  replyText             = signal<string>('');
+  cargandoMensajes      = signal<boolean>(false);
+  errorMensajes         = signal<string>('');
+  cargandoDetalleChat   = signal<boolean>(false);
+  enviandoReply         = signal<boolean>(false);
+
+  // Paginación de respuestas (Infinite scroll hacia arriba)
+  currentPage           = signal<number>(0);
+  hasMorePages          = signal<boolean>(true);
+  cargandoMasRespuestas = signal<boolean>(false);
+
+  // Nuevo chat modal
+  modalNuevoChat        = signal<boolean>(false);
+  docentesDisponibles   = signal<DocenteDisponible[]>([]);
+  nuevoChatAlumnoSel    = signal<Hijo | null>(null);
+  nuevoChatDocenteSel   = signal<DocenteDisponible | null>(null);
+  nuevoChatAsunto       = signal<string>('');
+  nuevoChatMensaje      = signal<string>('');
+  enviandoNuevoChat     = signal<boolean>(false);
 
   nombrePadre    = this.auth.getNombre() ?? 'Padre';
   codigoPadre    = this.auth.getCodigo() ?? '';
@@ -165,6 +241,12 @@ export class PortalPadre implements OnDestroy {
   setSeccion(s: Seccion) {
     this.seccionActiva.set(s);
     if (s !== 'inicio') this.vista.set('dashboard');
+    if (s === 'mensajes') {
+      this.cargarMensajes();
+      this.ws.marcarLeidas();
+    } else {
+      this.ws.unsubscribeFromChat();
+    }
   }
 
   verDetalle(idx: number) {
@@ -197,5 +279,163 @@ export class PortalPadre implements OnDestroy {
   logout() {
     this.auth.logout();
     this.router.navigate(['/']);
+  }
+
+  /* ════════════════════════════════════════════════
+     MENSAJES — Sección completa del portal del padre
+  ════════════════════════════════════════════════ */
+
+  private headers(): HttpHeaders {
+    return new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken() ?? ''}` });
+  }
+
+  cargarMensajes(): void {
+    this.cargandoMensajes.set(true);
+    this.errorMensajes.set('');
+    this.http.get<MensajeResumen[]>(
+      'http://localhost:8080/api/portal/padre/mensajes',
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => { this.mensajes.set(data); this.cargandoMensajes.set(false); },
+      error: () => { this.errorMensajes.set('No se pudieron cargar los mensajes.'); this.cargandoMensajes.set(false); },
+    });
+  }
+
+  noLeidosPadre = () => this.mensajes().filter(m => !m.leido).length;
+
+  abrirChat(id: number): void {
+    // Resetear estado de paginación y respuestas
+    this.mensajeActivo.set(null);
+    this.respuestasActivas.set([]);
+    this.currentPage.set(0);
+    this.hasMorePages.set(true);
+    this.cargandoDetalleChat.set(true);
+
+    this.http.get<MensajeDetalle>(
+      `http://localhost:8080/api/portal/padre/mensajes/${id}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.mensajeActivo.set(data);
+        // Cargar las respuestas de la primera página (10 más recientes)
+        this.cargarPaginaRespuestas(id, 0, true);
+        // Suscribir al chat room de WebSocket
+        this.ws.subscribeToChat(id, (resp: RespuestaResumen) => {
+          this.respuestasActivas.update(rs => [...rs, resp]);
+        });
+        // Marcar como leído en la lista local
+        this.mensajes.update(ms =>
+          ms.map(m => m.id === id ? { ...m, leido: true } : m)
+        );
+        this.cargandoDetalleChat.set(false);
+      },
+      error: () => { this.cargandoDetalleChat.set(false); },
+    });
+  }
+
+  private cargarPaginaRespuestas(idMensaje: number, page: number, reset = false): void {
+    if (reset) { this.cargandoDetalleChat.set(true); }
+    else        { this.cargandoMasRespuestas.set(true); }
+
+    this.http.get<RespuestaResumen[]>(
+      `http://localhost:8080/api/portal/padre/mensajes/${idMensaje}/respuestas-paginadas`,
+      { headers: this.headers(), params: { page: page.toString(), size: '10' } }
+    ).subscribe({
+      next: (data) => {
+        if (reset) {
+          this.respuestasActivas.set(data);
+        } else {
+          // Anteponer mensajes más antiguos en la parte superior
+          this.respuestasActivas.update(rs => [...data, ...rs]);
+        }
+        this.hasMorePages.set(data.length === 10);
+        this.currentPage.set(page);
+        this.cargandoDetalleChat.set(false);
+        this.cargandoMasRespuestas.set(false);
+      },
+      error: () => {
+        this.cargandoDetalleChat.set(false);
+        this.cargandoMasRespuestas.set(false);
+      },
+    });
+  }
+
+  cargarMasRespuestas(): void {
+    const activo = this.mensajeActivo();
+    if (!activo || !this.hasMorePages() || this.cargandoMasRespuestas()) return;
+    this.cargarPaginaRespuestas(activo.id, this.currentPage() + 1, false);
+  }
+
+  cerrarChat(): void {
+    this.ws.unsubscribeFromChat();
+    this.mensajeActivo.set(null);
+    this.respuestasActivas.set([]);
+    this.replyText.set('');
+  }
+
+  enviarRespuesta(): void {
+    const activo = this.mensajeActivo();
+    const texto  = this.replyText().trim();
+    if (!activo || !texto || this.enviandoReply()) return;
+
+    this.enviandoReply.set(true);
+    this.http.post<void>(
+      `http://localhost:8080/api/portal/padre/mensajes/${activo.id}/responder`,
+      { cuerpo: texto },
+      { headers: this.headers() }
+    ).subscribe({
+      next: () => {
+        this.replyText.set('');
+        this.enviandoReply.set(false);
+        // El WS room traerá la respuesta automáticamente vía subscribeToChat
+      },
+      error: () => { this.enviandoReply.set(false); },
+    });
+  }
+
+  abrirNuevoChat(): void {
+    this.http.get<DocenteDisponible[]>(
+      'http://localhost:8080/api/portal/padre/mensajes/docentes-disponibles',
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.docentesDisponibles.set(data);
+        this.nuevoChatAsunto.set('');
+        this.nuevoChatMensaje.set('');
+        this.nuevoChatDocenteSel.set(null);
+        this.modalNuevoChat.set(true);
+      },
+    });
+  }
+
+  cerrarNuevoChat(): void { this.modalNuevoChat.set(false); }
+
+  enviarNuevoChat(): void {
+    const docente = this.nuevoChatDocenteSel();
+    const asunto  = this.nuevoChatAsunto().trim();
+    const cuerpo  = this.nuevoChatMensaje().trim();
+    if (!docente || !asunto || !cuerpo || this.enviandoNuevoChat()) return;
+
+    this.enviandoNuevoChat.set(true);
+    this.http.post<{ id: number }>(
+      'http://localhost:8080/api/portal/padre/mensajes/iniciar',
+      {
+        idAlumno:    docente.idAlumno,
+        idPadre:     0, // el backend lo infiere del token
+        idAulaCurso: docente.idAulaCurso,
+        asunto,
+        cuerpo,
+      },
+      { headers: this.headers() }
+    ).subscribe({
+      next: (resp) => {
+        this.enviandoNuevoChat.set(false);
+        this.modalNuevoChat.set(false);
+        this.cargarMensajes();
+        // Abrir el chat recién creado
+        this.abrirChat(resp.id);
+      },
+      error: () => { this.enviandoNuevoChat.set(false); },
+    });
   }
 }

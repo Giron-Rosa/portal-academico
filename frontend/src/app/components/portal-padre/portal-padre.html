@@ -413,16 +413,211 @@
 
       <!-- ========== SECCIÓN: MENSAJES ========== -->
       @if (seccionActiva() === 'mensajes') {
-        <div class="seccion-placeholder">
-          <div class="placeholder-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
+        <div class="msg-layout">
+
+          <!-- ─── COLUMNA IZQUIERDA: LISTA DE HILOS ─── -->
+          <div class="msg-sidebar">
+            <div class="msg-sidebar-header">
+              <h2 class="msg-sidebar-title">Mensajes</h2>
+              @if (noLeidosPadre() > 0) {
+                <span class="msg-badge">{{ noLeidosPadre() }}</span>
+              }
+              <button class="btn-nuevo-msg" (click)="abrirNuevoChat()" title="Nuevo mensaje">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Nuevo
+              </button>
+            </div>
+
+            @if (cargandoMensajes()) {
+              <div class="msg-loading"><div class="msg-spinner"></div></div>
+            } @else if (errorMensajes()) {
+              <div class="msg-error">{{ errorMensajes() }}</div>
+            } @else if (mensajes().length === 0) {
+              <div class="msg-empty">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <p>Aún no tienes mensajes.<br/>Escribe a un docente.</p>
+              </div>
+            } @else {
+              <ul class="msg-list">
+                @for (msg of mensajes(); track msg.id) {
+                  <li class="msg-item"
+                      [class.msg-item--active]="mensajeActivo()?.id === msg.id"
+                      [class.msg-item--unread]="!msg.leido"
+                      (click)="abrirChat(msg.id)">
+                    <div class="msg-item-avatar">{{ msg.nombrePadre?.[0] ?? '?' }}</div>
+                    <div class="msg-item-body">
+                      <div class="msg-item-top">
+                        <span class="msg-item-docente">{{ msg.nombrePadre }}</span>
+                        <span class="msg-item-time">{{ msg.fechaEnvio }}</span>
+                      </div>
+                      <span class="msg-item-asunto">{{ msg.asunto }}</span>
+                      @if (msg.nombreAlumno) {
+                        <span class="msg-item-alumno">👦 {{ msg.nombreAlumno }}</span>
+                      }
+                      <p class="msg-item-preview">{{ msg.ultimaRespuesta }}</p>
+                    </div>
+                    @if (!msg.leido) {
+                      <span class="msg-item-dot"></span>
+                    }
+                  </li>
+                }
+              </ul>
+            }
           </div>
-          <h2>Mensajes</h2>
-          <p>Comunicación directa con docentes y dirección del colegio.</p>
-          <span class="badge-pronto">Próximamente</span>
+
+          <!-- ─── COLUMNA DERECHA: VENTANA DE CHAT ─── -->
+          <div class="msg-chat" [class.msg-chat--empty]="!mensajeActivo()">
+            @if (!mensajeActivo() && !cargandoDetalleChat()) {
+              <!-- Estado vacío del chat -->
+              <div class="msg-chat-empty">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <h3>Selecciona un chat</h3>
+                <p>Elige una conversación de la lista o inicia una nueva.</p>
+                <button class="btn-nuevo-msg-center" (click)="abrirNuevoChat()">Nuevo mensaje al docente</button>
+              </div>
+            }
+
+            @if (cargandoDetalleChat() && !mensajeActivo()) {
+              <div class="msg-loading msg-loading--full"><div class="msg-spinner"></div></div>
+            }
+
+            @if (mensajeActivo()) {
+              <!-- Cabecera del chat -->
+              <div class="chat-header">
+                <div class="chat-header-info">
+                  <div class="chat-avatar">{{ mensajeActivo()!.nombrePadre?.[0] ?? '?' }}</div>
+                  <div>
+                    <h3 class="chat-title">{{ mensajeActivo()!.asunto }}</h3>
+                    <span class="chat-meta">
+                      {{ mensajeActivo()!.nombrePadre }}
+                      @if (mensajeActivo()!.nombreAlumno) { · {{ mensajeActivo()!.nombreAlumno }} }
+                      @if (mensajeActivo()!.curso) { · {{ mensajeActivo()!.curso }} }
+                    </span>
+                  </div>
+                </div>
+                <button class="chat-close" (click)="cerrarChat()">✕</button>
+              </div>
+
+              <!-- Botón "cargar más" (infinite scroll hacia arriba) -->
+              <div class="chat-load-more">
+                @if (hasMorePages() && !cargandoMasRespuestas()) {
+                  <button class="btn-load-more" (click)="cargarMasRespuestas()">
+                    ↑ Cargar mensajes anteriores
+                  </button>
+                }
+                @if (cargandoMasRespuestas()) {
+                  <div class="msg-spinner msg-spinner--sm"></div>
+                }
+              </div>
+
+              <!-- Mensajes del hilo -->
+              <div class="chat-messages" id="chat-scroll">
+                <!-- Mensaje original -->
+                <div class="bubble bubble--padre">
+                  <p class="bubble-body">{{ mensajeActivo()!.cuerpo }}</p>
+                  <span class="bubble-time">{{ mensajeActivo()!.fechaEnvio }}</span>
+                </div>
+
+                <!-- Respuestas paginadas -->
+                @for (r of respuestasActivas(); track r.id) {
+                  <div class="bubble" [class.bubble--docente]="r.esMaestro" [class.bubble--padre]="!r.esMaestro">
+                    <span class="bubble-autor">{{ r.autor }}</span>
+                    <p class="bubble-body">{{ r.cuerpo }}</p>
+                    <span class="bubble-time">{{ r.fecha }}</span>
+                  </div>
+                }
+              </div>
+
+              <!-- Caja de respuesta -->
+              <div class="chat-reply-box">
+                <textarea
+                  class="chat-reply-input"
+                  placeholder="Escribe una respuesta..."
+                  rows="2"
+                  [value]="replyText()"
+                  (input)="replyText.set($any($event.target).value)"
+                  (keydown.control.enter)="enviarRespuesta()">
+                </textarea>
+                <button
+                  class="btn-send-reply"
+                  [disabled]="!replyText().trim() || enviandoReply()"
+                  (click)="enviarRespuesta()">
+                  @if (enviandoReply()) {
+                    <div class="msg-spinner msg-spinner--sm"></div>
+                  } @else {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                  }
+                </button>
+              </div>
+            }
+          </div>
         </div>
+
+        <!-- ──── MODAL: Nuevo Chat ──── -->
+        @if (modalNuevoChat()) {
+          <div class="modal-overlay" (click)="cerrarNuevoChat()">
+            <div class="modal-nuevo-chat" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h3>Nuevo Mensaje al Docente</h3>
+                <button class="modal-close" (click)="cerrarNuevoChat()">✕</button>
+              </div>
+
+              <div class="modal-body">
+                <!-- Selección de Docente / Curso -->
+                <label class="modal-label">Docente y Curso</label>
+                <div class="docente-list">
+                  @for (d of docentesDisponibles(); track d.idAulaCurso) {
+                    <div class="docente-item"
+                         [class.docente-item--sel]="nuevoChatDocenteSel()?.idAulaCurso === d.idAulaCurso"
+                         (click)="nuevoChatDocenteSel.set(d)">
+                      <div class="docente-avatar">{{ d.nombreMaestro[0] }}</div>
+                      <div>
+                        <span class="docente-name">{{ d.nombreMaestro }}</span>
+                        <span class="docente-sub">{{ d.curso }} · {{ d.nombreAlumno }}</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+
+                <!-- Asunto -->
+                <label class="modal-label" for="nc-asunto">Asunto</label>
+                <input id="nc-asunto"
+                       type="text"
+                       class="modal-input"
+                       placeholder="Ej: Consulta sobre asistencia"
+                       [value]="nuevoChatAsunto()"
+                       (input)="nuevoChatAsunto.set($any($event.target).value)" />
+
+                <!-- Mensaje -->
+                <label class="modal-label" for="nc-msg">Mensaje</label>
+                <textarea id="nc-msg"
+                          class="modal-textarea"
+                          placeholder="Escribe tu mensaje aquí..."
+                          rows="4"
+                          [value]="nuevoChatMensaje()"
+                          (input)="nuevoChatMensaje.set($any($event.target).value)">
+                </textarea>
+              </div>
+
+              <div class="modal-footer">
+                <button class="btn-modal-cancel" (click)="cerrarNuevoChat()">Cancelar</button>
+                <button class="btn-modal-send"
+                        [disabled]="!nuevoChatDocenteSel() || !nuevoChatAsunto().trim() || !nuevoChatMensaje().trim() || enviandoNuevoChat()"
+                        (click)="enviarNuevoChat()">
+                  @if (enviandoNuevoChat()) { Enviando... } @else { Enviar mensaje }
+                </button>
+              </div>
+            </div>
+          </div>
+        }
       }
 
       <!-- ========== SECCIÓN: EVENTOS ========== -->

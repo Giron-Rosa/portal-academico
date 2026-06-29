@@ -18,6 +18,7 @@ export class WebSocketService implements OnDestroy {
 
   private client: Client | null = null;
   private subscription: StompSubscription | null = null;
+  private chatSubscription: StompSubscription | null = null;
 
   /** Signal con la última notificación recibida */
   ultimaNotificacion = signal<NotificacionWs | null>(null);
@@ -71,11 +72,47 @@ export class WebSocketService implements OnDestroy {
 
   /** Detiene la conexión WebSocket */
   disconnect(): void {
+    this.unsubscribeFromChat();
     this.subscription?.unsubscribe();
     this.client?.deactivate();
     this.conectado.set(false);
     this.subscription = null;
     this.client = null;
+  }
+
+  /** Se suscribe a una habitación de chat específica para recibir respuestas en vivo */
+  subscribeToChat(idMensaje: number, callback: (msg: any) => void): void {
+    this.unsubscribeFromChat();
+
+    if (!this.client || !this.conectado()) {
+      // Reintentar si no está conectado aún
+      setTimeout(() => {
+        if (this.conectado()) {
+          this.subscribeToChat(idMensaje, callback);
+        }
+      }, 1000);
+      return;
+    }
+
+    this.chatSubscription = this.client.subscribe(
+      `/topic/chat/${idMensaje}`,
+      (msg: IMessage) => {
+        try {
+          const payload = JSON.parse(msg.body);
+          callback(payload);
+        } catch {
+          console.warn('[WS] Error al parsear mensaje de chat room:', msg.body);
+        }
+      }
+    );
+  }
+
+  /** Se desuscribe de la habitación de chat activa */
+  unsubscribeFromChat(): void {
+    if (this.chatSubscription) {
+      this.chatSubscription.unsubscribe();
+      this.chatSubscription = null;
+    }
   }
 
   /** Marca todas las notificaciones como vistas */
