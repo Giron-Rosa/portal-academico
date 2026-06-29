@@ -2,9 +2,102 @@ import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 
-type Seccion = 'dashboard' | 'estudiantes' | 'docentes' | 'padres' | 'kanban';
+type Seccion = 'dashboard' | 'estudiantes' | 'docentes' | 'padres' | 'kanban' | 'finanzas' | 'caja' | 'configuracion';
+
+interface ConceptoPago {
+  idConcepto?: number;
+  nombre: string;
+  descripcion: string;
+  monto: number;
+  activo: boolean;
+}
+
+interface CuotaEstudiante {
+  idCuota: number;
+  idEstudiante: number;
+  estudianteNombre: string;
+  estudianteApellido: string;
+  estudianteCodigo: string;
+  idConcepto: number;
+  conceptoNombre: string;
+  monto: number;
+  fechaVencimiento: string;
+  pagado: boolean;
+  fechaPago: string | null;
+  nroTransaccion: string | null;
+}
+
+interface CategoriaCaja {
+  idCategoria: number;
+  nombre: string;
+  tipo: 'ingreso' | 'gasto';
+  descripcion: string;
+  activo: boolean;
+}
+
+interface MovimientoCaja {
+  idMovimiento: number;
+  tipo: 'ingreso' | 'gasto';
+  idCategoria: number | null;
+  categoriaNombre: string | null;
+  descripcion: string;
+  monto: number;
+  fecha: string;
+  referencia: string | null;
+}
+
+interface FlujoCajaMensual {
+  anio: number;
+  mes: number;
+  totalIngresos: number;
+  totalGastos: number;
+  saldo: number;
+}
+
+interface CajaKpi {
+  totalIngresos: number;
+  totalGastos: number;
+  saldo: number;
+  totalMovimientos: number;
+}
+
+interface ColegioConfig {
+  idConfig: number;
+  nombre: string;
+  ruc: string;
+  direccion: string;
+  telefono: string;
+  email: string;
+  ciudad: string;
+  distrito: string;
+  nivel: string;
+  director: string;
+  mision: string;
+  vision: string;
+}
+
+interface AnoEscolar {
+  idAno: number;
+  nombre: string;
+  fechaInicio: string;
+  fechaFin: string;
+  activo: boolean;
+}
+
+interface PermisoRol {
+  idPermiso: number;
+  idRol: number;
+  rolNombre: string;
+  idModulo: number;
+  moduloNombre: string;
+  puedeVer: boolean;
+  puedeCrear: boolean;
+  puedeEditar: boolean;
+  puedeBorrar: boolean;
+}
 
 interface Kpis {
   totalEstudiantes: number;
@@ -59,7 +152,7 @@ interface NotaKanban {
 
 @Component({
   selector: 'app-portal-admin',
-  imports: [FormsModule],
+  imports: [FormsModule, DecimalPipe],
   templateUrl: './portal-admin.html',
   styleUrl: './portal-admin.scss',
 })
@@ -84,6 +177,45 @@ export class PortalAdmin implements OnInit {
   docentes = signal<Docente[]>([]);
   padres = signal<Padre[]>([]);
   notas = signal<NotaKanban[]>([]);
+
+  // Finanzas signals
+  conceptos     = signal<ConceptoPago[]>([]);
+  cuotas        = signal<CuotaEstudiante[]>([]);
+  cargandoFinanzas = signal(false);
+  filtroCuotaEstudiante = '';
+  filtroCuotaPagado: 'todos' | 'pagados' | 'pendientes' = 'todos';
+  modalFinanzas = signal<'concepto' | 'generar' | 'pagar' | null>(null);
+
+  cuotasMorosas = computed(() => this.cuotas().filter(c => !c.pagado));
+  cuotasPagadas = computed(() => this.cuotas().filter(c => c.pagado));
+
+  formConcepto = { idConcepto: null as number | null, nombre: '', descripcion: '', monto: 0, activo: true };
+  formGenerar  = { idConcepto: null as number | null, grado: '', fechaVencimiento: '' };
+  formPagar    = { idCuota: null as number | null, nroTransaccion: '' };
+
+  // Caja signals
+  private readonly CAJA = 'http://localhost:8080/api/portal/admin/caja';
+  categoriasIngreso = signal<CategoriaCaja[]>([]);
+  categoriasGasto   = signal<CategoriaCaja[]>([]);
+  movimientosCaja   = signal<MovimientoCaja[]>([]);
+  flujoCaja         = signal<FlujoCajaMensual[]>([]);
+  cajaKpi           = signal<CajaKpi | null>(null);
+  cargandoCaja      = signal(false);
+  filtroMovTipo: 'todos' | 'ingreso' | 'gasto' = 'todos';
+  filtroMovAnio: number = new Date().getFullYear();
+  filtroMovMes: number | null = null;
+  modalCaja = signal<'movimiento' | null>(null);
+  formMovimiento = { tipo: 'gasto' as 'ingreso'|'gasto', idCategoria: null as number|null, descripcion: '', monto: 0, fecha: this.today, referencia: '' };
+
+  // Config signals
+  private readonly CONFIG_URL = 'http://localhost:8080/api/portal/admin/config';
+  colegioConfig = signal<ColegioConfig | null>(null);
+  anosEscolares = signal<AnoEscolar[]>([]);
+  permisos      = signal<PermisoRol[]>([]);
+  cargandoConfig = signal(false);
+  formColegio: Partial<ColegioConfig> = {};
+  formAnoEscolar = { nombre: '', fechaInicio: '', fechaFin: '' };
+  editandoColegio = false;
 
   // Kanban lists
   notasPendientes = computed(() => this.notas().filter(n => n.estado === 'pendiente'));
@@ -112,6 +244,9 @@ export class PortalAdmin implements OnInit {
   setSeccion(sec: Seccion) {
     this.seccionActiva.set(sec);
     this.cargarDatos();
+    if (sec === 'finanzas')      this.cargarFinanzas();
+    if (sec === 'caja')          this.cargarCaja();
+    if (sec === 'configuracion') this.cargarConfiguracion();
   }
 
   private getHeaders(): HttpHeaders {
@@ -144,6 +279,8 @@ export class PortalAdmin implements OnInit {
         next: (data) => { this.padres.set(data); this.cargando.set(false); },
         error: () => { this.errorCarga.set('Error al cargar apoderados.'); this.cargando.set(false); }
       });
+    } else if (this.seccionActiva() === 'finanzas') {
+      this.cargarFinanzas();
     } else if (this.seccionActiva() === 'kanban') {
       this.http.get<NotaKanban[]>(`${this.API_BASE}/notas-kanban`, { headers }).subscribe({
         next: (data) => { this.notas.set(data); this.cargando.set(false); },
@@ -274,8 +411,196 @@ export class PortalAdmin implements OnInit {
     });
   }
 
+  // ── Finanzas Methods ──────────────────────────────────────────────
+  private readonly FIN = 'http://localhost:8080/api/portal/admin/finanzas';
+
+  cargarFinanzas() {
+    const h = this.getHeaders();
+    this.cargandoFinanzas.set(true);
+    const q   = this.filtroCuotaEstudiante.trim();
+    const pag = this.filtroCuotaPagado;
+    let params = q ? `?query=${encodeURIComponent(q)}` : '';
+    if (pag !== 'todos') params += (params ? '&' : '?') + `pagado=${pag === 'pagados'}`;
+
+    this.http.get<ConceptoPago[]>(`${this.FIN}/conceptos`, { headers: h }).subscribe({
+      next: d => this.conceptos.set(d),
+      error: () => {}
+    });
+    this.http.get<CuotaEstudiante[]>(`${this.FIN}/cuotas${params}`, { headers: h }).subscribe({
+      next: d => { this.cuotas.set(d); this.cargandoFinanzas.set(false); },
+      error: () => this.cargandoFinanzas.set(false)
+    });
+  }
+
+  abrirConceptoNuevo() {
+    this.formConcepto = { idConcepto: null, nombre: '', descripcion: '', monto: 0, activo: true };
+    this.modalFinanzas.set('concepto');
+  }
+  abrirConceptoEditar(c: ConceptoPago) {
+    this.formConcepto = { idConcepto: c.idConcepto!, nombre: c.nombre, descripcion: c.descripcion, monto: c.monto, activo: c.activo };
+    this.modalFinanzas.set('concepto');
+  }
+  guardarConcepto() {
+    const h   = this.getHeaders();
+    const f   = this.formConcepto;
+    const obs = f.idConcepto
+      ? this.http.put(`${this.FIN}/conceptos/${f.idConcepto}`, f, { headers: h })
+      : this.http.post(`${this.FIN}/conceptos`, f, { headers: h });
+    obs.subscribe({ next: () => { this.modalFinanzas.set(null); this.cargarFinanzas(); }, error: () => alert('Error al guardar concepto.') });
+  }
+  eliminarConcepto(c: ConceptoPago) {
+    if (!confirm(`¿Eliminar concepto "${c.nombre}"?`)) return;
+    this.http.delete(`${this.FIN}/conceptos/${c.idConcepto}`, { headers: this.getHeaders() }).subscribe({
+      next: () => this.cargarFinanzas(),
+      error: () => alert('Error al eliminar concepto.')
+    });
+  }
+  abrirGenerarCuotas() {
+    this.formGenerar = { idConcepto: null, grado: '', fechaVencimiento: this.today };
+    this.modalFinanzas.set('generar');
+  }
+  procesarGenerarCuotas() {
+    const h = this.getHeaders();
+    this.http.post(`${this.FIN}/cuotas/generar`, this.formGenerar, { headers: h }).subscribe({
+      next: () => { this.modalFinanzas.set(null); this.cargarFinanzas(); },
+      error: () => alert('Error al generar cuotas.')
+    });
+  }
+  abrirRegistrarPago(q: CuotaEstudiante) {
+    this.formPagar = { idCuota: q.idCuota, nroTransaccion: '' };
+    this.modalFinanzas.set('pagar');
+  }
+  procesarRegistrarPago() {
+    const h = this.getHeaders();
+    const id = this.formPagar.idCuota;
+    this.http.post(`${this.FIN}/cuotas/${id}/pagar`, { nroTransaccion: this.formPagar.nroTransaccion }, { headers: h }).subscribe({
+      next: () => { this.modalFinanzas.set(null); this.cargarFinanzas(); },
+      error: () => alert('Error al registrar el pago.')
+    });
+  }
+
+  // ── Caja Methods ──────────────────────────────────────────────────
+
+  readonly MESES = ['', 'Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                    'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  cargarCaja() {
+    const h = this.getHeaders();
+    this.cargandoCaja.set(true);
+    const tipo = this.filtroMovTipo !== 'todos' ? this.filtroMovTipo : '';
+    let qs = `?anio=${this.filtroMovAnio}`;
+    if (tipo)              qs += `&tipo=${tipo}`;
+    if (this.filtroMovMes) qs += `&mes=${this.filtroMovMes}`;
+
+    this.http.get<CategoriaCaja[]>(`${this.CAJA}/categorias?tipo=ingreso`, { headers: h }).subscribe({ next: d => this.categoriasIngreso.set(d), error: () => {} });
+    this.http.get<CategoriaCaja[]>(`${this.CAJA}/categorias?tipo=gasto`,   { headers: h }).subscribe({ next: d => this.categoriasGasto.set(d),   error: () => {} });
+    this.http.get<any>(`${this.CAJA}/kpi?anio=${this.filtroMovAnio}`,      { headers: h }).subscribe({ next: d => this.cajaKpi.set(d),           error: () => {} });
+    this.http.get<FlujoCajaMensual[]>(`${this.CAJA}/flujo?anio=${this.filtroMovAnio}`, { headers: h }).subscribe({ next: d => this.flujoCaja.set(d), error: () => {} });
+    this.http.get<MovimientoCaja[]>(`${this.CAJA}/movimientos${qs}`, { headers: h }).subscribe({
+      next: d => { this.movimientosCaja.set(d); this.cargandoCaja.set(false); },
+      error: () => this.cargandoCaja.set(false)
+    });
+  }
+
+  abrirNuevoMovimiento() {
+    this.formMovimiento = { tipo: 'gasto', idCategoria: null, descripcion: '', monto: 0, fecha: this.today, referencia: '' };
+    this.modalCaja.set('movimiento');
+  }
+  guardarMovimiento() {
+    const h = this.getHeaders();
+    this.http.post<MovimientoCaja>(`${this.CAJA}/movimientos`, this.formMovimiento, { headers: h }).subscribe({
+      next: () => { this.modalCaja.set(null); this.cargarCaja(); },
+      error: () => alert('Error al guardar el movimiento.')
+    });
+  }
+  eliminarMovimiento(m: MovimientoCaja) {
+    if (!confirm(`¿Eliminar movimiento "${m.descripcion}"?`)) return;
+    this.http.delete(`${this.CAJA}/movimientos/${m.idMovimiento}`, { headers: this.getHeaders() }).subscribe({
+      next: () => this.cargarCaja(),
+      error: () => alert('Error al eliminar el movimiento.')
+    });
+  }
+
+  getNombreMes(mes: number): string { return this.MESES[mes] ?? mes.toString(); }
+
+
+  // ── Configuración Methods ─────────────────────────────────────────
+
+  cargarConfiguracion() {
+    const h = this.getHeaders();
+    this.cargandoConfig.set(true);
+    this.http.get<ColegioConfig>(`${this.CONFIG_URL}/colegio`, { headers: h }).subscribe({
+      next: d => { this.colegioConfig.set(d); this.formColegio = { ...d }; this.editandoColegio = false; },
+      error: () => {}
+    });
+    this.http.get<AnoEscolar[]>(`${this.CONFIG_URL}/anos`, { headers: h }).subscribe({
+      next: d => this.anosEscolares.set(d),
+      error: () => {}
+    });
+    this.http.get<PermisoRol[]>(`${this.CONFIG_URL}/permisos`, { headers: h }).subscribe({
+      next: d => { this.permisos.set(d); this.cargandoConfig.set(false); },
+      error: () => this.cargandoConfig.set(false)
+    });
+  }
+
+  guardarColegio() {
+    const h = this.getHeaders();
+    this.http.put<ColegioConfig>(`${this.CONFIG_URL}/colegio`, this.formColegio, { headers: h }).subscribe({
+      next: d => { this.colegioConfig.set(d); this.editandoColegio = false; alert('Datos del colegio actualizados.'); },
+      error: () => alert('Error al guardar los datos del colegio.')
+    });
+  }
+
+  crearAnoEscolar() {
+    const h = this.getHeaders();
+    this.http.post<AnoEscolar>(`${this.CONFIG_URL}/anos`, this.formAnoEscolar, { headers: h }).subscribe({
+      next: () => { this.formAnoEscolar = { nombre: '', fechaInicio: '', fechaFin: '' }; this.cargarConfiguracion(); },
+      error: () => alert('Error al crear el año escolar.')
+    });
+  }
+
+  activarAno(a: AnoEscolar) {
+    if (!confirm(`¿Activar "${a.nombre}" como año escolar en curso?`)) return;
+    this.http.put(`${this.CONFIG_URL}/anos/${a.idAno}/activar`, {}, { headers: this.getHeaders() }).subscribe({
+      next: () => this.cargarConfiguracion(),
+      error: () => alert('Error al activar el año escolar.')
+    });
+  }
+
+  getRolesUnicos(): string[] {
+    return [...new Set(this.permisos().map(p => p.rolNombre))];
+  }
+
+  getPermisosPorRol(rol: string): PermisoRol[] {
+    return this.permisos().filter(p => p.rolNombre === rol);
+  }
+
+  togglePermiso(p: PermisoRol, campo: 'puedeVer' | 'puedeCrear' | 'puedeEditar' | 'puedeBorrar') {
+    const actualizado = { ...p, [campo]: !p[campo] };
+    this.http.put<PermisoRol>(`${this.CONFIG_URL}/permisos/${p.idPermiso}`, {
+      puedeVer: actualizado.puedeVer, puedeCrear: actualizado.puedeCrear,
+      puedeEditar: actualizado.puedeEditar, puedeBorrar: actualizado.puedeBorrar
+    }, { headers: this.getHeaders() }).subscribe({
+      next: updated => {
+        this.permisos.update(list => list.map(x => x.idPermiso === updated.idPermiso ? updated : x));
+      },
+      error: () => alert('Error al actualizar el permiso.')
+    });
+  }
+
+  getPermisoValor(p: PermisoRol, campo: string): boolean {
+    if (campo === 'puedeVer')    return p.puedeVer;
+    if (campo === 'puedeCrear')  return p.puedeCrear;
+    if (campo === 'puedeEditar') return p.puedeEditar;
+    if (campo === 'puedeBorrar') return p.puedeBorrar;
+    return false;
+  }
+
   logout() {
     this.auth.logout();
     this.router.navigate(['/']);
   }
+
 }
+
+

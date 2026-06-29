@@ -302,6 +302,34 @@ export interface FormExamen {
   url: string;
 }
 
+/* ── Interfaces de Temario ── */
+
+export interface Unidad {
+  idUnidad: number;
+  idAulaCurso: number;
+  numero: number;
+  titulo: string;
+  bimestre: string;
+  semanas: string;
+  objetivos: string[];
+  indicadores: string[];
+  contenidos: string[];
+  estado: 'pendiente' | 'en_curso' | 'concluido';
+  fechaConclusion?: string;
+}
+
+export interface FormUnidad {
+  idUnidad?: number;
+  numero: number;
+  titulo: string;
+  bimestre: string;
+  semanas: string;
+  objetivos: string;
+  indicadores: string;
+  contenidos: string;
+  estado: 'pendiente' | 'en_curso' | 'concluido';
+}
+
 /* ── Interfaces de Reportes ── */
 
 export interface Reporte {
@@ -564,9 +592,10 @@ export class PortalDocente implements OnDestroy {
   /** Curso activo cuando el docente hace click en una card */
   cursoActivo      = signal<Curso | null>(null);
   /** Pestaña activa dentro del detalle del curso */
-  activeSubTab     = signal('contenido');  // 'asistencia' | 'contenido' | 'tareas' | 'examenes' | 'reportes'
+  activeSubTab     = signal('temario');  // 'temario' | 'asistencia' | 'contenido' | 'tareas' | 'examenes' | 'reportes'
 
   courseTabs = [
+    { id: 'temario',    label: 'Temario' },
     { id: 'asistencia', label: 'Asistencia' },
     { id: 'contenido',  label: 'Contenido' },
     { id: 'tareas',     label: 'Tareas' },
@@ -653,6 +682,33 @@ export class PortalDocente implements OnDestroy {
   formReporte = signal<FormReporte>({
     idAlumno: null, tipo: 'anotacion',
     titulo: '', descripcion: '', fecha: '', visiblePadre: true
+  });
+
+  /* ── Signals de Temario ── */
+
+  unidades = signal<Unidad[]>([]);
+  cargandoTemario = signal(false);
+  mostrarFormUnidad = signal(false);
+  formUnidad = signal<FormUnidad>({ numero: 1, titulo: '', bimestre: 'Bimestre I', semanas: '', objetivos: '', indicadores: '', contenidos: '', estado: 'pendiente' });
+  unidadesAbiertas = signal<Set<number>>(new Set([1]));
+
+  progresoTemario = computed(() => {
+    const list = this.unidades();
+    const total = list.length;
+    if (total === 0) return { concluido: 0, enCurso: 0, pendiente: 100, totalPct: 0 };
+    const concluidas = list.filter(u => u.estado === 'concluido').length;
+    const enCurso = list.filter(u => u.estado === 'en_curso').length;
+
+    const pctConcluido = (concluidas / total) * 100;
+    const pctEnCurso = (enCurso * 0.5 / total) * 100;
+    const pctPendiente = 100 - pctConcluido - pctEnCurso;
+
+    return {
+      concluido: Math.round(pctConcluido),
+      enCurso: Math.round(pctEnCurso),
+      pendiente: Math.round(pctPendiente),
+      totalPct: Math.round((concluidas + enCurso * 0.5) / total * 100)
+    };
   });
 
   /* ── Signals de Asistencia ── */
@@ -1649,9 +1705,10 @@ export class PortalDocente implements OnDestroy {
   abrirCurso(curso: Curso) {
     this.cursoActivo.set(curso);
     this.activeSection.set('curso-detalle');
-    this.activeSubTab.set('contenido');
+    this.activeSubTab.set('temario');
     this.semanasAbiertas.set(new Set([1]));
     this.clasesAbiertas.set(new Set(['1-1']));
+    this.cargarTemario(curso.idAulaCurso);
     this.cargarMateriales(curso.idAulaCurso);
     this.cargarTareas(curso.idAulaCurso);
     this.cargarExamenes(curso.idAulaCurso);
@@ -1664,6 +1721,9 @@ export class PortalDocente implements OnDestroy {
   /** Vuelve a la sección inicio y limpia el estado del curso activo */
   volverAlInicio() {
     this.cursoActivo.set(null);
+    this.unidades.set([]);
+    this.mostrarFormUnidad.set(false);
+    this.unidadesAbiertas.set(new Set([1]));
     this.materiales.set([]);
     this.tareas.set([]);
     this.tareasExpandidas.set(new Set());
@@ -1700,6 +1760,141 @@ export class PortalDocente implements OnDestroy {
       next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
+  }
+
+  /* ── Métodos de Temario ── */
+
+  cargarTemario(idAulaCurso: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoTemario.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Unidad[]>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/temario`,
+      { headers }
+    ).subscribe({
+      next: data => {
+        this.unidades.set(data);
+        this.cargandoTemario.set(false);
+      },
+      error: () => this.cargandoTemario.set(false)
+    });
+  }
+
+  toggleUnidad(numero: number) {
+    this.unidadesAbiertas.update(set => {
+      const next = new Set(set);
+      next.has(numero) ? next.delete(numero) : next.add(numero);
+      return next;
+    });
+  }
+
+  actualizarEstadoUnidad(unidad: Unidad, nuevoEstado: 'pendiente' | 'en_curso' | 'concluido') {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      numero: unidad.numero,
+      titulo: unidad.titulo,
+      bimestre: unidad.bimestre,
+      semanas: unidad.semanas,
+      objetivos: unidad.objetivos,
+      indicadores: unidad.indicadores,
+      contenidos: unidad.contenidos,
+      estado: nuevoEstado
+    };
+
+    /* Optimistic update */
+    this.unidades.update(list =>
+      list.map(u => u.idUnidad === unidad.idUnidad ? { ...u, estado: nuevoEstado } : u)
+    );
+
+    this.http.put(
+      `http://localhost:8080/api/portal/docente/temario/${unidad.idUnidad}`,
+      body, { headers }
+    ).subscribe({
+      error: () => {
+        const curso = this.cursoActivo();
+        if (curso) this.cargarTemario(curso.idAulaCurso);
+      }
+    });
+  }
+
+  abrirNuevaUnidad() {
+    const nextNum = this.unidades().length + 1;
+    this.formUnidad.set({
+      numero: nextNum,
+      titulo: '',
+      bimestre: 'Bimestre I',
+      semanas: '',
+      objetivos: '',
+      indicadores: '',
+      contenidos: '',
+      estado: 'pendiente'
+    });
+    this.mostrarFormUnidad.set(true);
+  }
+
+  editarUnidad(unidad: Unidad) {
+    this.formUnidad.set({
+      idUnidad: unidad.idUnidad,
+      numero: unidad.numero,
+      titulo: unidad.titulo,
+      bimestre: unidad.bimestre,
+      semanas: unidad.semanas,
+      objetivos: unidad.objetivos.join('\n'),
+      indicadores: unidad.indicadores.join('\n'),
+      contenidos: unidad.contenidos.join('\n'),
+      estado: unidad.estado
+    });
+    this.mostrarFormUnidad.set(true);
+  }
+
+  guardarUnidad() {
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    const f = this.formUnidad();
+    if (!f.titulo.trim()) return;
+
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      numero: f.numero,
+      titulo: f.titulo.trim(),
+      bimestre: f.bimestre,
+      semanas: f.semanas.trim(),
+      objetivos: f.objetivos.split('\n').map(x => x.trim()).filter(Boolean),
+      indicadores: f.indicadores.split('\n').map(x => x.trim()).filter(Boolean),
+      contenidos: f.contenidos.split('\n').map(x => x.trim()).filter(Boolean),
+      estado: f.estado
+    };
+
+    if (f.idUnidad) {
+      // Edit mode
+      this.http.put(
+        `http://localhost:8080/api/portal/docente/temario/${f.idUnidad}`,
+        body, { headers }
+      ).subscribe({
+        next: () => {
+          this.cargarTemario(curso.idAulaCurso);
+          this.mostrarFormUnidad.set(false);
+        },
+        error: () => alert('Error al actualizar la unidad didáctica.')
+      });
+    } else {
+      // Create mode
+      this.http.post(
+        `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/temario`,
+        body, { headers }
+      ).subscribe({
+        next: () => {
+          this.cargarTemario(curso.idAulaCurso);
+          this.mostrarFormUnidad.set(false);
+        },
+        error: () => alert('Error al crear la unidad didáctica.')
+      });
+    }
   }
 
   /** Carga los materiales del aula_curso dado */
@@ -2318,6 +2513,30 @@ export class PortalDocente implements OnDestroy {
         const curso = this.cursoActivo();
         if (curso) this.cargarReportes(curso.idAulaCurso);
       }
+    });
+  }
+
+  exportarCurso(formato: 'excel' | 'pdf') {
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    const url = `http://localhost:8080/api/portal/docente/export/curso/${curso.idAulaCurso}/${formato}`;
+
+    this.http.get(url, { headers, responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const type = formato === 'excel'
+          ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          : 'application/pdf';
+        const file = new Blob([blob], { type });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(file);
+        link.download = `reporte_curso_${curso.nombre.toLowerCase().replace(/\s+/g, '_')}_${this.today}.${formato === 'excel' ? 'xlsx' : 'pdf'}`;
+        link.click();
+      },
+      error: () => alert('Error al descargar el reporte académico del curso.')
     });
   }
 

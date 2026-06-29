@@ -8,7 +8,27 @@ import type { TareaAlumno, ActividadAlumno, MaterialAlumno } from './curso-detal
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
-type Seccion = 'inicio' | 'calendario' | 'kanban' | 'refuerzo' | 'recursos';
+type Seccion = 'inicio' | 'calificaciones' | 'asistencias' | 'calendario' | 'kanban' | 'refuerzo' | 'recursos';
+
+interface CalificacionGlobal {
+  idAulaCurso: number;
+  curso: string;
+  bim1: number | null;
+  bim2: number | null;
+  bim3: number | null;
+  bim4: number | null;
+}
+
+interface AsistenciaGlobal {
+  idAulaCurso: number;
+  curso: string;
+  total: number;
+  presente: number;
+  tardanza: number;
+  falta: number;
+  justificado: number;
+  porcentaje: number;
+}
 
 interface CursoApi {
   idAulaCurso: number;
@@ -77,6 +97,12 @@ export class PortalAlumno implements OnInit {
   errorCarga = signal('');
   cursos = signal<Curso[]>([]);
 
+  // ── Global metrics signals ──
+  calificacionesGlobales = signal<CalificacionGlobal[]>([]);
+  asistenciasGlobales = signal<AsistenciaGlobal[]>([]);
+  cargandoCalificaciones = signal(false);
+  cargandoAsistencias = signal(false);
+
   /** Curso activo para la vista de detalle (null = mostrar grid) */
   cursoActivo = signal<Curso | null>(null);
 
@@ -86,6 +112,8 @@ export class PortalAlumno implements OnInit {
 
   navItems: { id: Seccion; label: string; icon: string }[] = [
     { id: 'inicio', label: 'Inicio', icon: 'home' },
+    { id: 'calificaciones', label: 'Calificaciones', icon: 'award' },
+    { id: 'asistencias', label: 'Asistencia Global', icon: 'check-circle' },
     { id: 'calendario', label: 'Calendario', icon: 'calendar' },
     { id: 'kanban', label: 'Tablero Kanban', icon: 'kanban' },
     { id: 'refuerzo', label: 'Refuerzo', icon: 'refuerzo' },
@@ -345,7 +373,42 @@ export class PortalAlumno implements OnInit {
     this.seccionActiva.set(id);
     this.cursoActivo.set(null);   // cerrar cualquier detalle abierto
     this.dropdownOpen.set(false);
+
+    if (id === 'calificaciones') {
+      this.cargarCalificacionesGlobales();
+    } else if (id === 'asistencias') {
+      this.cargarAsistenciasGlobales();
+    }
   }
+
+  cargarCalificacionesGlobales() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoCalificaciones.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<CalificacionGlobal[]>('http://localhost:8080/api/portal/alumno/calificaciones-globales', { headers }).subscribe({
+      next: (data) => {
+        this.calificacionesGlobales.set(data);
+        this.cargandoCalificaciones.set(false);
+      },
+      error: () => this.cargandoCalificaciones.set(false)
+    });
+  }
+
+  cargarAsistenciasGlobales() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoAsistencias.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<AsistenciaGlobal[]>('http://localhost:8080/api/portal/alumno/asistencia-global', { headers }).subscribe({
+      next: (data) => {
+        this.asistenciasGlobales.set(data);
+        this.cargandoAsistencias.set(false);
+      },
+      error: () => this.cargandoAsistencias.set(false)
+    });
+  }
+
   toggleDropdown() { this.dropdownOpen.update(v => !v); }
 
   /** Abre la vista de detalle para el curso seleccionado */

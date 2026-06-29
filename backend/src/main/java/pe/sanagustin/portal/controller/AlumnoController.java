@@ -64,4 +64,14 @@ public class AlumnoController {
             Principal principal) {
         return ResponseEntity.ok(alumnoService.getReportes(principal.getName(), idAulaCurso));
     }
+
+    @GetMapping("/calificaciones-globales")
+    public ResponseEntity<List<CalificacionGlobalDto>> getCalificacionesGlobales(Principal principal) {
+        return ResponseEntity.ok(alumnoService.getCalificacionesGlobales(principal.getName()));
+    }
+
+    @GetMapping("/asistencia-global")
+    public ResponseEntity<List<AsistenciaGlobalDto>> getAsistenciasGlobales(Principal principal) {
+        return ResponseEntity.ok(alumnoService.getAsistenciasGlobales(principal.getName()));
+    }
 }

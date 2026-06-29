@@ -289,6 +289,169 @@
         }<!-- @else -->
       }
 
+      <!-- ========== CALIFICACIONES ========== -->
+      @if (seccionActiva() === 'calificaciones') {
+        <div class="pa-calendar-view animate-fade-in" style="padding: 24px;">
+          <div class="pa-view-header" style="margin-bottom: 24px;">
+            <div class="pa-header-info">
+              <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Calificaciones Bimestrales</h2>
+              <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Resumen global de promedios de todas tus asignaturas</p>
+            </div>
+          </div>
+
+          @if (cargandoCalificaciones()) {
+            <div class="pa-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px;">
+              <div class="pa-spinner"></div>
+              <span style="margin-top: 12px; color: #6b7280;">Cargando tus notas globales...</span>
+            </div>
+          }
+
+          @if (!cargandoCalificaciones() && calificacionesGlobales().length > 0) {
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                <thead>
+                  <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+                    <th style="padding: 16px; font-weight: 600; color: #374151;">Asignatura</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Bimestre I</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Bimestre II</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Bimestre III</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Bimestre IV</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Promedio Final</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (c of calificacionesGlobales(); track c.idAulaCurso) {
+                    <tr style="border-bottom: 1px solid #f3f4f6; transition: background 0.2s; cursor: default;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
+                      <td style="padding: 16px; font-weight: 600; color: #111827;">{{ c.curso }}</td>
+                      
+                      <!-- Bimestre 1 -->
+                      <td style="padding: 16px; text-align: center; font-weight: 500;" 
+                          [style.color]="c.bim1 !== null ? (c.bim1 >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
+                        {{ c.bim1 !== null ? c.bim1 : '—' }}
+                      </td>
+                      
+                      <!-- Bimestre 2 -->
+                      <td style="padding: 16px; text-align: center; font-weight: 500;" 
+                          [style.color]="c.bim2 !== null ? (c.bim2 >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
+                        {{ c.bim2 !== null ? c.bim2 : '—' }}
+                      </td>
+                      
+                      <!-- Bimestre 3 -->
+                      <td style="padding: 16px; text-align: center; font-weight: 500;" 
+                          [style.color]="c.bim3 !== null ? (c.bim3 >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
+                        {{ c.bim3 !== null ? c.bim3 : '—' }}
+                      </td>
+                      
+                      <!-- Bimestre 4 -->
+                      <td style="padding: 16px; text-align: center; font-weight: 500;" 
+                          [style.color]="c.bim4 !== null ? (c.bim4 >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
+                        {{ c.bim4 !== null ? c.bim4 : '—' }}
+                      </td>
+
+                      <!-- Promedio Final -->
+                      @let finalAvg = (
+                        (c.bim1 || 0) + (c.bim2 || 0) + (c.bim3 || 0) + (c.bim4 || 0)
+                      ) / (
+                        (c.bim1 !== null ? 1 : 0) + (c.bim2 !== null ? 1 : 0) + (c.bim3 !== null ? 1 : 0) + (c.bim4 !== null ? 1 : 0) || 1
+                      );
+                      @let hasGrades = (c.bim1 !== null || c.bim2 !== null || c.bim3 !== null || c.bim4 !== null);
+                      
+                      <td style="padding: 16px; text-align: center; font-weight: 700;" 
+                          [style.color]="hasGrades ? (finalAvg >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
+                        {{ hasGrades ? (finalAvg | number:'1.1-1') : '—' }}
+                      </td>
+
+                      <!-- Estado Badge -->
+                      <td style="padding: 16px; text-align: center;">
+                        @if (hasGrades) {
+                          <span style="font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase;"
+                                [style.background]="finalAvg >= 11 ? '#e6f4ea' : '#fce8e6'"
+                                [style.color]="finalAvg >= 11 ? '#137333' : '#c5221f'">
+                            {{ finalAvg >= 11 ? 'Aprobado' : 'Desaprobado' }}
+                          </span>
+                        } @else {
+                          <span style="font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; background: #f1f3f4; color: #5f6368;">
+                            Pendiente
+                          </span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ========== ASISTENCIA GLOBAL ========== -->
+      @if (seccionActiva() === 'asistencias') {
+        <div class="pa-calendar-view animate-fade-in" style="padding: 24px;">
+          <div class="pa-view-header" style="margin-bottom: 24px;">
+            <div class="pa-header-info">
+              <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Asistencia Consolidada</h2>
+              <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Historial global de asistencias y faltas por materia</p>
+            </div>
+          </div>
+
+          @if (cargandoAsistencias()) {
+            <div class="pa-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px;">
+              <div class="pa-spinner"></div>
+              <span style="margin-top: 12px; color: #6b7280;">Cargando consolidado de asistencias...</span>
+            </div>
+          }
+
+          @if (!cargandoAsistencias() && asistenciasGlobales().length > 0) {
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                <thead>
+                  <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+                    <th style="padding: 16px; font-weight: 600; color: #374151;">Asignatura</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Total Clases</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Presentes</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Tardanzas</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Faltas Justificadas</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Faltas Injustificadas</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Porcentaje Asistencia</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Estado Alerta</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (a of asistenciasGlobales(); track a.idAulaCurso) {
+                    <tr style="border-bottom: 1px solid #f3f4f6; transition: background 0.2s; cursor: default;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
+                      <td style="padding: 16px; font-weight: 600; color: #111827;">{{ a.curso }}</td>
+                      <td style="padding: 16px; text-align: center; color: #374151;">{{ a.total }}</td>
+                      <td style="padding: 16px; text-align: center; color: #137333; font-weight: 500;">{{ a.presente }}</td>
+                      <td style="padding: 16px; text-align: center; color: #b06000; font-weight: 500;">{{ a.tardanza }}</td>
+                      <td style="padding: 16px; text-align: center; color: #1a73e8; font-weight: 500;">{{ a.justificado }}</td>
+                      <td style="padding: 16px; text-align: center; color: #c5221f; font-weight: 500;">{{ a.falta }}</td>
+                      <td style="padding: 16px; text-align: center; font-weight: 700;"
+                          [style.color]="a.porcentaje >= 80 ? '#137333' : a.porcentaje >= 70 ? '#b06000' : '#c5221f'">
+                        {{ a.total > 0 ? (a.porcentaje | number:'1.1-1') + '%' : '—' }}
+                      </td>
+                      <td style="padding: 16px; text-align: center;">
+                        @if (a.total > 0) {
+                          <span style="font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase;"
+                                [style.background]="a.porcentaje >= 80 ? '#e6f4ea' : a.porcentaje >= 70 ? '#fef7e0' : '#fce8e6'"
+                                [style.color]="a.porcentaje >= 80 ? '#137333' : a.porcentaje >= 70 ? '#b06000' : '#c5221f'">
+                            {{ a.porcentaje >= 80 ? 'Normal' : a.porcentaje >= 70 ? 'Alerta' : 'Riesgo' }}
+                          </span>
+                        } @else {
+                          <span style="font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; background: #f1f3f4; color: #5f6368;">
+                            Sin datos
+                          </span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      }
+
       <!-- ========== CALENDARIO ========== -->
       @if (seccionActiva() === 'calendario') {
         <div class="pa-calendar-view animate-fade-in">

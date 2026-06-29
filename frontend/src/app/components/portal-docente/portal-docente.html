@@ -356,6 +356,124 @@
           }
         </div>
 
+        <!-- ─── Tab: TEMARIO ─── -->
+        @if (activeSubTab() === 'temario') {
+          <div class="cd-section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <h3 class="cd-section-title">Temario y Avance Curricular</h3>
+            <button class="rp-btn-nuevo" (click)="abrirNuevaUnidad()">
+              + Nueva Unidad
+            </button>
+          </div>
+
+          <!-- Barra de Progreso Tricolor Premium -->
+          <div class="tm-progress-container" style="background: #f3f4f6; border-radius: 12px; padding: 16px; margin-bottom: 24px; border: 1px solid #e5e7eb;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #374151;">
+              <span>Progreso General Estimado</span>
+              <span style="color: #059669;">{{ progresoTemario().totalPct }}% completado</span>
+            </div>
+            <!-- Barra multicolor -->
+            <div class="tm-progress-bar-wrapper" style="height: 12px; display: flex; border-radius: 6px; overflow: hidden; background: #e5e7eb;">
+              <div [style.width.%]="progresoTemario().concluido" style="background: #059669; height: 100%; transition: width 0.3s;" title="Concluido: {{ progresoTemario().concluido }}%"></div>
+              <div [style.width.%]="progresoTemario().enCurso" style="background: #2563eb; height: 100%; transition: width 0.3s;" title="En Curso: {{ progresoTemario().enCurso }}%"></div>
+              <div [style.width.%]="progresoTemario().pendiente" style="background: #9ca3af; height: 100%; transition: width 0.3s;" title="Pendiente: {{ progresoTemario().pendiente }}%"></div>
+            </div>
+            <!-- Leyendas -->
+            <div style="display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: #6b7280;">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #059669; border-radius: 50%;"></span>
+                <span>Concluido</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #2563eb; border-radius: 50%;"></span>
+                <span>En Curso (cuenta al 50%)</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #9ca3af; border-radius: 50%;"></span>
+                <span>Pendiente</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Estado de carga -->
+          @if (cargandoTemario()) {
+            <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando temario...</span></div>
+          }
+
+          <!-- Lista de Unidades -->
+          @if (!cargandoTemario()) {
+            <div class="tm-unidad-list" style="display: flex; flex-direction: column; gap: 16px;">
+              @for (u of unidades(); track u.idUnidad) {
+                <div class="tm-unidad-card" style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                  
+                  <!-- Header de Unidad (Acordeón clickeable) -->
+                  <div (click)="toggleUnidad(u.numero)" style="display: flex; justify-content: space-between; align-items: center; padding: 16px; cursor: pointer; background: #f9fafb; border-bottom: 1px solid #e5e7eb; user-select: none;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <span style="font-weight: 700; color: #111827; background: #e5e7eb; padding: 4px 8px; border-radius: 6px;">U{{ u.numero }}</span>
+                      <h4 style="margin: 0; font-weight: 600; color: #1f2937; font-size: 15px;">{{ u.titulo }}</h4>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;" (click)="$event.stopPropagation()">
+                      <!-- Selector de estado -->
+                      <select [value]="u.estado" (change)="actualizarEstadoUnidad(u, $any($event.target).value)" 
+                              style="font-size: 12px; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-weight: 600;"
+                              [style.color]="u.estado === 'concluido' ? '#059669' : u.estado === 'en_curso' ? '#2563eb' : '#6b7280'">
+                        <option value="pendiente">Pendiente</option>
+                        <option value="en_curso">En Curso</option>
+                        <option value="concluido">Concluido</option>
+                      </select>
+
+                      <!-- Editar botón -->
+                      <button class="as-btn-outline" style="padding: 4px 8px; font-size: 12px;" (click)="editarUnidad(u)">
+                        Editar
+                      </button>
+
+                      <svg class="cd-chevron" [class.open]="unidadesAbiertas().has(u.numero)"
+                           width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition: transform 0.2s;">
+                        <polyline points="18 15 12 9 6 15"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Detalle de la Unidad (Abierto/Cerrado) -->
+                  @if (unidadesAbiertas().has(u.numero)) {
+                    <div style="padding: 16px; display: grid; grid-template-columns: 1fr 2fr; gap: 16px; background: white; border-top: 1px solid #f3f4f6;">
+                      <!-- Datos generales y contenidos -->
+                      <div>
+                        <div style="margin-bottom: 12px; font-size: 13px; color: #4b5563;">
+                          <strong>Bimestre:</strong> {{ u.bimestre }} <span style="margin: 0 8px;">•</span> <strong>Periodo estimado:</strong> {{ u.semanas }}
+                        </div>
+                        <h5 style="margin: 12px 0 6px 0; font-size: 13px; font-weight: 700; color: #374151;">Contenidos Temáticos</h5>
+                        <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #4b5563; line-height: 1.6;">
+                          @for (c of u.contenidos; track c) {
+                            <li>{{ c }}</li>
+                          }
+                        </ul>
+                      </div>
+                      
+                      <!-- Objetivos e Indicadores -->
+                      <div style="border-left: 1px solid #f3f4f6; padding-left: 16px;">
+                        <h5 style="margin: 0 0 6px 0; font-size: 13px; font-weight: 700; color: #374151;">Objetivos de Aprendizaje</h5>
+                        <ul style="margin: 0 0 16px 0; padding-left: 18px; font-size: 13px; color: #4b5563; line-height: 1.5;">
+                          @for (o of u.objetivos; track o) {
+                            <li>{{ o }}</li>
+                          }
+                        </ul>
+
+                        <h5 style="margin: 0 0 6px 0; font-size: 13px; font-weight: 700; color: #374151;">Indicadores de Logro</h5>
+                        <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #4b5563; line-height: 1.5;">
+                          @for (ind of u.indicadores; track ind) {
+                            <li>{{ ind }}</li>
+                          }
+                        </ul>
+                      </div>
+                    </div>
+                  }
+
+                </div>
+              }
+            </div>
+          }
+        }
+
         <!-- ─── Tab: CONTENIDO ─── -->
         @if (activeSubTab() === 'contenido') {
           <div class="cd-section-header">
@@ -1416,11 +1534,29 @@
         @if (activeSubTab() === 'reportes') {
 
           <!-- Cabecera -->
-          <div class="cd-section-header">
-            <h3 class="cd-section-title">Libreta de Reportes</h3>
-            @if (!mostrarFormReporte()) {
-              <button class="rp-btn-nuevo" (click)="toggleFormReporte(true)">+ Nuevo Reporte</button>
-            }
+          <div class="cd-section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <h3 class="cd-section-title" style="margin: 0;">Libreta de Reportes</h3>
+              @if (!mostrarFormReporte()) {
+                <button class="rp-btn-nuevo" (click)="toggleFormReporte(true)">+ Nuevo Reporte</button>
+              }
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="as-btn-outline" (click)="exportarCurso('pdf')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                Exportar PDF
+              </button>
+              <button class="as-btn-outline" (click)="exportarCurso('excel')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="9" y1="3" x2="9" y2="21"/>
+                </svg>
+                Exportar Excel
+              </button>
+            </div>
           </div>
 
           <!-- Descripción informativa -->
@@ -1656,6 +1792,80 @@
         }<!-- /reportes -->
 
       }<!-- /curso-detalle -->
+
+      <!-- ────── MODAL: CREAR/EDITAR UNIDAD ────── -->
+      @if (mostrarFormUnidad()) {
+        <div class="cd-modal-backdrop" (click)="mostrarFormUnidad.set(false)">
+          <div class="cd-modal" (click)="$event.stopPropagation()" style="max-width: 600px;">
+            <div class="cd-modal-header">
+              <h3 class="cd-modal-title">{{ formUnidad().idUnidad ? 'Editar Unidad Didáctica' : 'Crear Unidad Didáctica' }}</h3>
+              <button class="cd-modal-close" (click)="mostrarFormUnidad.set(false)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            
+            <div class="cd-modal-body" style="display: flex; flex-direction: column; gap: 16px; padding: 20px; max-height: 70vh; overflow-y: auto;">
+              <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+                <div>
+                  <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Número de Unidad</label>
+                  <input type="number" [(ngModel)]="formUnidad().numero" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;" required />
+                </div>
+                <div>
+                  <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Título de Unidad</label>
+                  <input type="text" [(ngModel)]="formUnidad().titulo" placeholder="Ej: Fundamentos de la Álgebra" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;" required />
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div>
+                  <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Bimestre</label>
+                  <select [(ngModel)]="formUnidad().bimestre" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;">
+                    <option value="Bimestre I">Bimestre I</option>
+                    <option value="Bimestre II">Bimestre II</option>
+                    <option value="Bimestre III">Bimestre III</option>
+                    <option value="Bimestre IV">Bimestre IV</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Semanas de Duración</label>
+                  <input type="text" [(ngModel)]="formUnidad().semanas" placeholder="Ej: Semanas 1-4" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;" />
+                </div>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Contenidos Temáticos (Uno por línea)</label>
+                <textarea [(ngModel)]="formUnidad().contenidos" placeholder="Concepto A&#10;Concepto B&#10;Concepto C" rows="3" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: inherit; resize: vertical; font-size: 13px;"></textarea>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Objetivos de Aprendizaje (Uno por línea)</label>
+                <textarea [(ngModel)]="formUnidad().objetivos" placeholder="Objetivo 1&#10;Objetivo 2" rows="3" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: inherit; resize: vertical; font-size: 13px;"></textarea>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Indicadores de Logro (Uno por línea)</label>
+                <textarea [(ngModel)]="formUnidad().indicadores" placeholder="Indicador 1&#10;Indicador 2" rows="3" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: inherit; resize: vertical; font-size: 13px;"></textarea>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Estado Inicial</label>
+                <select [(ngModel)]="formUnidad().estado" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;">
+                  <option value="pendiente">Pendiente</option>
+                  <option value="en_curso">En Curso</option>
+                  <option value="concluido">Concluido</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="cd-modal-footer">
+              <button class="cd-modal-cancel" (click)="mostrarFormUnidad.set(false)">Cancelar</button>
+              <button class="cd-modal-submit" (click)="guardarUnidad()" [disabled]="!formUnidad().titulo.trim()">Guardar Unidad</button>
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- ────── MODAL: SUBIR MATERIAL ────── -->
       @if (modalMaterial()) {

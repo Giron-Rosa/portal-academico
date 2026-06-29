@@ -58,7 +58,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/portal/docente/**").hasAnyAuthority("ROLE_MAESTRO", "MAESTRO", "ROLE_DOCENTE", "DOCENTE", "ROLE_PROFESOR", "PROFESOR")
                         .requestMatchers("/api/portal/alumno/**").hasRole("ALUMNO")
                         .requestMatchers("/api/portal/padre/**").hasAnyAuthority("ROLE_PADRE", "PADRE")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**", "/api/portal/admin/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
 
                         // Cualquier otra ruta requiere autenticación
                         .anyRequest().authenticated()

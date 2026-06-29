@@ -256,4 +256,146 @@ public class AlumnoService {
                 (String) r[4]
         )).toList();
     }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Calificaciones globales agrupadas por bimestre
+    // ──────────────────────────────────────────────────────────────────
+    public List<CalificacionGlobalDto> getCalificacionesGlobales(String codigo) {
+        String sql = """
+                SELECT 
+                    ac.id_aula_curso,
+                    c.nombre AS curso,
+                    COALESCE(
+                      (
+                        SELECT ROUND(AVG(nota)::numeric, 1) 
+                        FROM (
+                          SELECT nt.nota FROM notas_tarea nt 
+                          JOIN tareas_curso t ON t.id_tarea = nt.id_tarea
+                          WHERE nt.id_alumno = al.id_alumno AND t.id_aula_curso = ac.id_aula_curso AND t.semana <= 4 AND nt.nota IS NOT NULL
+                          UNION ALL
+                          SELECT ne.nota FROM notas_examen ne
+                          JOIN examenes_curso e ON e.id_examen = ne.id_examen
+                          WHERE ne.id_alumno = al.id_alumno AND e.id_aula_curso = ac.id_aula_curso AND e.semana <= 4 AND ne.nota IS NOT NULL
+                        ) b1
+                      ), 
+                      NULL
+                    ) AS bim1,
+                    COALESCE(
+                      (
+                        SELECT ROUND(AVG(nota)::numeric, 1) 
+                        FROM (
+                          SELECT nt.nota FROM notas_tarea nt 
+                          JOIN tareas_curso t ON t.id_tarea = nt.id_tarea
+                          WHERE nt.id_alumno = al.id_alumno AND t.id_aula_curso = ac.id_aula_curso AND t.semana >= 5 AND t.semana <= 8 AND nt.nota IS NOT NULL
+                          UNION ALL
+                          SELECT ne.nota FROM notas_examen ne
+                          JOIN examenes_curso e ON e.id_examen = ne.id_examen
+                          WHERE ne.id_alumno = al.id_alumno AND e.id_aula_curso = ac.id_aula_curso AND e.semana >= 5 AND e.semana <= 8 AND ne.nota IS NOT NULL
+                        ) b2
+                      ), 
+                      NULL
+                    ) AS bim2,
+                    COALESCE(
+                      (
+                        SELECT ROUND(AVG(nota)::numeric, 1) 
+                        FROM (
+                          SELECT nt.nota FROM notas_tarea nt 
+                          JOIN tareas_curso t ON t.id_tarea = nt.id_tarea
+                          WHERE nt.id_alumno = al.id_alumno AND t.id_aula_curso = ac.id_aula_curso AND t.semana >= 9 AND t.semana <= 12 AND nt.nota IS NOT NULL
+                          UNION ALL
+                          SELECT ne.nota FROM notas_examen ne
+                          JOIN examenes_curso e ON e.id_examen = ne.id_examen
+                          WHERE ne.id_alumno = al.id_alumno AND e.id_aula_curso = ac.id_aula_curso AND e.semana >= 9 AND e.semana <= 12 AND ne.nota IS NOT NULL
+                        ) b3
+                      ), 
+                      NULL
+                    ) AS bim3,
+                    COALESCE(
+                      (
+                        SELECT ROUND(AVG(nota)::numeric, 1) 
+                        FROM (
+                          SELECT nt.nota FROM notas_tarea nt 
+                          JOIN tareas_curso t ON t.id_tarea = nt.id_tarea
+                          WHERE nt.id_alumno = al.id_alumno AND t.id_aula_curso = ac.id_aula_curso AND t.semana >= 13 AND nt.nota IS NOT NULL
+                          UNION ALL
+                          SELECT ne.nota FROM notas_examen ne
+                          JOIN examenes_curso e ON e.id_examen = ne.id_examen
+                          WHERE ne.id_alumno = al.id_alumno AND e.id_aula_curso = ac.id_aula_curso AND e.semana >= 13 AND ne.nota IS NOT NULL
+                        ) b4
+                      ), 
+                      NULL
+                    ) AS bim4
+                FROM alumnos al
+                JOIN usuarios u ON u.id_usuario = al.id_usuario
+                JOIN matriculas m ON m.id_alumno = al.id_alumno AND m.estado = 'activa'
+                JOIN aula_cursos ac ON ac.id_aula = m.id_aula
+                JOIN cursos c ON c.id_curso = ac.id_curso
+                WHERE u.codigo = :codigo
+                ORDER BY c.nombre
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery(sql)
+                .setParameter("codigo", codigo)
+                .getResultList();
+
+        return rows.stream().map(r -> new CalificacionGlobalDto(
+                ((Number) r[0]).longValue(),
+                (String) r[1],
+                r[2] != null ? ((Number) r[2]).doubleValue() : null,
+                r[3] != null ? ((Number) r[3]).doubleValue() : null,
+                r[4] != null ? ((Number) r[4]).doubleValue() : null,
+                r[5] != null ? ((Number) r[5]).doubleValue() : null
+        )).toList();
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Asistencia global consolidada por curso
+    // ──────────────────────────────────────────────────────────────────
+    public List<AsistenciaGlobalDto> getAsistenciasGlobales(String codigo) {
+        String sql = """
+                SELECT 
+                    ac.id_aula_curso,
+                    c.nombre AS curso,
+                    COUNT(aa.id_asistencia) AS total,
+                    SUM(CASE WHEN aa.estado = 'presente' THEN 1 ELSE 0 END) AS presente,
+                    SUM(CASE WHEN aa.estado = 'tardanza' THEN 1 ELSE 0 END) AS tardanza,
+                    SUM(CASE WHEN aa.estado = 'falta' THEN 1 ELSE 0 END) AS falta,
+                    SUM(CASE WHEN aa.estado = 'justificado' THEN 1 ELSE 0 END) AS justificado
+                FROM alumnos al
+                JOIN usuarios u ON u.id_usuario = al.id_usuario
+                JOIN matriculas m ON m.id_alumno = al.id_alumno AND m.estado = 'activa'
+                JOIN aula_cursos ac ON ac.id_aula = m.id_aula
+                JOIN cursos c ON c.id_curso = ac.id_curso
+                LEFT JOIN asistencia_alumno aa ON aa.id_alumno = al.id_alumno AND aa.id_aula_curso = ac.id_aula_curso
+                WHERE u.codigo = :codigo
+                GROUP BY ac.id_aula_curso, c.nombre, al.id_alumno
+                ORDER BY c.nombre
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery(sql)
+                .setParameter("codigo", codigo)
+                .getResultList();
+
+        return rows.stream().map(r -> {
+            int total = r[2] != null ? ((Number) r[2]).intValue() : 0;
+            int pres  = r[3] != null ? ((Number) r[3]).intValue() : 0;
+            int tard  = r[4] != null ? ((Number) r[4]).intValue() : 0;
+            int falt  = r[5] != null ? ((Number) r[5]).intValue() : 0;
+            int just  = r[6] != null ? ((Number) r[6]).intValue() : 0;
+            double pct = total == 0 ? 100.0 : Math.round((pres + tard + just) * 1000.0 / total) / 10.0;
+
+            return new AsistenciaGlobalDto(
+                ((Number) r[0]).longValue(),
+                (String) r[1],
+                total,
+                pres,
+                tard,
+                falt,
+                just,
+                pct
+            );
+        }).toList();
+    }
 }
