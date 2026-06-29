@@ -46,8 +46,8 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                        // Autenticación pública
-                        .requestMatchers("/api/auth/**").permitAll()
+                        // Autenticación pública y páginas de error internas
+                        .requestMatchers("/api/auth/**", "/error").permitAll()
 
                         // Preflight CORS: OPTIONS siempre libre
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
