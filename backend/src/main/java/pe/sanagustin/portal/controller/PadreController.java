@@ -49,4 +49,26 @@ public class PadreController {
         return ResponseEntity.ok(
                 padreService.getAsistenciaDetalle(userDetails.getUsername(), codigoAlumno));
     }
+
+    /** GET /api/portal/padre/eventos/{codigoAlumno}
+     *  Devuelve los comunicados y eventos del aula del estudiante.
+     */
+    @GetMapping("/eventos/{codigoAlumno}")
+    public ResponseEntity<List<pe.sanagustin.portal.dto.EventoHijoDto>> getEventos(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String codigoAlumno) {
+        return ResponseEntity.ok(
+                padreService.getEventos(userDetails.getUsername(), codigoAlumno));
+    }
+
+    /** GET /api/portal/padre/pagos/{codigoAlumno}
+     *  Devuelve la lista de pensiones y pagos del estudiante.
+     */
+    @GetMapping("/pagos/{codigoAlumno}")
+    public ResponseEntity<List<pe.sanagustin.portal.dto.PagoHijoDto>> getPagos(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String codigoAlumno) {
+        return ResponseEntity.ok(
+                padreService.getPagos(userDetails.getUsername(), codigoAlumno));
+    }
 }

@@ -244,7 +244,8 @@ CREATE TABLE comunicados (
     tipo           VARCHAR(30)  NOT NULL DEFAULT 'general',
     fecha_evento   DATE,
     -- fecha del evento (examen, reunión…); NULL si no aplica
-    fecha_creacion TIMESTAMP    NOT NULL DEFAULT NOW()
+    fecha_creacion TIMESTAMP    NOT NULL DEFAULT NOW(),
+    hora_evento    TIME
 );
 
 -- ============================================================

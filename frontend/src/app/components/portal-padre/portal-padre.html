@@ -921,32 +921,180 @@
 
       <!-- ========== SECCIÓN: EVENTOS ========== -->
       @if (seccionActiva() === 'eventos') {
-        <div class="seccion-placeholder">
-          <div class="placeholder-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-          </div>
-          <h2>Eventos</h2>
-          <p>Calendario de eventos escolares, reuniones de padres y actividades académicas.</p>
-          <span class="badge-pronto">Próximamente</span>
+        <div class="eventos-layout">
+          <!-- Selector de hijo -->
+          @if (hijos().length > 1) {
+            <div class="hijo-tabs">
+              @for (h of hijos(); track h.codigo; let i = $index) {
+                <button class="hijo-tab" [class.hijo-tab--active]="hijoIdx() === i" (click)="cambiarHijoEventos(i)">
+                  <span class="hijo-tab-avatar">{{ h.nombre[0] }}</span>
+                  <span>{{ h.nombre }}</span>
+                </button>
+              }
+            </div>
+          }
+
+          <!-- Estado de carga / error -->
+          @if (cargandoEventos()) {
+            <div class="cursos-loading">
+              <div class="curso-spinner"></div>
+              <span>Cargando eventos y comunicados...</span>
+            </div>
+          } @else if (errorEventos()) {
+            <div class="cursos-error">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="1.8">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <p>{{ errorEventos() }}</p>
+              <button class="btn-retry" (click)="cargarEventos(hijoActual()?.codigo ?? '')">Reintentar</button>
+            </div>
+          } @else if (eventosHijo().length === 0) {
+            <div class="cursos-empty">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+              </svg>
+              <p>No hay eventos o comunicados vigentes para el aula de este estudiante.</p>
+            </div>
+          } @else {
+            <div class="eventos-timeline">
+              @for (ev of eventosHijo(); track ev.id) {
+                <div class="evento-card" [class]="'evento-card--' + ev.tipo.toLowerCase()">
+                  <div class="evento-icon-wrap">
+                    <span class="evento-emoji">{{ getBadgeEventoIcon(ev.tipo) }}</span>
+                  </div>
+                  <div class="evento-body">
+                    <div class="evento-meta-row">
+                      <span class="evento-tipo-badge" [class]="'et-badge--' + ev.tipo.toLowerCase()">
+                        {{ getBadgeEventoLabel(ev.tipo) }}
+                      </span>
+                      @if (ev.fechaEvento) {
+                        <span class="evento-fecha-val">📅 {{ ev.fechaEvento }} @if(ev.horaEvento){ · {{ ev.horaEvento }} }</span>
+                      }
+                      <span class="evento-docente-val">👤 {{ ev.docente }}</span>
+                    </div>
+                    <h3 class="evento-titulo-h3">{{ ev.titulo }}</h3>
+                    <p class="evento-descripcion-p">{{ ev.descripcion }}</p>
+                    <span class="evento-creacion-val">Publicado: {{ ev.fechaCreacion }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </div>
       }
 
       <!-- ========== SECCIÓN: PAGOS ========== -->
       @if (seccionActiva() === 'pagos') {
-        <div class="seccion-placeholder">
-          <div class="placeholder-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-              <line x1="1" y1="10" x2="23" y2="10"/>
-            </svg>
-          </div>
-          <h2>Pagos</h2>
-          <p>Historial de pagos, cuotas pendientes y comprobantes de pago.</p>
-          <span class="badge-pronto">Próximamente</span>
+        <div class="pagos-layout">
+          <!-- Selector de hijo -->
+          @if (hijos().length > 1) {
+            <div class="hijo-tabs">
+              @for (h of hijos(); track h.codigo; let i = $index) {
+                <button class="hijo-tab" [class.hijo-tab--active]="hijoIdx() === i" (click)="cambiarHijoPagos(i)">
+                  <span class="hijo-tab-avatar">{{ h.nombre[0] }}</span>
+                  <span>{{ h.nombre }}</span>
+                </button>
+              }
+            </div>
+          }
+
+          <!-- Estado de carga / error -->
+          @if (cargandoPagos()) {
+            <div class="cursos-loading">
+              <div class="curso-spinner"></div>
+              <span>Cargando estado de cuenta...</span>
+            </div>
+          } @else if (errorPagos()) {
+            <div class="cursos-error">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="1.8">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <p>{{ errorPagos() }}</p>
+              <button class="btn-retry" (click)="cargarPagos(hijoActual()?.codigo ?? '')">Reintentar</button>
+            </div>
+          } @else {
+            <!-- Alerta de morosidad si hay algún pago VENCIDO -->
+            @if (pagosHijo().some(p => p.estado === 'VENCIDO')) {
+              <div class="pago-alerta-morosidad">
+                <div class="pam-icon">⚠️</div>
+                <div class="pam-body">
+                  <h4>Aviso de Pago Pendiente</h4>
+                  <p>Estimado apoderado, registramos pensiones vencidas para este estudiante. Agradeceremos regularizar el pago a la brevedad para evitar inconvenientes administrativos.</p>
+                </div>
+              </div>
+            }
+
+            <!-- KPIs de Pagos -->
+            <div class="pagos-kpis">
+              <div class="pago-kpi-card">
+                <span class="pkpi-val">S/. {{ pagosHijo().reduce((sum, p) => p.estado === 'PAGADO' ? sum + p.monto : sum, 0) | number:'1.2-2' }}</span>
+                <span class="pkpi-lbl">Total Pagado</span>
+              </div>
+              <div class="pago-kpi-card pago-kpi-card--pending">
+                <span class="pkpi-val">S/. {{ pagosHijo().reduce((sum, p) => p.estado !== 'PAGADO' ? sum + p.monto : sum, 0) | number:'1.2-2' }}</span>
+                <span class="pkpi-lbl">Total Pendiente</span>
+              </div>
+              <div class="pago-kpi-card pago-kpi-card--overdue">
+                <span class="pkpi-val">
+                  {{ pagosHijo().filter(p => p.estado === 'VENCIDO').length }}
+                </span>
+                <span class="pkpi-lbl">Pensiones Vencidas</span>
+              </div>
+            </div>
+
+            <!-- Tabla de cuotas/pensiones -->
+            <div class="pagos-tabla-wrap">
+              <h3 class="pagos-title">Estado de Pensiones y Cuotas</h3>
+              <table class="notas-tabla">
+                <thead>
+                  <tr>
+                    <th>Concepto</th>
+                    <th>Monto</th>
+                    <th>Vencimiento</th>
+                    <th>Estado</th>
+                    <th>Fecha de Pago</th>
+                    <th>Comprobante</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (p of pagosHijo(); track p.concepto) {
+                    <tr>
+                      <td class="nt-titulo">{{ p.concepto }}</td>
+                      <td class="nt-nota">S/. {{ p.monto | number:'1.2-2' }}</td>
+                      <td class="nt-fecha">{{ p.fechaVencimiento }}</td>
+                      <td>
+                        <span class="pago-badge"
+                              [class.pago-badge--pagado]="p.estado === 'PAGADO'"
+                              [class.pago-badge--pendiente]="p.estado === 'PENDIENTE'"
+                              [class.pago-badge--vencido]="p.estado === 'VENCIDO'">
+                          {{ p.estado }}
+                        </span>
+                      </td>
+                      <td class="nt-fecha">{{ p.fechaPago ?? '—' }}</td>
+                      <td class="pago-doc">{{ p.documento ?? '—' }}</td>
+                      <td>
+                        @if (p.estado !== 'PAGADO') {
+                          <button class="btn-pagar-inline"
+                                  [disabled]="pagandoConcepto() === p.concepto"
+                                  (click)="simularPago(p)">
+                            @if (pagandoConcepto() === p.concepto) {
+                              Procesando...
+                            } @else {
+                              Pagar en línea
+                            }
+                          </button>
+                        } @else {
+                          <span class="pago-completo-check">✓ Completado</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         </div>
       }
 

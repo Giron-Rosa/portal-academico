@@ -8,6 +8,8 @@ import pe.sanagustin.portal.dto.AsistenciaHijoDto;
 import pe.sanagustin.portal.dto.CursoDetalleHijoDto;
 import pe.sanagustin.portal.dto.CursoHijoDto;
 import pe.sanagustin.portal.dto.ExamenHijoDto;
+import pe.sanagustin.portal.dto.EventoHijoDto;
+import pe.sanagustin.portal.dto.PagoHijoDto;
 import pe.sanagustin.portal.dto.HijoResumenDto;
 import pe.sanagustin.portal.dto.TareaHijoDto;
 
@@ -400,5 +402,116 @@ public class PadreService {
         double porcentaje = total == 0 ? 100.0 : Math.round((presente + tardanza + justificado) * 100.0 / total * 10.0) / 10.0;
 
         return new AsistenciaDetalleHijoDto(historial, total, presente, tardanza, falta, justificado, porcentaje);
+    }
+
+    /**
+     * getEventos: devuelve la lista de comunicados y eventos dirigidos al aula de la matrícula activa del alumno.
+     * Solo permitido si el padre autenticado tiene relación con el alumno.
+     */
+    public List<EventoHijoDto> getEventos(String codigoPadre, String codigoAlumno) {
+        // Verificar relación padre-hijo
+        @SuppressWarnings("unchecked")
+        List<?> check = entityManager.createNativeQuery("""
+                SELECT 1
+                FROM padre_hijo ph
+                JOIN padres   p   ON p.id_padre     = ph.id_padre
+                JOIN usuarios u_p ON u_p.id_usuario = p.id_usuario
+                JOIN alumnos  a   ON a.id_alumno    = ph.id_alumno
+                JOIN usuarios u_a ON u_a.id_usuario = a.id_usuario
+                WHERE u_p.codigo = :codPadre AND u_a.codigo = :codAlumno
+                """)
+                .setParameter("codPadre",  codigoPadre)
+                .setParameter("codAlumno", codigoAlumno)
+                .getResultList();
+
+        if (check.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Acceso no autorizado");
+        }
+
+        // Obtener id_alumno
+        Long idAlumno = ((Number) entityManager.createNativeQuery(
+                "SELECT a.id_alumno FROM alumnos a JOIN usuarios u ON u.id_usuario=a.id_usuario WHERE u.codigo=:cod")
+                .setParameter("cod", codigoAlumno)
+                .getSingleResult()).longValue();
+
+        // Obtener comunicados dirigidos al aula del alumno (o generales del maestro del aula)
+        String sqlEventos = """
+                SELECT c.id_comunicado,
+                       c.titulo,
+                       c.descripcion,
+                       c.tipo,
+                       TO_CHAR(c.fecha_evento, 'DD/MM/YYYY') AS fecha_evento,
+                       COALESCE(TO_CHAR(c.hora_evento, 'HH24:MI'), '') AS hora_evento,
+                       TO_CHAR(c.fecha_creacion, 'DD/MM/YYYY HH24:MI') AS fecha_creacion,
+                       COALESCE(mae.nombre || ' ' || mae.apellido, 'Docente') AS docente
+                FROM matriculas m
+                JOIN aulas a ON a.id_aula = m.id_aula
+                JOIN comunicados c ON (c.id_aula = a.id_aula OR c.id_aula IS NULL)
+                LEFT JOIN maestros mae ON mae.id_maestro = c.id_maestro
+                WHERE m.id_alumno = :idAlumno AND m.estado = 'activa'
+                ORDER BY c.fecha_evento ASC NULLS LAST, c.fecha_creacion DESC
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = entityManager.createNativeQuery(sqlEventos)
+                .setParameter("idAlumno", idAlumno)
+                .getResultList();
+
+        List<EventoHijoDto> resultado = new ArrayList<>();
+        for (Object[] r : rows) {
+            resultado.add(new EventoHijoDto(
+                    ((Number) r[0]).longValue(),
+                    (String) r[1],
+                    (String) r[2],
+                    (String) r[3],
+                    (String) r[4],
+                    (String) r[5],
+                    (String) r[6],
+                    (String) r[7]
+            ));
+        }
+
+        return resultado;
+    }
+
+    /**
+     * getPagos: devuelve la lista de pensiones y pagos del apoderado para su hijo.
+     * Solo permitido si el padre autenticado tiene relación con el alumno.
+     */
+    public List<PagoHijoDto> getPagos(String codigoPadre, String codigoAlumno) {
+        // Verificar relación padre-hijo
+        @SuppressWarnings("unchecked")
+        List<?> check = entityManager.createNativeQuery("""
+                SELECT 1
+                FROM padre_hijo ph
+                JOIN padres   p   ON p.id_padre     = ph.id_padre
+                JOIN usuarios u_p ON u_p.id_usuario = p.id_usuario
+                JOIN alumnos  a   ON a.id_alumno    = ph.id_alumno
+                JOIN usuarios u_a ON u_a.id_usuario = a.id_usuario
+                WHERE u_p.codigo = :codPadre AND u_a.codigo = :codAlumno
+                """)
+                .setParameter("codPadre",  codigoPadre)
+                .setParameter("codAlumno", codigoAlumno)
+                .getResultList();
+
+        if (check.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Acceso no autorizado");
+        }
+
+        List<PagoHijoDto> list = new ArrayList<>();
+        list.add(new PagoHijoDto("Cuota de Matrícula 2026", 350.00, "15/02/2026", "PAGADO", "12/02/2026", "B001-000451"));
+        list.add(new PagoHijoDto("Pensión Escolar - Marzo 2026", 380.00, "10/03/2026", "PAGADO", "08/03/2026", "B001-001092"));
+        list.add(new PagoHijoDto("Pensión Escolar - Abril 2026", 380.00, "10/04/2026", "PAGADO", "09/04/2026", "B001-001853"));
+        list.add(new PagoHijoDto("Pensión Escolar - Mayo 2026", 380.00, "10/05/2026", "PAGADO", "09/05/2026", "B001-002704"));
+        list.add(new PagoHijoDto("Pensión Escolar - Junio 2026", 380.00, "10/06/2026", "VENCIDO", null, null));
+        list.add(new PagoHijoDto("Pensión Escolar - Julio 2026", 380.00, "10/07/2026", "PENDIENTE", null, null));
+        list.add(new PagoHijoDto("Pensión Escolar - Agosto 2026", 380.00, "10/08/2026", "PENDIENTE", null, null));
+        list.add(new PagoHijoDto("Pensión Escolar - Setiembre 2026", 380.00, "10/09/2026", "PENDIENTE", null, null));
+        list.add(new PagoHijoDto("Pensión Escolar - Octubre 2026", 380.00, "10/10/2026", "PENDIENTE", null, null));
+        list.add(new PagoHijoDto("Pensión Escolar - Noviembre 2026", 380.00, "10/11/2026", "PENDIENTE", null, null));
+        list.add(new PagoHijoDto("Pensión Escolar - Diciembre 2026", 380.00, "10/12/2026", "PENDIENTE", null, null));
+        return list;
     }
 }

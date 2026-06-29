@@ -166,6 +166,27 @@ export interface AsistenciaDetalleCompleto {
   porcentaje: number;
 }
 
+/* ── Fase 4: Eventos y Pagos ── */
+export interface EventoHijo {
+  id: number;
+  titulo: string;
+  descripcion: string;
+  tipo: string;
+  fechaEvento: string;
+  horaEvento: string;
+  fechaCreacion: string;
+  docente: string;
+}
+
+export interface PagoHijo {
+  concepto: string;
+  monto: number;
+  fechaVencimiento: string;
+  estado: string; // 'PAGADO', 'PENDIENTE', 'VENCIDO'
+  fechaPago: string | null;
+  documento: string | null;
+}
+
 @Component({
   selector: 'app-portal-padre',
   imports: [CommonModule, FormsModule],
@@ -220,6 +241,16 @@ export class PortalPadre implements OnDestroy {
   asistenciaHijo        = signal<AsistenciaDetalleCompleto | null>(null);
   cargandoAsistencia    = signal<boolean>(false);
   errorAsistencia       = signal<string>('');
+
+  /* ── Fase 4: Señales de Eventos ── */
+  eventosHijo           = signal<EventoHijo[]>([]);
+  cargandoEventos       = signal<boolean>(false);
+  errorEventos          = signal<string>('');
+
+  /* ── Fase 4: Señales de Pagos ── */
+  pagosHijo             = signal<PagoHijo[]>([]);
+  cargandoPagos         = signal<boolean>(false);
+  errorPagos            = signal<string>('');
 
   nombrePadre    = this.auth.getNombre() ?? 'Padre';
   codigoPadre    = this.auth.getCodigo() ?? '';
@@ -318,6 +349,14 @@ export class PortalPadre implements OnDestroy {
       const hijo = this.hijoActual();
       if (hijo) this.cargarAsistencia(hijo.codigo);
     }
+    if (s === 'eventos') {
+      const hijo = this.hijoActual();
+      if (hijo) this.cargarEventos(hijo.codigo);
+    }
+    if (s === 'pagos') {
+      const hijo = this.hijoActual();
+      if (hijo) this.cargarPagos(hijo.codigo);
+    }
   }
 
   verDetalle(idx: number) {
@@ -399,6 +438,98 @@ export class PortalPadre implements OnDestroy {
     if (e === 'justificado') return 'Justificado';
     return est;
   }
+
+  /* ════════════════════════════════════════════════
+     FASE 4 — Eventos y Pagos del hijo
+  ════════════════════════════════════════════════ */
+
+  cargarEventos(codigoAlumno: string): void {
+    this.cargandoEventos.set(true);
+    this.errorEventos.set('');
+    this.http.get<EventoHijo[]>(
+      `http://localhost:8080/api/portal/padre/eventos/${codigoAlumno}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.eventosHijo.set(data);
+        this.cargandoEventos.set(false);
+      },
+      error: () => {
+        this.errorEventos.set('No se pudieron cargar los eventos del aula.');
+        this.cargandoEventos.set(false);
+      },
+    });
+  }
+
+  cambiarHijoEventos(idx: number): void {
+    this.hijoIdx.set(idx);
+    const hijo = this.hijos()[idx];
+    if (hijo) this.cargarEventos(hijo.codigo);
+  }
+
+  cargarPagos(codigoAlumno: string): void {
+    this.cargandoPagos.set(true);
+    this.errorPagos.set('');
+    this.http.get<PagoHijo[]>(
+      `http://localhost:8080/api/portal/padre/pagos/${codigoAlumno}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.pagosHijo.set(data);
+        this.cargandoPagos.set(false);
+      },
+      error: () => {
+        this.errorPagos.set('No se pudo cargar el estado de pensiones.');
+        this.cargandoPagos.set(false);
+      },
+    });
+  }
+
+  cambiarHijoPagos(idx: number): void {
+    this.hijoIdx.set(idx);
+    const hijo = this.hijos()[idx];
+    if (hijo) this.cargarPagos(hijo.codigo);
+  }
+
+  pagandoConcepto = signal<string | null>(null);
+
+  simularPago(pago: PagoHijo): void {
+    if (pago.estado === 'PAGADO') return;
+    this.pagandoConcepto.set(pago.concepto);
+
+    setTimeout(() => {
+      this.pagosHijo.update(list =>
+        list.map(p => p.concepto === pago.concepto ? {
+          ...p,
+          estado: 'PAGADO',
+          fechaPago: new Date().toLocaleDateString('es-PE'),
+          documento: 'B002-' + Math.floor(100000 + Math.random() * 900000)
+        } : p)
+      );
+      this.pagandoConcepto.set(null);
+    }, 1200);
+  }
+
+  getBadgeEventoIcon(tipo: string): string {
+    const t = tipo.toLowerCase();
+    if (t === 'examen') return '📝';
+    if (t === 'actividad') return '🏆';
+    if (t === 'reunion_padres') return '👥';
+    if (t === 'paseo') return '🚌';
+    if (t === 'dia_festivo') return '🎉';
+    return '📢';
+  }
+
+  getBadgeEventoLabel(tipo: string): string {
+    const t = tipo.toLowerCase();
+    if (t === 'examen') return 'Examen';
+    if (t === 'actividad') return 'Actividad';
+    if (t === 'reunion_padres') return 'Reunión';
+    if (t === 'paseo') return 'Paseo';
+    if (t === 'dia_festivo') return 'Festivo';
+    return 'General';
+  }
+
 
 
   getNotaColor(nota: number | null, max: number): string {
