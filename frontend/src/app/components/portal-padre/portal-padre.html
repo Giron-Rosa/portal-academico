@@ -1,4 +1,4 @@
-<div class="portal-wrapper">
+﻿<div class="portal-wrapper">
 
   <!-- ===== TOAST WEBSOCKET — Mensajes en Tiempo Real ===== -->
   @if (ws.toastVisible()) {
@@ -428,7 +428,6 @@
               </div>
               <div class="crb-item">
                 <span class="crb-val">
-                  {{ (cursosHijo() | slice:0).reduce ? '' : '' }}
                   {{ cursosHijo().length > 0 ? (cursosHijo().reduce((sum, c) => sum + c.promedioCurso, 0) / cursosHijo().length | number:'1.1-1') : '–' }}
                 </span>
                 <span class="crb-lbl">Prom. general</span>
