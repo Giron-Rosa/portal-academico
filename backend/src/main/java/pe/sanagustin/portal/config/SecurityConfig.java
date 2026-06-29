@@ -55,13 +55,9 @@ public class SecurityConfig {
                         // WebSocket handshake: SockJS necesita acceso libre al endpoint /ws
                         .requestMatchers("/ws/**").permitAll()
 
-                        // Rutas protegidas por rol
-                        // NOTA: Spring Security prefija "ROLE_" automáticamente con hasRole().
-                        // UserDetailsServiceImpl construye la autoridad como "ROLE_" + rol.toUpperCase()
-                        // (ej: padre → ROLE_PADRE), lo que coincide exactamente con hasRole("PADRE").
-                        .requestMatchers("/api/portal/docente/**").hasRole("MAESTRO")
+                        .requestMatchers("/api/portal/docente/**").hasAnyAuthority("ROLE_MAESTRO", "MAESTRO", "ROLE_DOCENTE", "DOCENTE", "ROLE_PROFESOR", "PROFESOR")
                         .requestMatchers("/api/portal/alumno/**").hasRole("ALUMNO")
-                        .requestMatchers("/api/portal/padre/**").hasRole("PADRE")
+                        .requestMatchers("/api/portal/padre/**").hasAnyAuthority("ROLE_PADRE", "PADRE")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         // Cualquier otra ruta requiere autenticación

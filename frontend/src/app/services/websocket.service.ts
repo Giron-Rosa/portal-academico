@@ -132,6 +132,12 @@ export class WebSocketService implements OnDestroy {
   private onMensajeRecibido(msg: IMessage): void {
     try {
       const notif: NotificacionWs = JSON.parse(msg.body);
+      
+      // Si el remitente es el propio usuario logueado, ignorar la notificación
+      if (notif.remitente === this.auth.getNombre()) {
+        return;
+      }
+
       this.ultimaNotificacion.set(notif);
       this.contadorNoLeidas.update(n => n + 1);
 
