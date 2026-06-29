@@ -17,6 +17,8 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -105,6 +107,34 @@ public class ReservaService {
         
         if (durationMin <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La hora de fin debe ser posterior a la hora de inicio.");
+        }
+
+        // Restricción: Horario escolar permitido es únicamente de 07:00 AM a 02:00 PM (420 a 840 minutos)
+        if (startMin < 420 || endMin > 840) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El horario de reserva permitido es únicamente de 07:00 AM a 02:00 PM.");
+        }
+
+        ZoneId zone = ZoneId.of("America/Lima");
+        LocalDate today = LocalDate.now(zone);
+        LocalDate reserveDate = LocalDate.parse(req.fecha());
+
+        // Validar que la fecha no sea pasada
+        if (reserveDate.isBefore(today)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se permite reservar en una fecha pasada.");
+        }
+
+        // Validar que la hora no sea pasada (si es hoy)
+        if (reserveDate.isEqual(today)) {
+            LocalTime nowTime = LocalTime.now(zone);
+            int nowMin = nowTime.getHour() * 60 + nowTime.getMinute();
+            if (startMin <= nowMin) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se permite reservar en una hora pasada.");
+            }
+        }
+
+        // Validar que sea un día laborable (lunes a viernes)
+        if (reserveDate.getDayOfWeek().getValue() > 5) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Las reservas de espacios solo se permiten de lunes a viernes.");
         }
 
         EspacioReserva espacio = espacioReservaRepository.findByNombre(req.espacio())

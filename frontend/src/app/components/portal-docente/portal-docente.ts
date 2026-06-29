@@ -1106,6 +1106,56 @@ export class PortalDocente implements OnDestroy {
     if (!f.espacio || !f.fecha || !f.horaInicio || !f.horaFin) return;
 
     this.errorDisponibilidad.set('');
+
+    const parseMin = (h: string) => {
+      const [hh, mm] = h.split(':').map(Number);
+      return hh * 60 + mm;
+    };
+
+    const startMin = parseMin(f.horaInicio);
+    const endMin = parseMin(f.horaFin);
+
+    if (endMin <= startMin) {
+      this.errorDisponibilidad.set('La hora de fin debe ser posterior a la hora de inicio.');
+      return;
+    }
+
+    // Validación 1: Horario permitido únicamente de 07:00 AM a 02:00 PM
+    if (startMin < 420 || endMin > 840) {
+      this.errorDisponibilidad.set('El horario de reserva permitido es únicamente de 07:00 AM a 02:00 PM.');
+      return;
+    }
+
+    // Formatear hoy en formato YYYY-MM-DD en la zona horaria local de Lima
+    const now = new Date();
+    // Obtener fecha local como YYYY-MM-DD
+    const localYear = now.getFullYear();
+    const localMonth = String(now.getMonth() + 1).padStart(2, '0');
+    const localDay = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${localYear}-${localMonth}-${localDay}`;
+
+    // Validación 2: No permitir fecha pasada
+    if (f.fecha < todayStr) {
+      this.errorDisponibilidad.set('No se permite reservar en una fecha pasada.');
+      return;
+    }
+
+    // Validación 3: No permitir hora pasada si es hoy
+    if (f.fecha === todayStr) {
+      const currentMin = now.getHours() * 60 + now.getMinutes();
+      if (startMin <= currentMin) {
+        this.errorDisponibilidad.set('No se permite reservar en una hora pasada.');
+        return;
+      }
+    }
+
+    // Validación 4: Días laborables únicamente (lunes a viernes)
+    const dayOfWeek = new Date(f.fecha + 'T00:00:00').getDay(); // 0=Domingo, 6=Sábado, 1=Lunes
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      this.errorDisponibilidad.set('Las reservas de espacios solo se permiten de lunes a viernes.');
+      return;
+    }
+
     if (this.tieneConflictoHorario()) {
       this.errorDisponibilidad.set('No puedes reservar en este horario porque tienes clase programada con otro grado/sección.');
       return;
