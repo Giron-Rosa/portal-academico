@@ -18,25 +18,14 @@ public class DataInitializer implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
-    private static final String TEST_PASSWORD = "Test1234!";
-
     @Override
     public void run(String... args) {
         List<Usuario> usuarios = usuarioRepository.findAll();
-
-        long actualizados = usuarios.stream()
-                .filter(u -> !u.getContrasenaHash().startsWith("$2a$") &&
-                             !u.getContrasenaHash().startsWith("$2b$"))
-                .peek(u -> {
-                    u.setContrasenaHash(passwordEncoder.encode(TEST_PASSWORD));
-                    usuarioRepository.save(u);
-                    log.info("Hash actualizado para usuario: {} ({})", u.getCodigo(), u.getRol());
-                })
-                .count();
-
-        if (actualizados > 0) {
-            log.info("DataInitializer: {} hash(es) actualizados con BCrypt. Password de prueba: '{}'",
-                    actualizados, TEST_PASSWORD);
+        for (Usuario u : usuarios) {
+            u.setContrasenaHash(passwordEncoder.encode("password"));
+            usuarioRepository.save(u);
+            log.info("Hash actualizado para usuario: {} ({})", u.getCodigo(), u.getRol());
         }
+        log.info("DataInitializer: Todos los usuarios actualizados con contraseña 'password'");
     }
 }

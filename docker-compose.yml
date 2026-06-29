@@ -27,7 +27,7 @@ services:
       POSTGRES_PASSWORD: Sa2025*Secure
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database:/docker-entrypoint-initdb.d
 
   backend:
     build:

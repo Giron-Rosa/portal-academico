@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS reportes_alumno (
     id_reporte      SERIAL       PRIMARY KEY,
     id_aula_curso   INT          NOT NULL REFERENCES aula_cursos(id_aula_curso) ON DELETE CASCADE,
     id_alumno       INT          NOT NULL REFERENCES alumnos(id_alumno)         ON DELETE CASCADE,
+    id_maestro      INT          REFERENCES maestros(id_maestro)                ON DELETE CASCADE,
     tipo            VARCHAR(30)  NOT NULL DEFAULT 'anotacion',
         -- pendiente | anotacion | llamada_atencion | felicitacion | otro
     titulo          VARCHAR(200) NOT NULL,
@@ -48,39 +49,39 @@ BEGIN
 
     -- Reportes para alumno 1 en 5to Sec B
     IF v_alumno1 IS NOT NULL THEN
-      INSERT INTO reportes_alumno (id_aula_curso, id_alumno, tipo, titulo, descripcion, fecha, visible_padre)
+      INSERT INTO reportes_alumno (id_aula_curso, id_alumno, id_maestro, tipo, titulo, descripcion, fecha, visible_padre)
       VALUES
-        (1, v_alumno1, 'pendiente',         'Entregar trabajo de fracciones',
+        (1, v_alumno1, 1, 'pendiente',         'Entregar trabajo de fracciones',
          'El alumno tiene pendiente entregar el trabajo grupal de fracciones de la semana 2.',
          CURRENT_DATE - 5, true),
-        (1, v_alumno1, 'felicitacion',      'Excelente participación en clase',
+        (1, v_alumno1, 1, 'felicitacion',      'Excelente participación en clase',
          'Demostró muy buen dominio de los números enteros y participó activamente.',
          CURRENT_DATE - 3, true),
-        (1, v_alumno1, 'anotacion',         'Cambio de horario de refuerzo',
+        (1, v_alumno1, 1, 'anotacion',         'Cambio de horario de refuerzo',
          'El padre solicitó cambiar el horario de tutoría al viernes por la tarde.',
          CURRENT_DATE - 1, false);
     END IF;
 
     -- Reportes para alumno 2 en 5to Sec B
     IF v_alumno2 IS NOT NULL THEN
-      INSERT INTO reportes_alumno (id_aula_curso, id_alumno, tipo, titulo, descripcion, fecha, visible_padre)
+      INSERT INTO reportes_alumno (id_aula_curso, id_alumno, id_maestro, tipo, titulo, descripcion, fecha, visible_padre)
       VALUES
-        (1, v_alumno2, 'llamada_atencion',  'Conducta disruptiva en clase',
+        (1, v_alumno2, 1, 'llamada_atencion',  'Conducta disruptiva en clase',
          'Se le llamó la atención por interrumpir reiteradamente durante la explicación del bimestre.',
          CURRENT_DATE - 7, true),
-        (1, v_alumno2, 'pendiente',         'Firma de citación pendiente',
+        (1, v_alumno2, 1, 'pendiente',         'Firma de citación pendiente',
          'El padre debe firmar y devolver la citación enviada el lunes pasado.',
          CURRENT_DATE - 2, true);
     END IF;
 
     -- Reportes para alumno 3 en 3ro Sec A
     IF v_alumno3 IS NOT NULL THEN
-      INSERT INTO reportes_alumno (id_aula_curso, id_alumno, tipo, titulo, descripcion, fecha, visible_padre)
+      INSERT INTO reportes_alumno (id_aula_curso, id_alumno, id_maestro, tipo, titulo, descripcion, fecha, visible_padre)
       VALUES
-        (9, v_alumno3, 'anotacion',         'Dificultad con ecuaciones lineales',
+        (9, v_alumno3, 1, 'anotacion',         'Dificultad con ecuaciones lineales',
          'El alumno muestra dificultades al resolver ecuaciones de primer grado. Se recomienda refuerzo.',
          CURRENT_DATE - 4, true),
-        (9, v_alumno3, 'otro',              'Material de apoyo enviado',
+        (9, v_alumno3, 1, 'otro',              'Material de apoyo enviado',
          'Se envió material adicional de práctica al correo del alumno.',
          CURRENT_DATE - 1, false);
     END IF;

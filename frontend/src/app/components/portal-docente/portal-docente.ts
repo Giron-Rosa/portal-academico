@@ -2379,6 +2379,11 @@ export class PortalDocente {
     }
   }
 
+  getHeaders(): HttpHeaders {
+    const token = this.auth.getToken();
+    return new HttpHeaders({ Authorization: `Bearer ${token}` });
+  }
+
   cargarConsolidado() {
     const curso = this.cursoActivo();
     if (!curso) return;

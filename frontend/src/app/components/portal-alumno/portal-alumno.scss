@@ -580,6 +580,657 @@ $sidebar-w: 210px;
 }
 
 // ============================================================
+// ANIMACIONES
+// ============================================================
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-alert {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.6; }
+}
+
+// ============================================================
+// COMPONENTES GLOBALES DE VISTA
+// ============================================================
+.pa-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.pa-view-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: $azul;
+}
+
+.pa-view-subtitle {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+// ============================================================
+// ALERTA SIDEBAR
+// ============================================================
+.pa-nav-item.has-alert {
+  border-left: 3px solid $rojo !important;
+}
+
+.pa-icon-alert-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pa-sidebar-alert-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background-color: $rojo;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px $azul;
+  animation: pulse-alert 2s infinite ease-in-out;
+}
+
+// ============================================================
+// VISTA: CALENDARIO
+// ============================================================
+.pa-calendar-view {
+  background: $blanco;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  border: 1px solid rgba(27,58,92,0.08);
+}
+
+.pa-calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #f1f5f9;
+  padding: 0.35rem 0.75rem;
+  border-radius: 30px;
+}
+
+.pa-btn-nav {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: $azul-med;
+  display: flex;
+  align-items: center;
+  padding: 0.2rem;
+  border-radius: 50%;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover {
+    background: rgba(0,0,0,0.06);
+    color: $azul;
+  }
+}
+
+.pa-calendar-month-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: $azul;
+  min-width: 120px;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.pa-calendar-container {
+  margin-top: 1rem;
+}
+
+.pa-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #64748b;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pa-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: minmax(100px, auto);
+  gap: 1px;
+  background: #e2e8f0;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.pa-calendar-day {
+  background: $blanco;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  &.different-month {
+    background: #f8fafc;
+    color: #cbd5e1;
+    .pa-day-number { color: #94a3b8; }
+  }
+
+  &.is-today {
+    background: #eff6ff;
+    .pa-day-number-wrapper {
+      background: #3b82f6;
+      color: $blanco;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+  }
+}
+
+.pa-day-number-wrapper {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.pa-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  max-height: 80px;
+}
+
+.pa-day-event {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &.event-tarea {
+    background: #e0f2fe;
+    color: #0369a1;
+    .pa-event-dot { background: #0284c7; }
+  }
+
+  &.event-actividad {
+    background: #f3e8ff;
+    color: #6b21a8;
+    .pa-event-dot { background: #8b5cf6; }
+  }
+}
+
+.pa-event-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pa-event-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ============================================================
+// VISTA: KANBAN
+// ============================================================
+.pa-kanban-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  height: calc(100vh - 160px);
+  overflow-y: hidden;
+}
+
+.pa-kanban-col {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  border: 1px solid rgba(27,58,92,0.06);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.01);
+  max-height: 100%;
+
+  &.col-pendiente {
+    .pa-kanban-col-header { border-bottom-color: #ef4444; }
+  }
+  &.col-enviado {
+    .pa-kanban-col-header { border-bottom-color: #3b82f6; }
+  }
+  &.col-calificado {
+    .pa-kanban-col-header { border-bottom-color: #22c55e; }
+  }
+}
+
+.pa-kanban-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid #cbd5e1;
+  margin-bottom: 1rem;
+}
+
+.pa-col-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: $azul;
+}
+
+.pa-col-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(0,0,0,0.06);
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.pa-kanban-col-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 2px;
+}
+
+.pa-kanban-card {
+  background: $blanco;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+  }
+}
+
+.pa-kcard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pa-kcard-curso {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.pa-kcard-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+
+  &.badge-pendiente { background: #fee2e2; color: #991b1b; }
+  &.badge-enviado { background: #dbeafe; color: #1e40af; }
+  &.badge-calificado { background: #dcfce7; color: #166534; }
+}
+
+.pa-kcard-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: $azul;
+  line-height: 1.3;
+}
+
+.pa-kcard-desc {
+  font-size: 0.75rem;
+  color: #64748b;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pa-kcard-footer {
+  display: flex;
+  align-items: center;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-top: 1px dashed rgba(0,0,0,0.05);
+  padding-top: 0.5rem;
+}
+
+.pa-kcard-due {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  &.text-red { color: #dc2626; }
+}
+
+.pa-kcard-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  &.text-blue { color: #2563eb; }
+}
+
+.pa-kcard-score {
+  color: #475569;
+}
+
+.pa-score {
+  font-size: 0.9rem;
+  &.nota-aprobada { color: #166534; }
+  &.nota-desaprobada { color: #991b1b; }
+}
+
+.pa-kanban-empty {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  padding: 2rem 0;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+}
+
+// ============================================================
+// VISTA: REFUERZO ACADÉMICO
+// ============================================================
+.pa-refuerzo-view, .pa-recursos-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pa-refuerzo-success-panel {
+  background: $blanco;
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  text-align: center;
+  max-width: 500px;
+  margin: 2rem auto;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+
+  .pa-success-icon-wrapper {
+    background: #f0fdf4;
+    padding: 1rem;
+    border-radius: 50%;
+  }
+
+  h3 { font-size: 1.15rem; font-weight: 700; color: #166534; }
+  p { font-size: 0.85rem; color: #475569; line-height: 1.5; }
+}
+
+.pa-refuerzo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+.pa-ref-curso-card {
+  background: $blanco;
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  &.border-red {
+    border-top: 4px solid $rojo;
+  }
+}
+
+.pa-ref-curso-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.pa-ref-curso-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: $azul;
+}
+
+.pa-ref-curso-docente {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+.pa-ref-score-badge {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 8px;
+  padding: 4px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  
+  span { font-size: 0.6rem; color: #991b1b; text-transform: uppercase; font-weight: 700; }
+  .pa-ref-score { font-size: 1.1rem; font-weight: 800; }
+}
+
+.pa-ref-subtitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pa-ref-materials-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pa-ref-material-item {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+.pa-ref-mat-icon {
+  font-size: 1.1rem;
+}
+
+.pa-ref-mat-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.pa-ref-mat-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $azul;
+}
+
+.pa-ref-mat-meta {
+  font-size: 0.68rem;
+  color: #64748b;
+  margin-top: 0.1rem;
+}
+
+.pa-ref-download-btn {
+  background: $azul-med;
+  color: $blanco;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background 0.2s;
+
+  &:hover {
+    background: $azul;
+  }
+}
+
+.pa-ref-no-link {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.pa-ref-empty {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+// ============================================================
+// VISTA: RECURSOS
+// ============================================================
+.pa-recursos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.pa-rec-card {
+  background: $blanco;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pa-rec-card-header {
+  padding: 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  border-left: 5px solid $azul-med;
+  background: #fafbfc;
+}
+
+.pa-rec-curso-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: $azul;
+}
+
+.pa-rec-docente {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+  display: block;
+}
+
+.pa-rec-body {
+  padding: 1rem;
+  flex: 1;
+}
+
+.pa-rec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pa-rec-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.pa-rec-icon {
+  font-size: 1.05rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pa-rec-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.pa-rec-title-link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $azul-med;
+  text-decoration: none;
+  line-height: 1.3;
+
+  &:hover {
+    text-decoration: underline;
+    color: $azul;
+  }
+
+  &.disabled {
+    color: #475569;
+    pointer-events: none;
+  }
+}
+
+.pa-rec-meta {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  margin-top: 0.1rem;
+}
+
+.pa-rec-empty {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+// ============================================================
 // RESPONSIVE
 // ============================================================
 @media (max-width: 1024px) {

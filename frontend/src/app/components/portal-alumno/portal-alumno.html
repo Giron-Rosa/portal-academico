@@ -63,6 +63,7 @@
         <button
           class="pa-nav-item"
           [class.active]="seccionActiva() === item.id"
+          [class.has-alert]="item.id === 'refuerzo' && tieneCursosEnRiesgo()"
           (click)="setSeccion(item.id)">
 
           @if (item.icon === 'home') {
@@ -87,10 +88,15 @@
             </svg>
           }
           @if (item.icon === 'refuerzo') {
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-            </svg>
+            <div class="pa-icon-alert-wrapper">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+              @if (tieneCursosEnRiesgo()) {
+                <span class="pa-sidebar-alert-dot"></span>
+              }
+            </div>
           }
           @if (item.icon === 'recursos') {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -285,51 +291,277 @@
 
       <!-- ========== CALENDARIO ========== -->
       @if (seccionActiva() === 'calendario') {
-        <div class="pa-placeholder">
-          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/>
-            <line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-          <h3>Calendario</h3>
-          <p>Vista de calendario académico próximamente</p>
+        <div class="pa-calendar-view animate-fade-in">
+          <div class="pa-view-header">
+            <div class="pa-header-info">
+              <h2 class="pa-view-title">Calendario Escolar</h2>
+              <p class="pa-view-subtitle">Fechas límite de entregas y evaluaciones</p>
+            </div>
+            <div class="pa-calendar-nav">
+              <button class="pa-btn-nav" (click)="cambiarMes(-1)" title="Mes anterior">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+              </button>
+              <span class="pa-calendar-month-label">{{ nombreMesActual() }} {{ anoActual() }}</span>
+              <button class="pa-btn-nav" (click)="cambiarMes(1)" title="Mes siguiente">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="pa-calendar-container">
+            <div class="pa-calendar-weekdays">
+              <div>Lun</div>
+              <div>Mar</div>
+              <div>Mié</div>
+              <div>Jue</div>
+              <div>Vie</div>
+              <div>Sáb</div>
+              <div>Dom</div>
+            </div>
+
+            <div class="pa-calendar-grid">
+              @for (dia of diasCalendario(); track dia.fechaStr) {
+                <div 
+                  class="pa-calendar-day" 
+                  [class.different-month]="dia.mesDiferente"
+                  [class.is-today]="dia.esHoy"
+                  [class.has-events]="dia.eventos.length > 0">
+                  
+                  <div class="pa-day-number-wrapper">
+                    <span class="pa-day-number">{{ dia.diaNumero }}</span>
+                  </div>
+                  
+                  <div class="pa-day-events">
+                    @for (evt of dia.eventos; track evt.titulo) {
+                      <div class="pa-day-event" [class.event-tarea]="evt.tipo === 'tarea'" [class.event-actividad]="evt.tipo === 'actividad'" [title]="evt.curso + ': ' + evt.titulo">
+                        <span class="pa-event-dot"></span>
+                        <span class="pa-event-text">{{ evt.titulo }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
         </div>
       }
 
       <!-- ========== KANBAN ========== -->
       @if (seccionActiva() === 'kanban') {
-        <div class="pa-placeholder">
-          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
-            <rect x="3" y="3" width="5" height="18" rx="1"/>
-            <rect x="10" y="3" width="5" height="12" rx="1"/>
-            <rect x="17" y="3" width="5" height="15" rx="1"/>
-          </svg>
-          <h3>Kanban</h3>
-          <p>Tablero de tareas y actividades próximamente</p>
+        <div class="pa-kanban-view animate-fade-in">
+          <div class="pa-view-header">
+            <div class="pa-header-info">
+              <h2 class="pa-view-title">Tablero de Actividades (Kanban)</h2>
+              <p class="pa-view-subtitle">Seguimiento de tu progreso académico</p>
+            </div>
+          </div>
+
+          <div class="pa-kanban-board">
+            
+            <!-- Columna: Pendiente -->
+            <div class="pa-kanban-col col-pendiente">
+              <div class="pa-kanban-col-header">
+                <span class="pa-col-title">Pendientes</span>
+                <span class="pa-col-count">{{ tareasPendientes().length }}</span>
+              </div>
+              <div class="pa-kanban-col-cards">
+                @if (tareasPendientes().length === 0) {
+                  <div class="pa-kanban-empty">Sin tareas pendientes</div>
+                }
+                @for (t of tareasPendientes(); track t.idTarea) {
+                  <div class="pa-kanban-card">
+                    <div class="pa-kcard-header">
+                      <span class="pa-kcard-curso">{{ t.cursoNombre }}</span>
+                      <span class="pa-kcard-badge badge-pendiente">Pendiente</span>
+                    </div>
+                    <h4 class="pa-kcard-title">{{ t.titulo }}</h4>
+                    <p class="pa-kcard-desc" *ngIf="t.descripcion">{{ t.descripcion }}</p>
+                    <div class="pa-kcard-footer">
+                      <span class="pa-kcard-due text-red">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        Vence: {{ t.fechaEntrega }}
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Columna: Enviado (Por calificar) -->
+            <div class="pa-kanban-col col-enviado">
+              <div class="pa-kanban-col-header">
+                <span class="pa-col-title">Entregados</span>
+                <span class="pa-col-count">{{ tareasEntregadas().length }}</span>
+              </div>
+              <div class="pa-kanban-col-cards">
+                @if (tareasEntregadas().length === 0) {
+                  <div class="pa-kanban-empty">Sin entregas por calificar</div>
+                }
+                @for (t of tareasEntregadas(); track t.idTarea) {
+                  <div class="pa-kanban-card">
+                    <div class="pa-kcard-header">
+                      <span class="pa-kcard-curso">{{ t.cursoNombre }}</span>
+                      <span class="pa-kcard-badge badge-enviado">Enviado</span>
+                    </div>
+                    <h4 class="pa-kcard-title">{{ t.titulo }}</h4>
+                    <div class="pa-kcard-footer">
+                      <span class="pa-kcard-status text-blue">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                        Esperando calificación
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Columna: Calificado -->
+            <div class="pa-kanban-col col-calificado">
+              <div class="pa-kanban-col-header">
+                <span class="pa-col-title">Calificados</span>
+                <span class="pa-col-count">{{ tareasCalificadas().length }}</span>
+              </div>
+              <div class="pa-kanban-col-cards">
+                @if (tareasCalificadas().length === 0) {
+                  <div class="pa-kanban-empty">Sin tareas calificadas</div>
+                }
+                @for (t of tareasCalificadas(); track t.idTarea) {
+                  <div class="pa-kanban-card">
+                    <div class="pa-kcard-header">
+                      <span class="pa-kcard-curso">{{ t.cursoNombre }}</span>
+                      <span class="pa-kcard-badge badge-calificado">Calificado</span>
+                    </div>
+                    <h4 class="pa-kcard-title">{{ t.titulo }}</h4>
+                    <div class="pa-kcard-footer">
+                      <span class="pa-kcard-score">
+                        Nota: <strong class="pa-score" [class.nota-aprobada]="t.nota! >= 11" [class.nota-desaprobada]="t.nota! < 11">{{ t.nota }}</strong>/{{ t.notaMaxima }}
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+          </div>
         </div>
       }
 
       <!-- ========== REFUERZO ========== -->
       @if (seccionActiva() === 'refuerzo') {
-        <div class="pa-placeholder">
-          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-          </svg>
-          <h3>Refuerzo</h3>
-          <p>Material de refuerzo académico próximamente</p>
+        <div class="pa-refuerzo-view animate-fade-in">
+          <div class="pa-view-header">
+            <div class="pa-header-info">
+              <h2 class="pa-view-title">Refuerzo Académico (RN-10.2)</h2>
+              <p class="pa-view-subtitle">Materiales sugeridos de recuperación para cursos con promedio en riesgo (&lt; 11)</p>
+            </div>
+          </div>
+
+          @if (!tieneCursosEnRiesgo()) {
+            <div class="pa-refuerzo-success-panel">
+              <div class="pa-success-icon-wrapper">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              </div>
+              <h3>¡Excelente rendimiento académico!</h3>
+              <p>No tienes cursos con promedios en riesgo de desaprobación actualmente. Sigue manteniendo tus notas por encima de 11.</p>
+            </div>
+          } @else {
+            <div class="pa-refuerzo-grid">
+              @for (rc of cursosConRiesgo(); track rc.idAulaCurso) {
+                <div class="pa-ref-curso-card border-red">
+                  <div class="pa-ref-curso-header">
+                    <div>
+                      <h3 class="pa-ref-curso-name">{{ rc.nombre }}</h3>
+                      <p class="pa-ref-curso-docente">Docente: {{ rc.docente }}</p>
+                    </div>
+                    <div class="pa-ref-score-badge">
+                      <span>Promedio</span>
+                      <strong class="pa-ref-score text-red">{{ rc.promedio }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="pa-ref-materials-section">
+                    <h4 class="pa-ref-subtitle">Material de Reforzamiento disponible:</h4>
+                    
+                    @if (materialesTotal().length === 0) {
+                      <p class="pa-ref-empty">No hay materiales de reforzamiento subidos para este curso.</p>
+                    }
+                    
+                    <div class="pa-ref-materials-list">
+                      @for (mat of materialesTotal(); track mat.idMaterial) {
+                        @if (mat.idAulaCurso === rc.idAulaCurso && (mat.tipo === 'word' || mat.titulo.toLowerCase().includes('refuerzo') || mat.titulo.toLowerCase().includes('practica'))) {
+                          <div class="pa-ref-material-item">
+                            <span class="pa-ref-mat-icon">{{ tipoIcon(mat.tipo) }}</span>
+                            <div class="pa-ref-mat-info">
+                              <span class="pa-ref-mat-title">{{ mat.titulo }}</span>
+                              <span class="pa-ref-mat-meta">Semana {{ mat.semana }} · Clase {{ mat.clase }}</span>
+                            </div>
+                            <a [href]="mat.url" target="_blank" class="pa-ref-download-btn" *ngIf="mat.url">
+                              Descargar
+                            </a>
+                            <span class="pa-ref-no-link" *ngIf="!mat.url">Enlace físico</span>
+                          </div>
+                        }
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </div>
       }
 
       <!-- ========== RECURSOS ========== -->
       @if (seccionActiva() === 'recursos') {
-        <div class="pa-placeholder">
-          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-          </svg>
-          <h3>Recursos</h3>
-          <p>Biblioteca de recursos educativos próximamente</p>
+        <div class="pa-recursos-view animate-fade-in">
+          <div class="pa-view-header">
+            <div class="pa-header-info">
+              <h2 class="pa-view-title">Biblioteca de Recursos</h2>
+              <p class="pa-view-subtitle">Acceso a todas las guías de estudio, lecturas y materiales interactivos</p>
+            </div>
+          </div>
+
+          <div class="pa-recursos-grid">
+            @for (curso of cursos(); track curso.idAulaCurso) {
+              <div class="pa-rec-card">
+                <div class="pa-rec-card-header" [style.border-left-color]="curso.color">
+                  <h3 class="pa-rec-curso-title">{{ curso.nombre }}</h3>
+                  <span class="pa-rec-docente">{{ curso.docente }}</span>
+                </div>
+                
+                <div class="pa-rec-body">
+                  <div class="pa-rec-list">
+                    @for (mat of materialesTotal(); track mat.idMaterial) {
+                      @if (mat.idAulaCurso === curso.idAulaCurso) {
+                        <div class="pa-rec-item">
+                          <span class="pa-rec-icon">{{ tipoIcon(mat.tipo) }}</span>
+                          <div class="pa-rec-info">
+                            <a [href]="mat.url" target="_blank" class="pa-rec-title-link" [class.disabled]="!mat.url">
+                              {{ mat.titulo }}
+                            </a>
+                            <span class="pa-rec-meta">Semana {{ mat.semana }} · Clase {{ mat.clase }}</span>
+                          </div>
+                        </div>
+                      }
+                    }
+                    @if (materialesTotal().length === 0) {
+                      <div class="pa-rec-empty">No hay recursos disponibles.</div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
         </div>
       }
 
