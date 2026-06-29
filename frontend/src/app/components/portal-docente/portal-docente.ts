@@ -341,6 +341,20 @@ export interface AsistenciaAlumno {
   justificante: string | null;
 }
 
+export interface AlumnoConsolidado {
+  idAlumno: number;
+  codigo: string;
+  nombres: string;
+  alertaRiesgo: boolean;
+  porcentajeAsistencia: number;
+  estados: string[];
+}
+
+export interface ConsolidadoMensual {
+  fechas: string[];
+  alumnos: AlumnoConsolidado[];
+}
+
 export interface SesionAsistencia {
   fecha:             string;
   totalPresentes:    number;
@@ -547,6 +561,15 @@ export class PortalDocente {
   cursoActivo      = signal<Curso | null>(null);
   /** Pestaña activa dentro del detalle del curso */
   activeSubTab     = signal('contenido');  // 'asistencia' | 'contenido' | 'tareas' | 'examenes' | 'reportes'
+
+  courseTabs = [
+    { id: 'asistencia', label: 'Asistencia' },
+    { id: 'contenido',  label: 'Contenido' },
+    { id: 'tareas',     label: 'Tareas' },
+    { id: 'examenes',   label: 'Exámenes' },
+    { id: 'reportes',   label: 'Reportes' }
+  ];
+
   /** Lista de materiales del curso activo */
   materiales       = signal<Material[]>([]);
   cargandoMat      = signal(false);
@@ -636,6 +659,10 @@ export class PortalDocente {
   asistenciaModificada = signal(false);
   fechaAsistencia     = signal<string>('');
   fechasSesiones      = signal<string[]>([]);
+  mostrarConsolidado  = signal(false);
+  cargandoConsolidado = signal(false);
+  mesConsolidado      = signal<string>(''); // YYYY-MM
+  datosConsolidado    = signal<ConsolidadoMensual | null>(null);
   /** Copia local editable de alumnos — se modifica antes de guardar */
   asistenciaLocal     = signal<AsistenciaAlumno[]>([]);
 
@@ -2327,6 +2354,62 @@ export class PortalDocente {
     if (!fechaStr) return '';
     const d = new Date(fechaStr + 'T12:00:00');
     return d.toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  /** Formato legible largo YYYY-MM-DD → "Domingo, 28 De Junio" */
+  formatFechaLarga(fechaStr: string): string {
+    if (!fechaStr) return '';
+    const d = new Date(fechaStr + 'T12:00:00');
+    const parts = d.toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' }).split(', ');
+    if (parts.length > 1) {
+      return parts[0].charAt(0).toUpperCase() + parts[0].slice(1) + ', ' + parts[1].replace('de ', 'De ');
+    }
+    return d.toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+
+  verConsolidado() {
+    const act = !this.mostrarConsolidado();
+    this.mostrarConsolidado.set(act);
+    if (act) {
+      if (!this.mesConsolidado()) {
+        const d = new Date();
+        this.mesConsolidado.set(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+      }
+      this.cargarConsolidado();
+    }
+  }
+
+  cargarConsolidado() {
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    this.cargandoConsolidado.set(true);
+    this.http.get<ConsolidadoMensual>(`/api/portal/docente/cursos/${curso.idAulaCurso}/asistencia/consolidado?mes=${this.mesConsolidado()}`, { headers: this.getHeaders() })
+      .subscribe({
+        next: (res) => {
+          this.datosConsolidado.set(res);
+          this.cargandoConsolidado.set(false);
+        },
+        error: () => {
+          this.cargandoConsolidado.set(false);
+        }
+      });
+  }
+
+  cambiarMesConsolidado(deltaMeses: number) {
+    const actual = this.mesConsolidado();
+    if (!actual) return;
+    const [y, m] = actual.split('-').map(Number);
+    const d = new Date(y, m - 1 + deltaMeses, 1);
+    this.mesConsolidado.set(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    this.cargarConsolidado();
+  }
+
+  formatMes(mesYYYYMM: string): string {
+    if (!mesYYYYMM) return '';
+    const [y, m] = mesYYYYMM.split('-').map(Number);
+    const d = new Date(y, m - 1, 1);
+    const str = d.toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
+    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
   /** Cuenta cuántos reportes de un tipo tiene un alumno */

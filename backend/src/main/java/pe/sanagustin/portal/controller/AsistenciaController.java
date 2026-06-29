@@ -11,10 +11,13 @@ import pe.sanagustin.portal.service.AsistenciaService;
 import java.time.LocalDate;
 import java.util.List;
 
+import pe.sanagustin.portal.dto.ConsolidadoMensualDto;
+
 /**
  * GET    /api/portal/docente/cursos/{idAulaCurso}/asistencia?fecha=YYYY-MM-DD
  * POST   /api/portal/docente/cursos/{idAulaCurso}/asistencia
  * GET    /api/portal/docente/cursos/{idAulaCurso}/asistencia/fechas
+ * GET    /api/portal/docente/cursos/{idAulaCurso}/asistencia/consolidado?mes=YYYY-MM
  */
 @RestController
 @RequiredArgsConstructor
@@ -44,5 +47,13 @@ public class AsistenciaController {
             @PathVariable long idAulaCurso,
             @AuthenticationPrincipal UserDetails user) {
         return asistenciaService.getFechasConSesion(idAulaCurso, user.getUsername());
+    }
+
+    @GetMapping("/api/portal/docente/cursos/{idAulaCurso}/asistencia/consolidado")
+    public ConsolidadoMensualDto getConsolidado(
+            @PathVariable long idAulaCurso,
+            @RequestParam String mes,
+            @AuthenticationPrincipal UserDetails user) {
+        return asistenciaService.getConsolidado(idAulaCurso, mes, user.getUsername());
     }
 }

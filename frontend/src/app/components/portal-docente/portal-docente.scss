@@ -4064,6 +4064,87 @@ a.cd-mat-titulo {
 }
 
 /* ── Lista de alumnos ── */
+/* ─── Encabezado de la lista ─── */
+.as-list-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.as-list-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.as-list-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.as-btn-outline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover {
+    background: #f3f4f6;
+  }
+}
+
+.as-btn-guardar-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 20px;
+  background: #10b981;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover {
+    background: #059669;
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.as-list-table-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  background: #f9fafb;
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 2px;
+}
+
+.as-th-num { width: 22px; text-align: center; }
+.as-th-estudiante { flex: 1; min-width: 170px; }
+.as-th-asistencia { width: 140px; text-align: center; }
+.as-th-observacion { min-width: 150px; flex: 1; }
+
 .as-alumno-list {
   display: flex;
   flex-direction: column;
@@ -4072,7 +4153,7 @@ a.cd-mat-titulo {
 
 .as-alumno-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.75rem;
   padding: 0.55rem 0.85rem;
   border-radius: 8px;
@@ -4081,11 +4162,11 @@ a.cd-mat-titulo {
   transition: background 0.12s;
   flex-wrap: wrap;
 
-  /* Colores por estado */
-  &.as-row-presente   { background: #f0fdf4; border-color: #bbf7d0; }
-  &.as-row-falta      { background: #fef2f2; border-color: #fecaca; }
-  &.as-row-tardanza   { background: #fffbeb; border-color: #fde68a; }
-  &.as-row-justificado{ background: #eff6ff; border-color: #bfdbfe; }
+  /* Colores por estado (un color sutil de fondo) */
+  &.as-row-presente   { background: #ffffff; }
+  &.as-row-falta      { background: #ffffff; }
+  &.as-row-tardanza   { background: #ffffff; }
+  &.as-row-justificado{ background: #ffffff; }
 }
 
 .as-alumno-id {
@@ -4132,7 +4213,7 @@ a.cd-mat-titulo {
 /* Botones de estado */
 .as-estado-btns {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: wrap;
   align-items: center;
 }
@@ -4140,79 +4221,77 @@ a.cd-mat-titulo {
 .as-btn-estado {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border: 1.5px solid #e5e7eb;
-  border-radius: 20px;
+  border-radius: 50%;
   background: #fff;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: #9ca3af;
   cursor: pointer;
-  transition: all 0.12s;
-  white-space: nowrap;
+  transition: all 0.15s ease;
   user-select: none;
+  padding: 0;
 
-  span { display: none; }
-  @media (min-width: 640px) { span { display: inline; } }
+  span {
+    display: inline;
+  }
 }
 
 /* Estado activo por tipo */
 .as-btn-presente {
   &:hover, &.as-activo {
-    border-color: #4ade80;
-    background: #f0fdf4;
-    color: #15803d;
+    border-color: #10b981;
+    background: #10b981;
+    color: #fff;
   }
-  &.as-activo { background: #dcfce7; font-weight: 800; }
 }
 
 .as-btn-tardanza {
   &:hover, &.as-activo {
     border-color: #fbbf24;
-    background: #fffbeb;
-    color: #d97706;
+    background: #fff;
+    color: #fbbf24;
   }
-  &.as-activo { background: #fef3c7; font-weight: 800; }
 }
 
 .as-btn-falta {
   &:hover, &.as-activo {
     border-color: #f87171;
-    background: #fef2f2;
-    color: #dc2626;
+    background: #fff;
+    color: #f87171;
   }
-  &.as-activo { background: #fee2e2; font-weight: 800; }
 }
 
 .as-btn-justificado {
   &:hover, &.as-activo {
     border-color: #60a5fa;
-    background: #eff6ff;
-    color: #2563eb;
+    background: #fff;
+    color: #60a5fa;
   }
-  &.as-activo { background: #dbeafe; font-weight: 800; }
 }
 
 /* Campo de justificante */
 .as-justificante-wrap {
-  width: 100%;
-  padding-left: calc(200px + 1.35rem);
-
-  @media (max-width: 640px) { padding-left: 0; }
+  flex: 1;
+  min-width: 150px;
+  margin-left: 10px;
 }
 
 .as-justificante-input {
   width: 100%;
-  max-width: 480px;
-  border: 1px solid #bfdbfe;
-  border-radius: 7px;
-  padding: 0.3rem 0.65rem;
+  max-width: 200px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.4rem 0.8rem;
   font-size: 0.8rem;
-  color: #1e40af;
+  color: #4b5563;
   background: #fff;
-  &:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
-  &::placeholder { color: #93c5fd; }
+  transition: border-color 0.2s;
+  &:focus { outline: none; border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96,165,250,.1); }
+  &::placeholder { color: #9ca3af; }
 }
 
 /* Footer de acciones (al final de la lista) */

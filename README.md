@@ -25,7 +25,7 @@ docker compose up -d
 
 > Primera vez: `docker compose up -d --build`
 
-## Usuarios de prueba (contraseña: `Test1234!`)
+## Usuarios de prueba (contraseñas por defecto: `password`)
 
 | Rol | Código | Nombre | Portal |
 |-----|--------|--------|--------|
@@ -36,8 +36,10 @@ docker compose up -d
 | Alumno | `2S261007` | Renzo Méndez | 2do Sec A |
 | Padre | `PAD-2024-00142` | Marisol Martínez | — |
 | Docente | `OC16Mar26` | Oscar Castillo | — |
+| Docente | `RM10Nov20` | Roberto Morales| — |
 | Admin | `ADM-001` | — | — |
 
+Docentes y alumnos password: `password`
 Admin password: `Admin1234!`
 
 ## Estructura de la BD (`database/init.sql`)

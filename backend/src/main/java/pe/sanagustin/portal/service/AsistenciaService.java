@@ -12,6 +12,12 @@ import pe.sanagustin.portal.dto.SesionAsistenciaDto;
 
 import java.util.List;
 
+import pe.sanagustin.portal.dto.ConsolidadoMensualDto;
+import pe.sanagustin.portal.dto.AlumnoConsolidadoDto;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+
 @Service
 @RequiredArgsConstructor
 public class AsistenciaService {
@@ -141,5 +147,104 @@ public class AsistenciaService {
                 .getSingleResult();
         if (cnt.longValue() == 0)
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No autorizado");
+    }
+
+    public ConsolidadoMensualDto getConsolidado(long idAulaCurso, String mesYYYYMM, String codigoDocente) {
+        verificarAutorizacion(idAulaCurso, codigoDocente);
+
+        // 1. Fechas únicas en ese mes
+        String fechasSql = """
+                SELECT DISTINCT TO_CHAR(a.fecha, 'YYYY-MM-DD')
+                FROM asistencia_alumno a
+                WHERE a.id_aula_curso = :iac
+                  AND TO_CHAR(a.fecha, 'YYYY-MM') = :mes
+                ORDER BY 1 ASC
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<String> fechas = em.createNativeQuery(fechasSql)
+                .setParameter("iac", idAulaCurso)
+                .setParameter("mes", mesYYYYMM)
+                .getResultList();
+
+        // 2. Todos los alumnos activos en este curso
+        String alumnosSql = """
+                SELECT al.id_alumno, u.codigo, al.apellido || ' ' || al.nombre AS nombres
+                FROM matriculas m
+                JOIN alumnos al ON al.id_alumno = m.id_alumno
+                JOIN usuarios u ON u.id_usuario = al.id_usuario
+                WHERE m.id_aula = (SELECT id_aula FROM aula_cursos WHERE id_aula_curso = :iac)
+                  AND m.estado = 'activa'
+                ORDER BY al.apellido, al.nombre
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rowsAlumnos = em.createNativeQuery(alumnosSql)
+                .setParameter("iac", idAulaCurso)
+                .getResultList();
+
+        List<AlumnoConsolidadoDto> consolidados = new ArrayList<>();
+
+        if (fechas.isEmpty()) {
+            for (Object[] r : rowsAlumnos) {
+                consolidados.add(new AlumnoConsolidadoDto(
+                        ((Number) r[0]).longValue(),
+                        (String) r[1],
+                        (String) r[2],
+                        false,
+                        100,
+                        new ArrayList<>()
+                ));
+            }
+            return new ConsolidadoMensualDto(fechas, consolidados);
+        }
+
+        // 3. Asistencias de este mes
+        String asisSql = """
+                SELECT a.id_alumno, TO_CHAR(a.fecha, 'YYYY-MM-DD'), a.estado
+                FROM asistencia_alumno a
+                WHERE a.id_aula_curso = :iac
+                  AND TO_CHAR(a.fecha, 'YYYY-MM') = :mes
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rowsAsis = em.createNativeQuery(asisSql)
+                .setParameter("iac", idAulaCurso)
+                .setParameter("mes", mesYYYYMM)
+                .getResultList();
+
+        Map<Long, Map<String, String>> mapaAsis = new HashMap<>();
+        for (Object[] r : rowsAsis) {
+            long idA = ((Number) r[0]).longValue();
+            String f = (String) r[1];
+            String e = (String) r[2];
+            mapaAsis.computeIfAbsent(idA, k -> new HashMap<>()).put(f, e);
+        }
+
+        for (Object[] r : rowsAlumnos) {
+            long idA = ((Number) r[0]).longValue();
+            String codigo = (String) r[1];
+            String nombres = (String) r[2];
+
+            Map<String, String> asisAlumno = mapaAsis.getOrDefault(idA, new HashMap<>());
+            List<String> estados = new ArrayList<>();
+            int countAsistidos = 0;
+            int total = fechas.size();
+
+            for (String f : fechas) {
+                String e = asisAlumno.getOrDefault(f, "presente"); // si no hay asume presente
+                estados.add(e);
+                if ("presente".equals(e) || "tardanza".equals(e) || "justificado".equals(e)) {
+                    countAsistidos++;
+                }
+            }
+
+            int pct = total == 0 ? 100 : (int) Math.round((countAsistidos * 100.0) / total);
+            boolean alertaRiesgo = pct < 70;
+
+            consolidados.add(new AlumnoConsolidadoDto(idA, codigo, nombres, alertaRiesgo, pct, estados));
+        }
+
+        return new ConsolidadoMensualDto(fechas, consolidados);
     }
 }

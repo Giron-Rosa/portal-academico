@@ -331,13 +331,7 @@
 
         <!-- Tab bar del curso -->
         <div class="cd-tabs">
-          @for (tab of [
-            {id:'asistencia', label:'Asistencia'},
-            {id:'contenido',  label:'Contenido'},
-            {id:'tareas',     label:'Tareas'},
-            {id:'examenes',   label:'Exámenes'},
-            {id:'reportes',   label:'Reportes'}
-          ]; track tab.id) {
+          @for (tab of courseTabs; track tab.id) {
             <button class="cd-tab" [class.active]="activeSubTab() === tab.id"
                     (click)="activeSubTab.set(tab.id)">
               {{ tab.label }}
@@ -568,7 +562,104 @@
 
           <!-- ── Lista de alumnos ── -->
           @if (!cargandoAsistencia() && asistenciaLocal().length > 0) {
-            <div class="as-alumno-list">
+            <div class="as-list-header-row">
+              <h4 class="as-list-title">
+                @if (mostrarConsolidado()) { Consolidado Mensual } @else { Lista — {{ formatFechaLarga(fechaAsistencia()) }} }
+              </h4>
+              <div class="as-list-actions">
+                <button class="as-btn-outline" [class.active]="mostrarConsolidado()" (click)="verConsolidado()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                  </svg>
+                  @if(mostrarConsolidado()) { Volver a Lista } @else { Ver Consolidado Mensual }
+                </button>
+                @if (!mostrarConsolidado()) {
+                  <button class="as-btn-guardar-top"
+                          (click)="guardarAsistencia()"
+                          [disabled]="!asistenciaModificada() || guardandoAsistencia()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                      <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    Guardar
+                  </button>
+                }
+              </div>
+            </div>
+
+            @if (mostrarConsolidado()) {
+              <!-- CONSOLIDADO MENSUAL UI -->
+              <div class="cs-wrap">
+                <div class="cs-toolbar">
+                  <button class="cs-btn-mes" (click)="cambiarMesConsolidado(-1)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <span class="cs-mes-label">{{ formatMes(mesConsolidado()) }}</span>
+                  <button class="cs-btn-mes" (click)="cambiarMesConsolidado(1)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+
+                @if (cargandoConsolidado()) {
+                  <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando consolidado...</span></div>
+                } @else if (datosConsolidado()) {
+                  <div class="cs-table-wrap">
+                    <table class="cs-table">
+                      <thead>
+                        <tr>
+                          <th class="cs-th-fijo">Estudiante</th>
+                          <th class="cs-th-center">% Asistencia</th>
+                          @for (f of datosConsolidado()!.fechas; track f) {
+                            <th class="cs-th-center">
+                              <div class="cs-fecha-head">
+                                <span>{{ f.split('-')[2] }}</span>
+                              </div>
+                            </th>
+                          }
+                          @if(datosConsolidado()!.fechas.length === 0) {
+                            <th class="cs-th-center">Sin sesiones registradas este mes</th>
+                          }
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (a of datosConsolidado()!.alumnos; track a.idAlumno) {
+                          <tr>
+                            <td class="cs-td-fijo">
+                              <span class="cs-nombre">{{ a.nombres }}</span>
+                            </td>
+                            <td class="cs-td-center">
+                              <span class="cs-pct-badge" [class.cs-pct-riesgo]="a.alertaRiesgo">
+                                {{ a.porcentajeAsistencia }}%
+                              </span>
+                            </td>
+                            @for (e of a.estados; track $index) {
+                              <td class="cs-td-center">
+                                <span class="cs-estado-chip" [class]="'cs-chip-' + e">
+                                  {{ e.charAt(0).toUpperCase() }}
+                                </span>
+                              </td>
+                            }
+                            @if(a.estados.length === 0) {
+                              <td class="cs-td-center">-</td>
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+            } @else {
+              <!-- LISTA DE ASISTENCIA DIARIA NORMAL -->
+              <div class="as-alumno-list">
+              <!-- Encabezados de la tabla -->
+              <div class="as-list-table-header">
+                <div class="as-th-num">#</div>
+                <div class="as-th-estudiante">ESTUDIANTE</div>
+                <div class="as-th-asistencia">ASISTENCIA</div>
+                <div class="as-th-observacion">OBSERVACIÓN</div>
+              </div>
+
               @for (alumno of asistenciaLocal(); track alumno.idAlumno; let idx = $index) {
                 <div class="as-alumno-row" [class]="'as-row-' + alumno.estado">
 
@@ -587,52 +678,36 @@
                             [class.as-activo]="alumno.estado === 'presente'"
                             (click)="setEstadoAsistencia(alumno.idAlumno, 'presente')"
                             title="Presente">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                      <span>Presente</span>
-                    </button>
-                    <button class="as-btn-estado as-btn-tardanza"
-                            [class.as-activo]="alumno.estado === 'tardanza'"
-                            (click)="setEstadoAsistencia(alumno.idAlumno, 'tardanza')"
-                            title="Tardanza">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                      </svg>
-                      <span>Tardanza</span>
+                      <span>P</span>
                     </button>
                     <button class="as-btn-estado as-btn-falta"
                             [class.as-activo]="alumno.estado === 'falta'"
                             (click)="setEstadoAsistencia(alumno.idAlumno, 'falta')"
                             title="Falta">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                      <span>Falta</span>
+                      <span>F</span>
+                    </button>
+                    <button class="as-btn-estado as-btn-tardanza"
+                            [class.as-activo]="alumno.estado === 'tardanza'"
+                            (click)="setEstadoAsistencia(alumno.idAlumno, 'tardanza')"
+                            title="Tardanza">
+                      <span>T</span>
                     </button>
                     <button class="as-btn-estado as-btn-justificado"
                             [class.as-activo]="alumno.estado === 'justificado'"
                             (click)="setEstadoAsistencia(alumno.idAlumno, 'justificado')"
                             title="Justificado">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-                      </svg>
-                      <span>Justificado</span>
+                      <span>J</span>
                     </button>
                   </div>
 
-                  <!-- Campo de justificante (solo cuando está en estado justificado) -->
-                  @if (alumno.estado === 'justificado') {
-                    <div class="as-justificante-wrap">
-                      <input class="as-justificante-input"
-                             type="text"
-                             placeholder="Motivo del justificante (opcional)…"
-                             [ngModel]="alumno.justificante"
-                             (ngModelChange)="setJustificanteAsistencia(alumno.idAlumno, $event)"/>
-                    </div>
-                  }
+                  <!-- Campo de observación siempre visible -->
+                  <div class="as-justificante-wrap">
+                    <input class="as-justificante-input"
+                           type="text"
+                           placeholder="Nota..."
+                           [ngModel]="alumno.justificante"
+                           (ngModelChange)="setJustificanteAsistencia(alumno.idAlumno, $event)"/>
+                  </div>
 
                 </div>
               }
