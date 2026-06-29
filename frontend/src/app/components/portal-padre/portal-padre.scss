@@ -1575,3 +1575,388 @@ $amarillo:   #eab308;
   &:hover:not(:disabled) { background: #001d3d; }
   &:disabled { background: #94a3b8; cursor: not-allowed; }
 }
+
+/* -----------------------------------------------------------
+   FASE 2 — CURSOS del portal padre
+----------------------------------------------------------- */
+
+.cursos-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* -- Tabs selector de hijo -- */
+.hijo-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hijo-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.2s;
+
+  &:hover { border-color: #003566; color: #003566; }
+  &.hijo-tab--active {
+    background: #003566;
+    border-color: #003566;
+    color: #fff;
+  }
+}
+
+.hijo-tab-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* -- Loading / Error / Empty -- */
+.cursos-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  gap: 1rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.curso-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #003566;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.cursos-error, .cursos-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  gap: 0.75rem;
+  text-align: center;
+  color: #64748b;
+
+  p { margin: 0; font-size: 0.875rem; }
+}
+
+.btn-retry {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #003566;
+  font-weight: 600;
+  transition: all 0.15s;
+
+  &:hover { background: #e0f2fe; }
+}
+
+/* -- Barra de resumen de cursos -- */
+.cursos-resumen-bar {
+  display: flex;
+  gap: 1.5rem;
+  background: linear-gradient(135deg, #003566 0%, #0077b6 100%);
+  border-radius: 14px;
+  padding: 1.25rem 1.75rem;
+  flex-wrap: wrap;
+}
+
+.crb-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 100px;
+}
+
+.crb-val {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+.crb-lbl {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.75);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* -- Lista de cursos acordeón -- */
+.curso-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.curso-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+
+  &:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  &.curso-card--open { border-color: #003566; }
+}
+
+.curso-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  gap: 1rem;
+}
+
+.curso-card-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.curso-area-badge {
+  background: #e0f2fe;
+  color: #0077b6;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.curso-nombre {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.curso-docente {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.curso-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-shrink: 0;
+}
+
+.curso-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.cstat-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.cstat-lbl {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.curso-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  min-width: 80px;
+}
+
+.curso-progress-bar {
+  height: 6px;
+  width: 80px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.curso-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.curso-progress-pct {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.curso-chevron {
+  color: #94a3b8;
+  flex-shrink: 0;
+  transition: transform 0.3s;
+
+  .curso-card--open & {
+    transform: rotate(180deg);
+  }
+}
+
+/* -- Detalle expandido del curso -- */
+.curso-card-body {
+  border-top: 1px solid #f1f5f9;
+  padding: 1rem 1.25rem;
+  animation: slide-down 0.2s ease;
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.curso-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.curso-tab {
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover { background: #e2e8f0; color: #0f172a; }
+  &.curso-tab--active { background: #003566; color: #fff; }
+}
+
+/* -- Tabla de notas -- */
+.notas-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+
+  thead tr {
+    background: #f8fafc;
+  }
+
+  th {
+    text-align: left;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.7rem;
+    color: #64748b;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  td {
+    padding: 0.6rem 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+}
+
+.nt-titulo {
+  font-weight: 600;
+  color: #1e293b !important;
+  max-width: 240px;
+}
+
+.nt-fecha {
+  color: #94a3b8 !important;
+  white-space: nowrap;
+}
+
+.nt-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+
+  &.nt-badge--ok {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+  &.nt-badge--no {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+}
+
+.nt-nota {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.nt-sin-nota {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.nt-tipo {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.tab-empty {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  padding: 1.5rem;
+  margin: 0;
+}

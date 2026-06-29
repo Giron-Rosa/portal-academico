@@ -3,8 +3,11 @@ package pe.sanagustin.portal.service;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import pe.sanagustin.portal.dto.CursoDetalleHijoDto;
 import pe.sanagustin.portal.dto.CursoHijoDto;
+import pe.sanagustin.portal.dto.ExamenHijoDto;
 import pe.sanagustin.portal.dto.HijoResumenDto;
+import pe.sanagustin.portal.dto.TareaHijoDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -149,6 +152,167 @@ public class PadreService {
                     entregaGral,
                     estado,
                     cursos
+            ));
+        }
+
+        return resultado;
+    }
+
+    /**
+     * getCursosDetalle: devuelve los cursos del alumno identificado por codigoAlumno
+     * con sus tareas individuales (nota, entregado) y exámenes (nota, asistió).
+     * Solo se permite si el padre autenticado tiene relación con ese alumno.
+     */
+    public List<CursoDetalleHijoDto> getCursosDetalle(String codigoPadre, String codigoAlumno) {
+
+        // Verificar relación padre-hijo
+        @SuppressWarnings("unchecked")
+        List<?> check = entityManager.createNativeQuery("""
+                SELECT 1
+                FROM padre_hijo ph
+                JOIN padres   p   ON p.id_padre     = ph.id_padre
+                JOIN usuarios u_p ON u_p.id_usuario = p.id_usuario
+                JOIN alumnos  a   ON a.id_alumno    = ph.id_alumno
+                JOIN usuarios u_a ON u_a.id_usuario = a.id_usuario
+                WHERE u_p.codigo = :codPadre AND u_a.codigo = :codAlumno
+                """)
+                .setParameter("codPadre",  codigoPadre)
+                .setParameter("codAlumno", codigoAlumno)
+                .getResultList();
+
+        if (check.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Acceso no autorizado");
+        }
+
+        // Obtener id_alumno
+        Long idAlumno = ((Number) entityManager.createNativeQuery(
+                "SELECT a.id_alumno FROM alumnos a JOIN usuarios u ON u.id_usuario=a.id_usuario WHERE u.codigo=:cod")
+                .setParameter("cod", codigoAlumno)
+                .getSingleResult()).longValue();
+
+        // Obtener cursos de matrícula activa
+        String sqlCursos = """
+                SELECT ac.id_aula_curso,
+                       c.nombre,
+                       c.area,
+                       COALESCE(mae.nombre || ' ' || mae.apellido, 'Sin asignar') AS docente
+                FROM matriculas m
+                JOIN aula_cursos ac ON ac.id_aula = m.id_aula
+                JOIN cursos      c  ON c.id_curso = ac.id_curso
+                LEFT JOIN docente_asignaciones da ON da.id_aula_curso = ac.id_aula_curso AND da.activo = TRUE
+                LEFT JOIN maestros mae ON mae.id_maestro = da.id_maestro
+                WHERE m.id_alumno = :idAlumno AND m.estado = 'activa'
+                ORDER BY c.nombre
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> cursoRows = entityManager.createNativeQuery(sqlCursos)
+                .setParameter("idAlumno", idAlumno)
+                .getResultList();
+
+        List<CursoDetalleHijoDto> resultado = new ArrayList<>();
+
+        for (Object[] cr : cursoRows) {
+            long idAulaCurso = ((Number) cr[0]).longValue();
+            String cNombre   = (String) cr[1];
+            String cArea     = (String) cr[2];
+            String cDocente  = (String) cr[3];
+
+            // ── Tareas del alumno en este aula_curso ──────────────────
+            String sqlTareas = """
+                    SELECT tc.id_tarea,
+                           tc.titulo,
+                           TO_CHAR(tc.fecha_entrega, 'DD/MM/YYYY') AS fecha,
+                           COALESCE(nt.entregado, FALSE) AS entregado,
+                           nt.nota,
+                           tc.nota_maxima
+                    FROM tareas_curso tc
+                    LEFT JOIN notas_tarea nt ON nt.id_tarea = tc.id_tarea AND nt.id_alumno = :idAlumno
+                    WHERE tc.id_aula_curso = :idAulaCurso
+                    ORDER BY tc.fecha_entrega ASC
+                    """;
+
+            @SuppressWarnings("unchecked")
+            List<Object[]> tareaRows = entityManager.createNativeQuery(sqlTareas)
+                    .setParameter("idAlumno",    idAlumno)
+                    .setParameter("idAulaCurso", idAulaCurso)
+                    .getResultList();
+
+            List<TareaHijoDto> tareas = tareaRows.stream().map(t -> new TareaHijoDto(
+                    ((Number)  t[0]).longValue(),
+                    (String)   t[1],
+                    (String)   t[2],
+                    (Boolean)  t[3],
+                    t[4] != null ? ((Number) t[4]).doubleValue() : null,
+                    ((Number)  t[5]).intValue()
+            )).toList();
+
+            // ── Exámenes del alumno en este aula_curso ────────────────
+            String sqlExamenes = """
+                    SELECT ec.id_examen,
+                           ec.titulo,
+                           ec.tipo,
+                           TO_CHAR(ec.fecha_examen, 'DD/MM/YYYY') AS fecha,
+                           COALESCE(ne.asistio, TRUE) AS asistio,
+                           ne.nota,
+                           ec.nota_maxima
+                    FROM examenes_curso ec
+                    LEFT JOIN notas_examen ne ON ne.id_examen = ec.id_examen AND ne.id_alumno = :idAlumno
+                    WHERE ec.id_aula_curso = :idAulaCurso
+                    ORDER BY ec.fecha_examen ASC
+                    """;
+
+            @SuppressWarnings("unchecked")
+            List<Object[]> examenRows = entityManager.createNativeQuery(sqlExamenes)
+                    .setParameter("idAlumno",    idAlumno)
+                    .setParameter("idAulaCurso", idAulaCurso)
+                    .getResultList();
+
+            List<ExamenHijoDto> examenes = examenRows.stream().map(e -> new ExamenHijoDto(
+                    ((Number)  e[0]).longValue(),
+                    (String)   e[1],
+                    (String)   e[2],
+                    (String)   e[3],
+                    (Boolean)  e[4],
+                    e[5] != null ? ((Number) e[5]).doubleValue() : null,
+                    ((Number)  e[6]).intValue()
+            )).toList();
+
+            // ── Calcular métricas del curso ───────────────────────────
+            int tTotal = tareas.size();
+            int tEntregadas = (int) tareas.stream().filter(TareaHijoDto::entregado).count();
+            int progreso = tTotal == 0 ? 100 : (tEntregadas * 100) / tTotal;
+            double promedio = tareas.stream()
+                    .filter(t -> t.nota() != null)
+                    .mapToDouble(TareaHijoDto::nota)
+                    .average().orElse(0.0);
+            promedio = Math.round(promedio * 10.0) / 10.0;
+
+            // Asistencia del curso
+            @SuppressWarnings("unchecked")
+            List<Object[]> asistRow = entityManager.createNativeQuery("""
+                    SELECT COUNT(*) AS total,
+                           SUM(CASE WHEN aa.estado IN ('presente','tardanza','justificado') THEN 1 ELSE 0 END) AS pres
+                    FROM asistencia_alumno aa
+                    WHERE aa.id_aula_curso = :idAulaCurso AND aa.id_alumno = :idAlumno
+                    """)
+                    .setParameter("idAulaCurso", idAulaCurso)
+                    .setParameter("idAlumno",    idAlumno)
+                    .getResultList();
+
+            double asistencia = 100.0;
+            if (!asistRow.isEmpty()) {
+                Object[] ar = asistRow.get(0);
+                long total = ((Number) ar[0]).longValue();
+                long pres  = ar[1] != null ? ((Number) ar[1]).longValue() : 0L;
+                asistencia = total == 0 ? 100.0 : Math.round((pres * 100.0) / total * 10.0) / 10.0;
+            }
+
+            resultado.add(new CursoDetalleHijoDto(
+                    cNombre, cArea, cDocente,
+                    progreso, tEntregadas, tTotal, promedio, asistencia,
+                    tareas, examenes
             ));
         }
 

@@ -383,16 +383,216 @@
 
       <!-- ========== SECCIÓN: CURSOS ========== -->
       @if (seccionActiva() === 'cursos') {
-        <div class="seccion-placeholder">
-          <div class="placeholder-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="1.5">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-          </div>
-          <h2>Cursos</h2>
-          <p>Aquí verás los cursos de cada hijo con detalle de calificaciones y tareas pendientes.</p>
-          <span class="badge-pronto">Próximamente</span>
+        <div class="cursos-layout">
+
+          <!-- Selector de hijo (si hay más de uno) -->
+          @if (hijos().length > 1) {
+            <div class="hijo-tabs">
+              @for (h of hijos(); track h.codigo; let i = $index) {
+                <button class="hijo-tab" [class.hijo-tab--active]="hijoIdx() === i" (click)="cambiarHijoCursos(i)">
+                  <span class="hijo-tab-avatar">{{ h.nombre[0] }}</span>
+                  <span>{{ h.nombre }}</span>
+                </button>
+              }
+            </div>
+          }
+
+          <!-- Estado de carga / error -->
+          @if (cargandoCursos()) {
+            <div class="cursos-loading">
+              <div class="curso-spinner"></div>
+              <span>Cargando cursos...</span>
+            </div>
+          } @else if (errorCursos()) {
+            <div class="cursos-error">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="1.8">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <p>{{ errorCursos() }}</p>
+              <button class="btn-retry" (click)="cargarCursos(hijoActual()?.codigo ?? '')">Reintentar</button>
+            </div>
+          } @else if (cursosHijo().length === 0) {
+            <div class="cursos-empty">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+              <p>No hay cursos registrados para este alumno.</p>
+            </div>
+          } @else {
+
+            <!-- Resumen general del alumno en esta sección -->
+            <div class="cursos-resumen-bar">
+              <div class="crb-item">
+                <span class="crb-val">{{ cursosHijo().length }}</span>
+                <span class="crb-lbl">Cursos</span>
+              </div>
+              <div class="crb-item">
+                <span class="crb-val">
+                  {{ (cursosHijo() | slice:0).reduce ? '' : '' }}
+                  {{ cursosHijo().length > 0 ? (cursosHijo().reduce((sum, c) => sum + c.promedioCurso, 0) / cursosHijo().length | number:'1.1-1') : '–' }}
+                </span>
+                <span class="crb-lbl">Prom. general</span>
+              </div>
+              <div class="crb-item">
+                <span class="crb-val">
+                  {{ cursosHijo().reduce((sum, c) => sum + c.tareasEntregadas, 0) }}/{{ cursosHijo().reduce((sum, c) => sum + c.totalTareas, 0) }}
+                </span>
+                <span class="crb-lbl">Tareas entregadas</span>
+              </div>
+              <div class="crb-item">
+                <span class="crb-val">{{ hijoActual()?.asistencia ?? 0 }}%</span>
+                <span class="crb-lbl">Asistencia global</span>
+              </div>
+            </div>
+
+            <!-- Lista de cursos acordeón -->
+            <div class="curso-list">
+              @for (c of cursosHijo(); track c.nombre; let ci = $index) {
+                <div class="curso-card" [class.curso-card--open]="cursoExpandido() === ci">
+                  <!-- Cabecera del curso (click expande) -->
+                  <div class="curso-card-header" (click)="toggleCursoExpandido(ci)">
+                    <div class="curso-card-left">
+                      <div class="curso-area-badge">{{ c.area }}</div>
+                      <div>
+                        <h4 class="curso-nombre">{{ c.nombre }}</h4>
+                        <span class="curso-docente">{{ c.docente }}</span>
+                      </div>
+                    </div>
+                    <div class="curso-card-stats">
+                      <!-- Promedio -->
+                      <div class="curso-stat">
+                        <span class="cstat-val" [style.color]="getNotaColor(c.promedioCurso, 20)">
+                          {{ c.promedioCurso | number:'1.1-1' }}
+                        </span>
+                        <span class="cstat-lbl">Promedio</span>
+                      </div>
+                      <!-- Tareas -->
+                      <div class="curso-stat">
+                        <span class="cstat-val">{{ c.tareasEntregadas }}/{{ c.totalTareas }}</span>
+                        <span class="cstat-lbl">Tareas</span>
+                      </div>
+                      <!-- Asistencia -->
+                      <div class="curso-stat">
+                        <span class="cstat-val" [style.color]="getBarColor(c.asistenciaCurso)">{{ c.asistenciaCurso }}%</span>
+                        <span class="cstat-lbl">Asistencia</span>
+                      </div>
+                      <!-- Barra de progreso -->
+                      <div class="curso-progress-wrap">
+                        <div class="curso-progress-bar">
+                          <div class="curso-progress-fill"
+                               [style.width.%]="c.progreso"
+                               [style.background]="getBarColor(c.progreso)">
+                          </div>
+                        </div>
+                        <span class="curso-progress-pct">{{ c.progreso }}%</span>
+                      </div>
+                      <!-- Chevron -->
+                      <svg class="curso-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Detalle expandido del curso -->
+                  @if (cursoExpandido() === ci) {
+                    <div class="curso-card-body">
+                      <!-- Tabs: Tareas / Exámenes -->
+                      <div class="curso-tabs">
+                        <button class="curso-tab" [class.curso-tab--active]="tabCurso() === 'tareas'" (click)="tabCurso.set('tareas')">
+                          📋 Tareas ({{ c.tareas.length }})
+                        </button>
+                        <button class="curso-tab" [class.curso-tab--active]="tabCurso() === 'examenes'" (click)="tabCurso.set('examenes')">
+                          📝 Exámenes ({{ c.examenes.length }})
+                        </button>
+                      </div>
+
+                      <!-- Tab: Tareas -->
+                      @if (tabCurso() === 'tareas') {
+                        @if (c.tareas.length === 0) {
+                          <p class="tab-empty">No hay tareas registradas para este curso.</p>
+                        } @else {
+                          <table class="notas-tabla">
+                            <thead>
+                              <tr>
+                                <th>Tarea</th>
+                                <th>Entrega</th>
+                                <th>Estado</th>
+                                <th>Nota</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              @for (t of c.tareas; track t.idTarea) {
+                                <tr>
+                                  <td class="nt-titulo">{{ t.titulo }}</td>
+                                  <td class="nt-fecha">{{ t.fechaEntrega }}</td>
+                                  <td>
+                                    <span class="nt-badge" [class.nt-badge--ok]="t.entregado" [class.nt-badge--no]="!t.entregado">
+                                      {{ t.entregado ? 'Entregado' : 'Pendiente' }}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    @if (t.nota !== null) {
+                                      <span class="nt-nota" [style.color]="getNotaColor(t.nota, t.notaMaxima)">
+                                        {{ t.nota }}/{{ t.notaMaxima }}
+                                      </span>
+                                    } @else {
+                                      <span class="nt-sin-nota">Sin calificar</span>
+                                    }
+                                  </td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        }
+                      }
+
+                      <!-- Tab: Exámenes -->
+                      @if (tabCurso() === 'examenes') {
+                        @if (c.examenes.length === 0) {
+                          <p class="tab-empty">No hay exámenes registrados para este curso.</p>
+                        } @else {
+                          <table class="notas-tabla">
+                            <thead>
+                              <tr>
+                                <th>Examen</th>
+                                <th>Tipo</th>
+                                <th>Fecha</th>
+                                <th>Asistió</th>
+                                <th>Nota</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              @for (e of c.examenes; track e.idExamen) {
+                                <tr>
+                                  <td class="nt-titulo">{{ e.titulo }}</td>
+                                  <td><span class="nt-tipo">{{ e.tipo }}</span></td>
+                                  <td class="nt-fecha">{{ e.fechaExamen }}</td>
+                                  <td>
+                                    <span class="nt-badge" [class.nt-badge--ok]="e.asistio" [class.nt-badge--no]="!e.asistio">
+                                      {{ e.asistio ? 'Sí' : 'No' }}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    @if (e.nota !== null) {
+                                      <span class="nt-nota" [style.color]="getNotaColor(e.nota, e.notaMaxima)">
+                                        {{ e.nota }}/{{ e.notaMaxima }}
+                                      </span>
+                                    } @else {
+                                      <span class="nt-sin-nota">Sin calificar</span>
+                                    }
+                                  </td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        }
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
         </div>
       }
 

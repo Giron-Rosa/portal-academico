@@ -115,6 +115,39 @@ export interface DocenteDisponible {
   idAulaCurso: number;
 }
 
+/* ── Fase 2: Cursos ── */
+export interface TareaHijo {
+  idTarea: number;
+  titulo: string;
+  fechaEntrega: string;
+  entregado: boolean;
+  nota: number | null;
+  notaMaxima: number;
+}
+
+export interface ExamenHijo {
+  idExamen: number;
+  titulo: string;
+  tipo: string;
+  fechaExamen: string;
+  asistio: boolean;
+  nota: number | null;
+  notaMaxima: number;
+}
+
+export interface CursoDetalleCompleto {
+  nombre: string;
+  area: string;
+  docente: string;
+  progreso: number;
+  tareasEntregadas: number;
+  totalTareas: number;
+  promedioCurso: number;
+  asistenciaCurso: number;
+  tareas: TareaHijo[];
+  examenes: ExamenHijo[];
+}
+
 @Component({
   selector: 'app-portal-padre',
   imports: [CommonModule, FormsModule],
@@ -157,6 +190,13 @@ export class PortalPadre implements OnDestroy {
   nuevoChatAsunto       = signal<string>('');
   nuevoChatMensaje      = signal<string>('');
   enviandoNuevoChat     = signal<boolean>(false);
+
+  /* ── Fase 2: Señales de Cursos ── */
+  cursosHijo            = signal<CursoDetalleCompleto[]>([]);
+  cargandoCursos        = signal<boolean>(false);
+  errorCursos           = signal<string>('');
+  cursoExpandido        = signal<number>(-1); // índice del curso expandido (-1 = ninguno)
+  tabCurso              = signal<'tareas' | 'examenes'>('tareas'); // tab activa en el detalle
 
   nombrePadre    = this.auth.getNombre() ?? 'Padre';
   codigoPadre    = this.auth.getCodigo() ?? '';
@@ -247,6 +287,10 @@ export class PortalPadre implements OnDestroy {
     } else {
       this.ws.unsubscribeFromChat();
     }
+    if (s === 'cursos') {
+      const hijo = this.hijoActual();
+      if (hijo) this.cargarCursos(hijo.codigo);
+    }
   }
 
   verDetalle(idx: number) {
@@ -256,6 +300,48 @@ export class PortalPadre implements OnDestroy {
 
   volverDashboard() {
     this.vista.set('dashboard');
+  }
+
+  /* ════════════════════════════════════════════════
+     FASE 2 — Cursos del hijo
+  ════════════════════════════════════════════════ */
+
+  cargarCursos(codigoAlumno: string): void {
+    this.cargandoCursos.set(true);
+    this.errorCursos.set('');
+    this.cursoExpandido.set(-1);
+    this.http.get<CursoDetalleCompleto[]>(
+      `http://localhost:8080/api/portal/padre/cursos/${codigoAlumno}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.cursosHijo.set(data);
+        this.cargandoCursos.set(false);
+      },
+      error: () => {
+        this.errorCursos.set('No se pudieron cargar los cursos.');
+        this.cargandoCursos.set(false);
+      },
+    });
+  }
+
+  toggleCursoExpandido(idx: number): void {
+    this.cursoExpandido.update(prev => prev === idx ? -1 : idx);
+    this.tabCurso.set('tareas');
+  }
+
+  cambiarHijoCursos(idx: number): void {
+    this.hijoIdx.set(idx);
+    const hijo = this.hijos()[idx];
+    if (hijo) this.cargarCursos(hijo.codigo);
+  }
+
+  getNotaColor(nota: number | null, max: number): string {
+    if (nota === null) return '#94a3b8';
+    const pct = (nota / max) * 100;
+    if (pct >= 80) return '#22c55e';
+    if (pct >= 60) return '#eab308';
+    return '#c1121f';
   }
 
   getBarColor(p: number): string {
