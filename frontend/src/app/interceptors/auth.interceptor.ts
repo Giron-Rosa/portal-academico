@@ -28,17 +28,29 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(authReq).pipe(
     catchError((err: unknown) => {
       if (err instanceof HttpErrorResponse) {
-        // Solo cerrar sesión en 401 auténticos (token inválido/expirado),
-        // nunca en 403 (permisos), 404 (no encontrado) ni 500 (error del servidor).
         const is401 = err.status === 401;
-        // Excluir el endpoint de login para evitar bucle al meter credenciales incorrectas
         const isLoginCall = req.url.includes('/api/auth/login');
 
         if (is401 && !isLoginCall && auth.isLoggedIn()) {
-          console.warn('[AuthInterceptor] 401 recibido con sesión activa → cerrando sesión');
-          auth.logout();
-          router.navigate(['/']);
-          auth.openLogin();
+          const userRol = auth.getRol(); // 'maestro', 'padre', 'alumno', 'admin'
+          const urlLower = req.url.toLowerCase();
+
+          // Solo cerrar sesión si la petición 401 coincide con la del portal del rol activo del usuario.
+          // Si el usuario actual es "maestro" pero falló una llamada de "padre", no lo deslogueamos.
+          let matchesUserRole = false;
+          if (userRol === 'maestro' && urlLower.includes('/docente/')) matchesUserRole = true;
+          if (userRol === 'padre' && urlLower.includes('/padre/')) matchesUserRole = true;
+          if (userRol === 'alumno' && urlLower.includes('/alumno/')) matchesUserRole = true;
+          if (userRol === 'admin' && urlLower.includes('/admin/')) matchesUserRole = true;
+
+          if (matchesUserRole) {
+            console.warn(`[AuthInterceptor] 401 recibido en ruta del rol '${userRol}' → cerrando sesión`);
+            auth.logout();
+            router.navigate(['/']);
+            auth.openLogin();
+          } else {
+            console.info(`[AuthInterceptor] 401 en ruta externa a su rol (${userRol}) → omitiendo logout.`);
+          }
         }
       }
       return throwError(() => err);
