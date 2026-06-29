@@ -251,6 +251,7 @@ export class PortalPadre implements OnDestroy {
   pagosHijo             = signal<PagoHijo[]>([]);
   cargandoPagos         = signal<boolean>(false);
   errorPagos            = signal<string>('');
+  modalProximamentePago = signal<boolean>(false);
 
   nombrePadre    = this.auth.getNombre() ?? 'Padre';
   codigoPadre    = this.auth.getCodigo() ?? '';
@@ -494,20 +495,15 @@ export class PortalPadre implements OnDestroy {
   pagandoConcepto = signal<string | null>(null);
 
   simularPago(pago: PagoHijo): void {
-    if (pago.estado === 'PAGADO') return;
-    this.pagandoConcepto.set(pago.concepto);
+    this.abrirModalProximamentePago();
+  }
 
-    setTimeout(() => {
-      this.pagosHijo.update(list =>
-        list.map(p => p.concepto === pago.concepto ? {
-          ...p,
-          estado: 'PAGADO',
-          fechaPago: new Date().toLocaleDateString('es-PE'),
-          documento: 'B002-' + Math.floor(100000 + Math.random() * 900000)
-        } : p)
-      );
-      this.pagandoConcepto.set(null);
-    }, 1200);
+  abrirModalProximamentePago(): void {
+    this.modalProximamentePago.set(true);
+  }
+
+  cerrarModalProximamentePago(): void {
+    this.modalProximamentePago.set(false);
   }
 
   getBadgeEventoIcon(tipo: string): string {

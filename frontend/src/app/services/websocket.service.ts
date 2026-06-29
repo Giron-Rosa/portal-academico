@@ -42,10 +42,14 @@ export class WebSocketService implements OnDestroy {
     if (this.client?.active) return; // Ya conectado
 
     const codigo = this.auth.getCodigo();
-    if (!codigo) return;
+    const token = this.auth.getToken();
+    if (!codigo || !token) return;
 
     this.client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+      webSocketFactory: () => new SockJS(`http://localhost:8080/ws?token=${encodeURIComponent(token)}`),
+      connectHeaders: {
+        Authorization: `Bearer ${token}`
+      },
       reconnectDelay: 5000,
 
       onConnect: (_frame: IFrame) => {

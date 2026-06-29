@@ -1,4 +1,4 @@
-﻿<div class="portal-wrapper">
+<div class="portal-wrapper">
 
   <!-- ===== TOAST WEBSOCKET — Mensajes en Tiempo Real ===== -->
   @if (ws.toastVisible()) {
@@ -1099,4 +1099,27 @@
 
     </main>
   </div>
+
+  <!-- ===== MODAL PROXIMAMENTE PAGO ===== -->
+  @if (modalProximamentePago()) {
+    <div class="modal-overlay">
+      <div class="modal-nuevo-chat">
+        <div class="modal-header">
+          <h3>Pasarela de Pagos en Línea</h3>
+          <button class="modal-close" (click)="cerrarModalProximamentePago()">✕</button>
+        </div>
+        <div class="modal-body" style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 2.5rem 1.5rem; gap: 1rem;">
+          <div style="font-size: 3rem;">💳</div>
+          <h4 style="font-size: 1.25rem; font-weight: 600; color: #0d1b2a; margin-top: 0.5rem;">Servicio Próximamente</h4>
+          <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">
+            La pasarela de pagos en línea estará disponible en la siguiente fase del sistema.<br>
+            Por ahora, las consultas de pensiones y comprobantes son meramente informativas.
+          </p>
+          <button class="btn-modal-send" (click)="cerrarModalProximamentePago()" style="padding: 0.6rem 2rem; width: auto; font-size: 0.9rem;">
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>
