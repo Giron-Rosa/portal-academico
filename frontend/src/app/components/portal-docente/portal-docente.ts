@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, HostListener, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, HostListener, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -434,6 +434,7 @@ export class PortalDocente implements OnDestroy {
   private auth   = inject(AuthService);
   private http   = inject(HttpClient);
   readonly ws    = inject(WebSocketService);
+  private zone   = inject(NgZone);
 
   // Exponemos constantes usadas en el template
   calPxPorHora = CAL_PX_POR_HORA;
@@ -820,6 +821,15 @@ export class PortalDocente implements OnDestroy {
   });
 
   constructor() {
+    const token = this.auth.getToken();
+    const rol = this.auth.getRol();
+    if (!token || rol !== 'maestro') {
+      this.auth.logout();
+      this.router.navigate(['/']);
+      this.auth.openLogin();
+      return;
+    }
+
     this.cargarCursos();
     this.cargarHorario();
     this.cargarMensajes();
@@ -1235,6 +1245,21 @@ export class PortalDocente implements OnDestroy {
           if (data.idAlumno) {
             this.cargarContextoAlumno(data.idAlumno);
           }
+
+          // Suscribirse al canal de WebSocket para este chat y recibir mensajes en tiempo real
+          this.ws.subscribeToChat(id, (resp: RespuestaResumen) => {
+            this.zone.run(() => {
+              this.mensajeActivo.update(curr => {
+                if (!curr) return null;
+                // Evitar duplicados
+                if (curr.respuestas.some(r => r.id === resp.id)) return curr;
+                return {
+                  ...curr,
+                  respuestas: [...curr.respuestas, resp]
+                };
+              });
+            });
+          });
         },
       });
   }
