@@ -3,6 +3,7 @@ package pe.sanagustin.portal.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -30,21 +31,44 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
+                // Deshabilitar CSRF (usamos JWT stateless, no sesiones)
                 .csrf(AbstractHttpConfigurer::disable)
+
+                // Habilitar CORS usando nuestra configuración de bean
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // Sin estado de sesión: cada request debe traer su JWT
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // Devolver 401 (no 302/redirect) cuando la autenticación falta
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
+
                 .authorizeHttpRequests(auth -> auth
+                        // Autenticación pública
                         .requestMatchers("/api/auth/**").permitAll()
+
+                        // Preflight CORS: OPTIONS siempre libre
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // WebSocket handshake: SockJS necesita acceso libre al endpoint /ws
                         .requestMatchers("/ws/**").permitAll()
+
+                        // Rutas protegidas por rol
+                        // NOTA: Spring Security prefija "ROLE_" automáticamente con hasRole().
+                        // UserDetailsServiceImpl construye la autoridad como "ROLE_" + rol.toUpperCase()
+                        // (ej: padre → ROLE_PADRE), lo que coincide exactamente con hasRole("PADRE").
                         .requestMatchers("/api/portal/docente/**").hasRole("MAESTRO")
                         .requestMatchers("/api/portal/alumno/**").hasRole("ALUMNO")
                         .requestMatchers("/api/portal/padre/**").hasRole("PADRE")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Cualquier otra ruta requiere autenticación
                         .anyRequest().authenticated()
                 )
+
+                // Inyectar nuestro filtro JWT antes del filtro de usuario/contraseña
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
@@ -57,12 +81,32 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:4200", "http://127.0.0.1:4200"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        // Orígenes permitidos: frontend en desarrollo y producción Docker
+        config.setAllowedOrigins(List.of(
+                "http://localhost:4200",
+                "http://127.0.0.1:4200",
+                "http://localhost",
+                "http://127.0.0.1"
+        ));
+
+        // Métodos HTTP permitidos (incluye OPTIONS para preflight)
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        // Cabeceras permitidas: Authorization es clave
         config.setAllowedHeaders(List.of("*"));
+
+        // Exponer cabeceras al cliente Angular (necesario para leer Authorization en respuestas)
+        config.setExposedHeaders(List.of("Authorization"));
+
+        // Permitir envío de credenciales/cookies
         config.setAllowCredentials(true);
-        CorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        ((UrlBasedCorsConfigurationSource) source).registerCorsConfiguration("/**", config);
+
+        // Cache de preflight: 1 hora
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
 }
