@@ -1,5 +1,18 @@
 <div class="portal-wrapper">
 
+  <!-- ===== TOAST WEBSOCKET — Mensajes en Tiempo Real ===== -->
+  @if (ws.toastVisible()) {
+    <div class="ws-toast-padre">
+      <div class="ws-toast-icon">💬</div>
+      <div class="ws-toast-content">
+        <span class="ws-toast-title">Nuevo mensaje: {{ ws.ultimaNotificacion()?.asunto }}</span>
+        <span class="ws-toast-from">de {{ ws.ultimaNotificacion()?.remitente }}</span>
+        <span class="ws-toast-preview">{{ ws.ultimaNotificacion()?.preview }}</span>
+      </div>
+      <button class="ws-toast-close" (click)="ws.cerrarToast()">✕</button>
+    </div>
+  }
+
   <!-- ===== NAVBAR SUPERIOR ===== -->
   <header class="top-nav">
     <div class="nav-brand">

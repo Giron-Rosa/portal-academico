@@ -36,6 +36,12 @@
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
 
+    <!-- WebSockets (STOMP + SockJS) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-websocket</artifactId>
+    </dependency>
+
     <!-- JPA -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

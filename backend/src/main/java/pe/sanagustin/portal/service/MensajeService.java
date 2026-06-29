@@ -4,12 +4,14 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import pe.sanagustin.portal.dto.AlumnoContextoDto;
 import pe.sanagustin.portal.dto.AlumnoDisponibleDto;
 import pe.sanagustin.portal.dto.MensajeDetalleDto;
 import pe.sanagustin.portal.dto.MensajeResumenDto;
+import pe.sanagustin.portal.dto.NotificacionWsDto;
 import pe.sanagustin.portal.dto.NuevoChatRequest;
 import pe.sanagustin.portal.dto.RespuestaResumenDto;
 
@@ -20,6 +22,7 @@ import java.util.List;
 public class MensajeService {
 
     private final EntityManager em;
+    private final SimpMessagingTemplate ws;
 
     /* ─────────────────────────────────────────────────────────
        SQL reutilizable: columnas comunes para resumen y detalle
@@ -177,6 +180,36 @@ public class MensajeService {
                 .setParameter("codigo",  codigoDocente)
                 .setParameter("cuerpo",  cuerpo)
                 .executeUpdate();
+
+        /* ── Broadcast WebSocket a ambos lados del hilo ─────────────────
+           /topic/mensajes/{codigoPadre}   → para que el padre vea el badge
+           /topic/mensajes/{codigoDocente} → para refrescar vista del propio docente
+        ────────────────────────────────────────────────────────────────── */
+        Object[] msgInfo = (Object[]) em.createNativeQuery("""
+                SELECT m.asunto,
+                       mae.nombre || ' ' || mae.apellido AS nombre_mae,
+                       u_p.codigo AS codigo_padre
+                FROM mensajes m
+                JOIN maestros mae ON mae.id_maestro = m.id_maestro
+                JOIN padres   pa  ON pa.id_padre    = m.id_padre
+                JOIN usuarios u_p ON u_p.id_usuario = pa.id_usuario
+                WHERE m.id_mensaje = :id
+                """)
+                .setParameter("id", idMensaje)
+                .getSingleResult();
+
+        String asunto       = (String) msgInfo[0];
+        String nombreDocente = (String) msgInfo[1];
+        String codigoPadre  = (String) msgInfo[2];
+        String prevCuerpo   = cuerpo.length() > 80 ? cuerpo.substring(0, 80) + "…" : cuerpo;
+
+        NotificacionWsDto notifPadre = new NotificacionWsDto(
+                "NUEVA_RESPUESTA", idMensaje, asunto, nombreDocente, prevCuerpo, codigoPadre);
+        NotificacionWsDto notifDocente = new NotificacionWsDto(
+                "NUEVA_RESPUESTA", idMensaje, asunto, nombreDocente, prevCuerpo, codigoDocente);
+
+        ws.convertAndSend("/topic/mensajes/" + codigoPadre,  notifPadre);
+        ws.convertAndSend("/topic/mensajes/" + codigoDocente, notifDocente);
     }
 
     /* ─────────────────────────────────────────────────────────
@@ -362,7 +395,28 @@ public class MensajeService {
                 .setParameter("cuerpo",     req.getCuerpo())
                 .getResultList();
 
-        return ((Number) idRows.get(0)).longValue();
+        long idMensajeNuevo = ((Number) idRows.get(0)).longValue();
+
+        /* ── Broadcast WebSocket: notificar al padre que recibió un nuevo mensaje ── */
+        String codigoPadre = (String) em.createNativeQuery(
+                "SELECT u.codigo FROM padres pa JOIN usuarios u ON u.id_usuario=pa.id_usuario WHERE pa.id_padre=:idPadre")
+                .setParameter("idPadre", req.getIdPadre())
+                .getSingleResult();
+
+        String prevBody = req.getCuerpo().length() > 80
+                ? req.getCuerpo().substring(0, 80) + "…" : req.getCuerpo();
+
+        String nombreDocente = (String) em.createNativeQuery(
+                "SELECT mae.nombre || ' ' || mae.apellido FROM maestros mae JOIN usuarios u ON u.id_usuario=mae.id_usuario WHERE u.codigo=:codigo")
+                .setParameter("codigo", codigoDocente)
+                .getSingleResult();
+
+        NotificacionWsDto notifPadre = new NotificacionWsDto(
+                "NUEVO_MENSAJE", idMensajeNuevo, req.getAsunto(), nombreDocente, prevBody, codigoPadre);
+
+        ws.convertAndSend("/topic/mensajes/" + codigoPadre, notifPadre);
+
+        return idMensajeNuevo;
     }
 
     /* ─────────────────────────────────────────────────────────

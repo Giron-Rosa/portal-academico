@@ -1,7 +1,8 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { WebSocketService } from '../../services/websocket.service';
 
 type Seccion = 'inicio' | 'cursos' | 'asistencia' | 'mensajes' | 'eventos' | 'pagos';
 type Vista   = 'dashboard' | 'detalle';
@@ -68,10 +69,11 @@ interface HijoApi {
   templateUrl: './portal-padre.html',
   styleUrl: './portal-padre.scss',
 })
-export class PortalPadre {
+export class PortalPadre implements OnDestroy {
   private auth   = inject(AuthService);
   private router = inject(Router);
   private http   = inject(HttpClient);
+  readonly ws    = inject(WebSocketService);
 
   seccionActiva  = signal<Seccion>('inicio');
   vista          = signal<Vista>('dashboard');
@@ -104,6 +106,12 @@ export class PortalPadre {
 
   constructor() {
     this.cargarResumen();
+    // Conectar WebSocket para notificaciones de mensajes en tiempo real
+    this.ws.connect();
+  }
+
+  ngOnDestroy(): void {
+    this.ws.disconnect();
   }
 
   private cargarResumen() {

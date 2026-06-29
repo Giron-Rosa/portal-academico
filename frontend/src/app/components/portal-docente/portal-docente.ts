@@ -1,9 +1,10 @@
-import { Component, inject, signal, computed, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, HostListener, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { WebSocketService } from '../../services/websocket.service';
 import { PrediccionesDashboard } from './predicciones/predicciones-dashboard';
 
 export interface Curso {
@@ -428,10 +429,11 @@ const ICON_MAP: Record<string, string> = {
   templateUrl: './portal-docente.html',
   styleUrl: './portal-docente.scss',
 })
-export class PortalDocente {
+export class PortalDocente implements OnDestroy {
   private router = inject(Router);
   private auth   = inject(AuthService);
   private http   = inject(HttpClient);
+  readonly ws    = inject(WebSocketService);
 
   // Exponemos constantes usadas en el template
   calPxPorHora = CAL_PX_POR_HORA;
@@ -827,6 +829,12 @@ export class PortalDocente {
     this.cargarPendientes();
     this.cargarReservas();
     this.cargarEspaciosDisponibles();
+    // Conectar WebSocket para recibir notificaciones en tiempo real
+    this.ws.connect();
+  }
+
+  ngOnDestroy(): void {
+    this.ws.disconnect();
   }
 
   /* ══════════════════════════════════════════

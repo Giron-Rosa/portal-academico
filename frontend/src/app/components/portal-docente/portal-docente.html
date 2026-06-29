@@ -1,5 +1,18 @@
 <div class="pd-wrapper">
 
+  <!-- ═══════════════════ TOAST WEBSOCKET ═══════════════════ -->
+  @if (ws.toastVisible()) {
+    <div class="ws-toast" [class.ws-toast--visible]="ws.toastVisible()">
+      <div class="ws-toast-icon">💬</div>
+      <div class="ws-toast-content">
+        <span class="ws-toast-title">{{ ws.ultimaNotificacion()?.asunto }}</span>
+        <span class="ws-toast-from">de {{ ws.ultimaNotificacion()?.remitente }}</span>
+        <span class="ws-toast-preview">{{ ws.ultimaNotificacion()?.preview }}</span>
+      </div>
+      <button class="ws-toast-close" (click)="ws.cerrarToast()">✕</button>
+    </div>
+  }
+
   <!-- ═══════════════════ TOP NAVBAR ═══════════════════ -->
   <header class="pd-navbar">
     <div class="pd-navbar-left">
@@ -73,9 +86,13 @@
             }
           </span>
           <span class="pd-nav-label">{{ item.label }}</span>
-          <!-- Badge de mensajes no leídos (solo visible en la sección mensajes) -->
+          <!-- Badge de mensajes no leídos (DB) -->
           @if (item.id === 'mensajes' && noLeidos() > 0) {
             <span class="pd-nav-badge">{{ noLeidos() }}</span>
+          }
+          <!-- Badge de notificaciones en tiempo real (WebSocket) -->
+          @if (item.id === 'mensajes' && ws.contadorNoLeidas() > 0 && noLeidos() === 0) {
+            <span class="pd-nav-badge pd-nav-badge--ws">🔴</span>
           }
         </button>
       }
