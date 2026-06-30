@@ -3,6 +3,7 @@ package pe.sanagustin.portal.service;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pe.sanagustin.portal.dto.*;
 
 import java.util.List;
@@ -174,6 +175,53 @@ public class AlumnoService {
                 r[10] != null && (Boolean) r[10]
         )).toList();
     }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Marcar tarea como entregada (desde el Kanban del alumno)
+    // ──────────────────────────────────────────────────────────────────
+    @Transactional
+    public void marcarEntregada(String codigoAlumno, long idAulaCurso, long idTarea) {
+        // Upsert: si ya existe el registro en notas_tarea, actualizar entregado=true;
+        // si no existe, insertar uno nuevo con entregado=true y nota=NULL.
+        String upsertSql = """
+                INSERT INTO notas_tarea (id_tarea, id_alumno, entregado)
+                VALUES (:idTarea,
+                        (SELECT al.id_alumno FROM alumnos al
+                         JOIN usuarios u ON u.id_usuario = al.id_usuario
+                         WHERE u.codigo = :codigo),
+                        TRUE)
+                ON CONFLICT (id_tarea, id_alumno)
+                DO UPDATE SET entregado = TRUE
+                WHERE notas_tarea.id_tarea = :idTarea
+                """;
+        em.createNativeQuery(upsertSql)
+                .setParameter("idTarea", idTarea)
+                .setParameter("codigo", codigoAlumno)
+                .executeUpdate();
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Anular entrega de tarea (desde el Kanban del alumno)
+    // ──────────────────────────────────────────────────────────────────
+    @Transactional
+    public void anularEntrega(String codigoAlumno, long idAulaCurso, long idTarea) {
+        String updateSql = """
+                UPDATE notas_tarea
+                SET entregado = FALSE,
+                    nota = NULL
+                WHERE id_tarea = :idTarea
+                  AND id_alumno = (
+                      SELECT al.id_alumno FROM alumnos al
+                      JOIN usuarios u ON u.id_usuario = al.id_usuario
+                      WHERE u.codigo = :codigo
+                  )
+                """;
+        em.createNativeQuery(updateSql)
+                .setParameter("idTarea", idTarea)
+                .setParameter("codigo", codigoAlumno)
+                .executeUpdate();
+    }
+
 
     // ──────────────────────────────────────────────────────────────────
     // Actividades / Exámenes del alumno en un aula-curso

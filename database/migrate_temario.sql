@@ -2,6 +2,9 @@
 -- MIGRACIÓN: Temario y Unidades Didácticas
 -- ============================================================
 
+-- Asegurar encoding UTF-8 para caracteres acentuados
+SET client_encoding = 'UTF8';
+
 CREATE TABLE IF NOT EXISTS unidades_didacticas (
     id_unidad     SERIAL PRIMARY KEY,
     id_aula_curso INT NOT NULL REFERENCES aula_cursos(id_aula_curso) ON DELETE CASCADE,
@@ -30,7 +33,7 @@ BEGIN
         VALUES (
             rec.id_aula_curso,
             1,
-            'Introducción e Fundamentos Clave',
+            'Introducción y Fundamentos Clave',
             'Bimestre I',
             'Semanas 1-4',
             ARRAY['Comprender los conceptos teóricos iniciales', 'Identificar los componentes clave de la materia'],

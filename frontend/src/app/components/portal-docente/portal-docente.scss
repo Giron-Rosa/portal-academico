@@ -1004,24 +1004,26 @@
 /* ── Bloque de clase (posición absoluta dentro de su columna) ── */
 .cal-block {
   position: absolute;
-  left: 4px;
-  right: 4px;
-  border-radius: 8px;
-  padding: 8px 10px;
+  left: 6px;
+  right: 6px;
+  border-radius: 10px;
+  padding: 10px 12px;
   overflow: hidden;
-  cursor: default;
+  cursor: pointer;
   color: #fff;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  border-left: 4px solid rgba(255,255,255,0.45);
-  background-image: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, z-index 0s;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  border-left: 5px solid rgba(255,255,255,0.5);
+  background-image: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0));
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease, z-index 0s;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 
   &:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 10px 22px rgba(0,0,0,0.16);
     z-index: 5;
   }
 }

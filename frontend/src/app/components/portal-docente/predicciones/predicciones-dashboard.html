@@ -45,6 +45,56 @@
     </div>
   </div>
 
+  <!-- ── PANEL: CÓMO FUNCIONA ──────────────────────────────────────── -->
+  <details style="margin-bottom:20px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:0;overflow:hidden;">
+    <summary style="padding:14px 18px;cursor:pointer;font-weight:600;font-size:13.5px;color:#0369a1;list-style:none;display:flex;align-items:center;gap:8px;user-select:none;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0369a1" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      ¿Cómo funciona el algoritmo de predicción?
+      <svg style="margin-left:auto;transition:transform 0.2s" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0369a1" stroke-width="2.5">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </summary>
+    <div style="padding:0 18px 18px 18px;font-size:13px;color:#0c4a6e;line-height:1.7;">
+      <p style="margin:12px 0 8px 0;font-weight:600;color:#075985;">📡 Datos reales del servidor</p>
+      <p style="margin:0 0 12px 0;">Este módulo <strong>no es solo interfaz</strong>: consulta datos reales del backend (<code style="background:#e0f2fe;padding:2px 5px;border-radius:4px;">GET /api/portal/docente/predicciones</code>) para obtener las calificaciones y asistencias actuales de cada alumno en sus cursos.</p>
+      <p style="margin:0 0 8px 0;font-weight:600;color:#075985;">🧮 Fórmula del Índice de Riesgo (0-100)</p>
+      <div style="background:#fff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-bottom:12px;font-family:monospace;font-size:12.5px;">
+        Índice = (<b>Factor Asistencia</b> × 0.60) + (<b>Factor Nota</b> × 0.40)
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="background:#fff;border:1px solid #bae6fd;border-radius:8px;padding:10px;">
+          <p style="margin:0 0 6px 0;font-weight:700;color:#0369a1;">📋 Factor Asistencia (60%)</p>
+          <ul style="margin:0;padding-left:16px;">
+            <li>Asistencia &lt;60% → Factor 100 (crítico)</li>
+            <li>Asistencia 60–70% → Factor 80</li>
+            <li>Asistencia 70–80% → Factor 55</li>
+            <li>Asistencia 80–90% → Factor 30</li>
+            <li>Asistencia ≥90% → Factor 0</li>
+          </ul>
+        </div>
+        <div style="background:#fff;border:1px solid #bae6fd;border-radius:8px;padding:10px;">
+          <p style="margin:0 0 6px 0;font-weight:700;color:#0369a1;">📊 Factor Nota (40%)</p>
+          <ul style="margin:0;padding-left:16px;">
+            <li>Promedio &lt;8.0 → Factor 100 (crítico)</li>
+            <li>Promedio 8.0–10.4 → Factor 70</li>
+            <li>Promedio 10.5–12.9 → Factor 35</li>
+            <li>Promedio ≥13 → Factor 0</li>
+            <li>Sin notas aún → Factor 0</li>
+          </ul>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+        <span style="background:#fee2e2;color:#991b1b;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;">🔴 Riesgo Alto: Índice ≥ 60</span>
+        <span style="background:#fef3c7;color:#92400e;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;">🟡 Riesgo Medio: Índice 30–59</span>
+        <span style="background:#dcfce7;color:#166534;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;">🟢 Riesgo Bajo: Índice &lt; 30</span>
+      </div>
+    </div>
+  </details>
+
+
+
   <!-- ── ESTADOS ─────────────────────────────────────────────────── -->
   @if (cargando()) {
     <div class="pred-loading">

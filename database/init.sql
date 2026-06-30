@@ -3,6 +3,9 @@
 -- Base de datos: PostgreSQL
 -- ============================================================
 
+-- Asegurar encoding UTF-8 para todos los datos de semilla
+SET client_encoding = 'UTF8';
+
 -- ============================================================
 -- TIPOS ENUM
 -- ============================================================
@@ -866,15 +869,18 @@ CREATE TABLE IF NOT EXISTS reportes_alumno (
     fecha_creacion  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ============================================================
--- SEED DATA: Calificaciones y Asistencia Completa para Juan Martínez (id_alumno = 1)
--- Abarca los Bimestres I, II, III y IV para los cursos de 5to Sec B (id_aula_curso 1 al 8)
--- ============================================================
-
 -- Limpiar tareas, exámenes y notas previas de estos cursos para evitar conflictos de claves únicas
-DELETE FROM notas_tarea WHERE id_alumno = 1 AND id_tarea IN (SELECT id_tarea FROM tareas_curso WHERE id_aula_curso BETWEEN 1 AND 8);
-DELETE FROM notas_examen WHERE id_alumno = 1 AND id_examen IN (SELECT id_examen FROM examenes_curso WHERE id_aula_curso BETWEEN 1 AND 8);
-DELETE FROM asistencia_alumno WHERE id_alumno = 1 AND id_aula_curso BETWEEN 1 AND 8;
+DO $$
+DECLARE
+    v_juan_id INT;
+BEGIN
+    SELECT a.id_alumno INTO v_juan_id FROM alumnos a JOIN usuarios u ON u.id_usuario = a.id_usuario WHERE u.codigo = '5B111808';
+    IF v_juan_id IS NOT NULL THEN
+        DELETE FROM notas_tarea WHERE id_alumno = v_juan_id AND id_tarea IN (SELECT id_tarea FROM tareas_curso WHERE id_aula_curso BETWEEN 1 AND 8);
+        DELETE FROM notas_examen WHERE id_alumno = v_juan_id AND id_examen IN (SELECT id_examen FROM examenes_curso WHERE id_aula_curso BETWEEN 1 AND 8);
+        DELETE FROM asistencia_alumno WHERE id_alumno = v_juan_id AND id_aula_curso BETWEEN 1 AND 8;
+    END IF;
+END $$;
 
 -- Poblar tareas en todos los bimestres para los 8 cursos
 -- Cada curso tendrá 1 tarea por bimestre (semanas 2, 6, 10, 14)
@@ -891,7 +897,9 @@ DECLARE
     random_asist BOOLEAN;
     random_est VARCHAR(20);
     clase_fecha DATE;
+    v_juan_id INT;
 BEGIN
+    SELECT a.id_alumno INTO v_juan_id FROM alumnos a JOIN usuarios u ON u.id_usuario = a.id_usuario WHERE u.codigo = '5B111808';
     FOR c_id IN 1..8 LOOP
         -- Tareas y Exámenes por Bimestre
         FOR bim IN 1..4 LOOP
@@ -949,7 +957,7 @@ BEGIN
             INSERT INTO notas_tarea (id_tarea, id_alumno, entregado, nota, fecha_entrega, url_entrega)
             VALUES (
                 t_id,
-                1,
+                v_juan_id,
                 (random_nota IS NOT NULL),
                 random_nota,
                 CASE WHEN random_nota IS NOT NULL THEN NOW() - (180 - sem * 10 - 2) * INTERVAL '1 day' ELSE NULL END,
@@ -994,7 +1002,7 @@ BEGIN
             INSERT INTO notas_examen (id_examen, id_alumno, asistio, nota)
             VALUES (
                 e_id,
-                1,
+                v_juan_id,
                 (random_nota IS NOT NULL),
                 random_nota
             );
@@ -1024,7 +1032,7 @@ BEGIN
 
                 INSERT INTO asistencia_alumno (id_alumno, id_aula_curso, fecha, estado, justificante)
                 VALUES (
-                    1,
+                    v_juan_id,
                     c_id,
                     clase_fecha,
                     random_est,
@@ -1048,15 +1056,10 @@ VALUES
 ON CONFLICT (id_aula_curso, semana, clase, titulo) DO NOTHING;
 
 -- ============================================================
--- SEED DATA: Calificaciones y Asistencia para Sofía Martínez (id_alumno = 2) y Diego Martínez (id_alumno = 3)
+-- SEED DATA: Calificaciones y Asistencia para Sofía Martínez (5B111809) y Diego Martínez (3A110045)
 -- ============================================================
 
--- Limpiar registros previos para evitar conflictos de clave única
-DELETE FROM notas_tarea WHERE id_alumno IN (2, 3);
-DELETE FROM notas_examen WHERE id_alumno IN (2, 3);
-DELETE FROM asistencia_alumno WHERE id_alumno IN (2, 3);
-
--- Poblar tareas y exámenes para Sofía Martínez (id_alumno = 2) en 3ro Sec A (aula_cursos 9 a 16)
+-- Poblar tareas y exámenes para Sofía Martínez en 3ro Sec A (aula_cursos 9 a 16)
 DO $$
 DECLARE
     c_id INT;
@@ -1068,7 +1071,14 @@ DECLARE
     random_nota DECIMAL(4,1);
     clase_fecha DATE;
     random_est VARCHAR(20);
+    v_sofia_id INT;
 BEGIN
+    SELECT a.id_alumno INTO v_sofia_id FROM alumnos a JOIN usuarios u ON u.id_usuario = a.id_usuario WHERE u.codigo = '5B111809';
+    
+    DELETE FROM notas_tarea WHERE id_alumno = v_sofia_id;
+    DELETE FROM notas_examen WHERE id_alumno = v_sofia_id;
+    DELETE FROM asistencia_alumno WHERE id_alumno = v_sofia_id;
+
     FOR c_id IN 9..16 LOOP
         FOR bim IN 1..4 LOOP
             sem := (bim - 1) * 4 + 2;
@@ -1109,11 +1119,11 @@ BEGIN
             -- Si es bim = 4 y el curso es Matemática (9), dejaremos que se entregue pero sin calificar
             IF bim = 4 AND c_id = 9 THEN
                 INSERT INTO notas_tarea (id_tarea, id_alumno, entregado, nota, fecha_entrega, url_entrega)
-                VALUES (t_id, 2, TRUE, NULL, CURRENT_DATE - 1, 'http://localhost:8080/entregas/tarea_sofia.pdf')
+                VALUES (t_id, v_sofia_id, TRUE, NULL, CURRENT_DATE - 1, 'http://localhost:8080/entregas/tarea_sofia.pdf')
                 ON CONFLICT (id_tarea, id_alumno) DO NOTHING;
             ELSIF random_nota IS NOT NULL OR bim = 4 THEN
                 INSERT INTO notas_tarea (id_tarea, id_alumno, entregado, nota, fecha_entrega, url_entrega)
-                VALUES (t_id, 2, random_nota IS NOT NULL, random_nota, CASE WHEN random_nota IS NOT NULL THEN CURRENT_DATE - (180 - sem * 10) ELSE NULL END, NULL)
+                VALUES (t_id, v_sofia_id, random_nota IS NOT NULL, random_nota, CASE WHEN random_nota IS NOT NULL THEN CURRENT_DATE - (180 - sem * 10) ELSE NULL END, NULL)
                 ON CONFLICT (id_tarea, id_alumno) DO NOTHING;
             END IF;
 
@@ -1152,11 +1162,11 @@ BEGIN
             -- Si es bim = 4 y c_id = 9 (Matemática), dejaremos asistió pero sin calificar
             IF bim = 4 AND c_id = 9 THEN
                 INSERT INTO notas_examen (id_examen, id_alumno, asistio, nota)
-                VALUES (e_id, 2, TRUE, NULL)
+                VALUES (e_id, v_sofia_id, TRUE, NULL)
                 ON CONFLICT (id_examen, id_alumno) DO NOTHING;
             ELSIF random_nota IS NOT NULL OR bim = 4 THEN
                 INSERT INTO notas_examen (id_examen, id_alumno, asistio, nota)
-                VALUES (e_id, 2, TRUE, random_nota)
+                VALUES (e_id, v_sofia_id, TRUE, random_nota)
                 ON CONFLICT (id_examen, id_alumno) DO NOTHING;
             END IF;
         END LOOP;
@@ -1174,7 +1184,7 @@ BEGIN
                 END IF;
 
                 INSERT INTO asistencia_alumno (id_alumno, id_aula_curso, fecha, estado, justificante)
-                VALUES (2, c_id, clase_fecha, random_est, NULL)
+                VALUES (v_sofia_id, c_id, clase_fecha, random_est, NULL)
                 ON CONFLICT (id_alumno, id_aula_curso, fecha) DO UPDATE SET estado = EXCLUDED.estado;
             END LOOP;
         END LOOP;
@@ -1194,7 +1204,14 @@ DECLARE
     random_nota DECIMAL(4,1);
     clase_fecha DATE;
     random_est VARCHAR(20);
+    v_diego_id INT;
 BEGIN
+    SELECT a.id_alumno INTO v_diego_id FROM alumnos a JOIN usuarios u ON u.id_usuario = a.id_usuario WHERE u.codigo = '3A110045';
+    
+    DELETE FROM notas_tarea WHERE id_alumno = v_diego_id;
+    DELETE FROM notas_examen WHERE id_alumno = v_diego_id;
+    DELETE FROM asistencia_alumno WHERE id_alumno = v_diego_id;
+
     FOR c_id IN 17..22 LOOP
         FOR bim IN 1..4 LOOP
             sem := (bim - 1) * 4 + 2;
@@ -1226,11 +1243,11 @@ BEGIN
             -- Si es bim = 4 y el curso es Matematica (17), dejar entregado sin calificar
             IF bim = 4 AND c_id = 17 THEN
                 INSERT INTO notas_tarea (id_tarea, id_alumno, entregado, nota, fecha_entrega, url_entrega)
-                VALUES (t_id, 3, TRUE, NULL, CURRENT_DATE - 1, 'http://localhost:8080/entregas/tarea_diego.pdf')
+                VALUES (t_id, v_diego_id, TRUE, NULL, CURRENT_DATE - 1, 'http://localhost:8080/entregas/tarea_diego.pdf')
                 ON CONFLICT (id_tarea, id_alumno) DO NOTHING;
             ELSIF random_nota IS NOT NULL OR bim = 4 THEN
                 INSERT INTO notas_tarea (id_tarea, id_alumno, entregado, nota, fecha_entrega, url_entrega)
-                VALUES (t_id, 3, random_nota IS NOT NULL, random_nota, CASE WHEN random_nota IS NOT NULL THEN CURRENT_DATE - (180 - sem * 10) ELSE NULL END, NULL)
+                VALUES (t_id, v_diego_id, random_nota IS NOT NULL, random_nota, CASE WHEN random_nota IS NOT NULL THEN CURRENT_DATE - (180 - sem * 10) ELSE NULL END, NULL)
                 ON CONFLICT (id_tarea, id_alumno) DO NOTHING;
             END IF;
 
@@ -1260,11 +1277,11 @@ BEGIN
 
             IF bim = 4 AND c_id = 17 THEN
                 INSERT INTO notas_examen (id_examen, id_alumno, asistio, nota)
-                VALUES (e_id, 3, TRUE, NULL)
+                VALUES (e_id, v_diego_id, TRUE, NULL)
                 ON CONFLICT (id_examen, id_alumno) DO NOTHING;
             ELSIF random_nota IS NOT NULL OR bim = 4 THEN
                 INSERT INTO notas_examen (id_examen, id_alumno, asistio, nota)
-                VALUES (e_id, 3, TRUE, random_nota)
+                VALUES (e_id, v_diego_id, TRUE, random_nota)
                 ON CONFLICT (id_examen, id_alumno) DO NOTHING;
             END IF;
         END LOOP;
@@ -1282,7 +1299,7 @@ BEGIN
                 END IF;
 
                 INSERT INTO asistencia_alumno (id_alumno, id_aula_curso, fecha, estado, justificante)
-                VALUES (3, c_id, clase_fecha, random_est, NULL)
+                VALUES (v_diego_id, c_id, clase_fecha, random_est, NULL)
                 ON CONFLICT (id_alumno, id_aula_curso, fecha) DO UPDATE SET estado = EXCLUDED.estado;
             END LOOP;
         END LOOP;

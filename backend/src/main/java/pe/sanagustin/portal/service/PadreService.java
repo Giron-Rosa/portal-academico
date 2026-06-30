@@ -445,7 +445,10 @@ public class PadreService {
                 .setParameter("cod", codigoAlumno)
                 .getSingleResult()).longValue();
 
-        // Obtener comunicados dirigidos al aula del alumno (o generales del maestro del aula)
+        // Obtener comunicados dirigidos al aula del alumno (usando la tabla comunicado_aulas)
+        // Un comunicado aplica si:
+        //   a) Tiene entradas en comunicado_aulas para el aula del alumno, O
+        //   b) No tiene ninguna entrada en comunicado_aulas (comunicado general)
         String sqlEventos = """
                 SELECT c.id_comunicado,
                        c.titulo,
@@ -457,11 +460,22 @@ public class PadreService {
                        COALESCE(mae.nombre || ' ' || mae.apellido, 'Docente') AS docente
                 FROM matriculas m
                 JOIN aulas a ON a.id_aula = m.id_aula
-                JOIN comunicados c ON (c.id_aula = a.id_aula OR c.id_aula IS NULL)
+                JOIN comunicados c ON (
+                    EXISTS (
+                        SELECT 1 FROM comunicado_aulas ca
+                        WHERE ca.id_comunicado = c.id_comunicado
+                          AND ca.id_aula = a.id_aula
+                    )
+                    OR NOT EXISTS (
+                        SELECT 1 FROM comunicado_aulas ca
+                        WHERE ca.id_comunicado = c.id_comunicado
+                    )
+                )
                 LEFT JOIN maestros mae ON mae.id_maestro = c.id_maestro
                 WHERE m.id_alumno = :idAlumno AND m.estado = 'activa'
                 ORDER BY c.fecha_evento ASC NULLS LAST, c.fecha_creacion DESC
                 """;
+
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = entityManager.createNativeQuery(sqlEventos)

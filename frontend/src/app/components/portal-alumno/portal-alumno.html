@@ -738,6 +738,14 @@
                         </svg>
                         Vence: {{ t.fechaEntrega }}
                       </span>
+                      <button 
+                        style="margin-top:10px;width:100%;padding:8px 12px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity 0.2s;"
+                        (click)="entregarTarea(t)">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Entregar tarea
+                      </button>
                     </div>
                   </div>
                 }
@@ -761,13 +769,21 @@
                       <span class="pa-kcard-badge badge-enviado">Enviado</span>
                     </div>
                     <h4 class="pa-kcard-title">{{ t.titulo }}</h4>
-                    <div class="pa-kcard-footer">
-                      <span class="pa-kcard-status text-blue">
+                    <div class="pa-kcard-footer" style="display: flex; flex-direction: column; gap: 8px;">
+                      <span class="pa-kcard-status text-blue" style="display: flex; align-items: center; gap: 4px;">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
                         </svg>
                         Esperando calificación
                       </span>
+                      <button 
+                        style="width:100%;padding:8px 12px;background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity 0.2s;"
+                        (click)="anularEntrega(t)">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="15 18 9 12 15 6"/>
+                        </svg>
+                        Anular entrega
+                      </button>
                     </div>
                   </div>
                 }

@@ -12,12 +12,13 @@ import java.util.List;
 /**
  * Endpoints del portal del alumno.
  *
- * GET /api/portal/alumno/mis-cursos
- * GET /api/portal/alumno/cursos/{idAulaCurso}/asistencia
- * GET /api/portal/alumno/cursos/{idAulaCurso}/contenido
- * GET /api/portal/alumno/cursos/{idAulaCurso}/tareas
- * GET /api/portal/alumno/cursos/{idAulaCurso}/actividades
- * GET /api/portal/alumno/cursos/{idAulaCurso}/reportes
+ * GET  /api/portal/alumno/mis-cursos
+ * GET  /api/portal/alumno/cursos/{idAulaCurso}/asistencia
+ * GET  /api/portal/alumno/cursos/{idAulaCurso}/contenido
+ * GET  /api/portal/alumno/cursos/{idAulaCurso}/tareas
+ * POST /api/portal/alumno/cursos/{idAulaCurso}/tareas/{idTarea}/entregar
+ * GET  /api/portal/alumno/cursos/{idAulaCurso}/actividades
+ * GET  /api/portal/alumno/cursos/{idAulaCurso}/reportes
  */
 @RestController
 @RequestMapping("/api/portal/alumno")
@@ -51,6 +52,26 @@ public class AlumnoController {
         return ResponseEntity.ok(alumnoService.getTareas(principal.getName(), idAulaCurso));
     }
 
+    /** Marca una tarea como entregada (acción desde el Kanban del alumno) */
+    @PostMapping("/cursos/{idAulaCurso}/tareas/{idTarea}/entregar")
+    public ResponseEntity<Void> marcarEntregada(
+            @PathVariable long idAulaCurso,
+            @PathVariable long idTarea,
+            Principal principal) {
+        alumnoService.marcarEntregada(principal.getName(), idAulaCurso, idTarea);
+        return ResponseEntity.ok().build();
+    }
+
+    /** Anula la entrega de una tarea (acción desde el Kanban del alumno) */
+    @PostMapping("/cursos/{idAulaCurso}/tareas/{idTarea}/anular")
+    public ResponseEntity<Void> anularEntrega(
+            @PathVariable long idAulaCurso,
+            @PathVariable long idTarea,
+            Principal principal) {
+        alumnoService.anularEntrega(principal.getName(), idAulaCurso, idTarea);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/cursos/{idAulaCurso}/actividades")
     public ResponseEntity<List<ActividadAlumnoDto>> getActividades(
             @PathVariable long idAulaCurso,
@@ -75,3 +96,4 @@ public class AlumnoController {
         return ResponseEntity.ok(alumnoService.getAsistenciasGlobales(principal.getName()));
     }
 }
+

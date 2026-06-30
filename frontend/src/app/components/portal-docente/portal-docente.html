@@ -596,6 +596,17 @@
         <!-- ─── Tab: ASISTENCIA ─── -->
         @if (activeSubTab() === 'asistencia') {
 
+          <!-- ── Banner: curso no programado hoy ── -->
+          @if (cursoActivo() && !clasesDeHoy().some(c => c.idAulaCurso === cursoActivo()!.idAulaCurso)) {
+            <div style="display:flex;align-items:center;gap:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#92400e;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" style="flex-shrink:0">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span><strong>Este curso no está programado para hoy.</strong> Puedes seleccionar una fecha anterior para ver o modificar la asistencia registrada, o tomar asistencia para hoy si corresponde.</span>
+            </div>
+          }
+
           <!-- ── Barra de control de fecha ── -->
           <div class="as-control-bar">
             <div class="as-fecha-group">
@@ -2088,7 +2099,10 @@
                 <!-- Bloques de clase fija (Mis Clases) -->
                 @if (calendarioTab() === 'mis-clases') {
                   @for (clase of clasesDelDia(dia.num); track clase.horaInicio + clase.curso) {
-                    <div class="cal-block"
+                    <div class="cal-block" style="cursor: pointer;"
+                         (click)="abrirCursoDesdeCalendario(clase.curso, clase.grado, clase.seccion)"
+                         role="button" tabindex="0"
+                         (keydown.enter)="abrirCursoDesdeCalendario(clase.curso, clase.grado, clase.seccion)"
                          [style.top.px]="blockTop(clase.horaInicio)"
                          [style.height.px]="blockHeight(clase.horaInicio, clase.horaFin)"
                          [style.background-color]="cursoColor(clase.curso)">

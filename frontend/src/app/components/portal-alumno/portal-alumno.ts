@@ -330,6 +330,35 @@ export class PortalAlumno implements OnInit {
   tareasEntregadas = computed(() => this.tareasTotal().filter(t => t.entregado && t.nota === null));
   tareasCalificadas = computed(() => this.tareasTotal().filter(t => t.entregado && t.nota !== null));
 
+  /** IDs de tareas cuya entrega está en proceso (para feedback visual) */
+  kanbanEntregando = signal<Set<number>>(new Set());
+
+  /** Marca una tarea pendiente como entregada llamando al endpoint del alumno */
+  marcarComoEntregada(tarea: TareaAlumnoExt) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    // Marcar como procesando
+    this.kanbanEntregando.update(s => { const n = new Set(s); n.add(tarea.idTarea); return n; });
+    this.http.post(
+      `http://localhost:8080/api/portal/alumno/cursos/${tarea.idAulaCurso}/tareas/${tarea.idTarea}/entregar`,
+      {},
+      { headers }
+    ).subscribe({
+      next: () => {
+        // Actualizar la tarea localmente (optimistic update)
+        this.tareasTotal.update(list =>
+          list.map(t => t.idTarea === tarea.idTarea ? { ...t, entregado: true } : t)
+        );
+        this.kanbanEntregando.update(s => { const n = new Set(s); n.delete(tarea.idTarea); return n; });
+      },
+      error: () => {
+        this.kanbanEntregando.update(s => { const n = new Set(s); n.delete(tarea.idTarea); return n; });
+        alert('No se pudo marcar como entregada. Por favor inténtalo de nuevo.');
+      }
+    });
+  }
+
   // ── Refuerzo Computados (RN-10.2: promedio_curso < 11) ────────────────────────
   cursosConRiesgo = computed(() => {
     const cursosList = this.cursos();
@@ -587,6 +616,36 @@ export class PortalAlumno implements OnInit {
   /** Abre la vista de detalle para el curso seleccionado */
   abrirDetalleCurso(curso: Curso) {
     this.cursoActivo.set(curso);
+  }
+
+  entregarTarea(t: TareaAlumnoExt) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.post(`http://localhost:8080/api/portal/alumno/cursos/${t.idAulaCurso}/tareas/${t.idTarea}/entregar`, {}, { headers })
+      .subscribe({
+        next: () => {
+          this.ngOnInit();
+        },
+        error: () => {
+          alert('Error al entregar la tarea.');
+        }
+      });
+  }
+
+  anularEntrega(t: TareaAlumnoExt) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.post(`http://localhost:8080/api/portal/alumno/cursos/${t.idAulaCurso}/tareas/${t.idTarea}/anular`, {}, { headers })
+      .subscribe({
+        next: () => {
+          this.ngOnInit();
+        },
+        error: () => {
+          alert('Error al anular la entrega.');
+        }
+      });
   }
 
   /** Vuelve a la grid de cursos */

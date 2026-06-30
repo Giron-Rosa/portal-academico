@@ -482,7 +482,7 @@ export class PortalDocente implements OnDestroy {
   });
 
   activeSection = signal('inicio');
-  activeGrade   = signal('Clases de Hoy');
+  activeGrade   = signal('Todos los Cursos');
   selectedYear  = signal('2026');
   dropdownOpen  = signal(false);
   cargando      = signal(false);
@@ -866,13 +866,14 @@ export class PortalDocente implements OnDestroy {
   });
 
   grades = computed(() => {
-    const base   = ['Clases de Hoy'];
+    const base   = ['Clases de Hoy', 'Todos los Cursos'];
     const unique = [...new Set(this.cursos().map(c => c.grado))];
     return [...base, ...unique];
   });
 
   filteredCursos = computed(() => {
     if (this.activeGrade() === 'Clases de Hoy') return this.clasesDeHoy();
+    if (this.activeGrade() === 'Todos los Cursos') return this.cursos();
     return this.cursos().filter(c => c.grado === this.activeGrade());
   });
 
@@ -1714,9 +1715,19 @@ export class PortalDocente implements OnDestroy {
     this.cargarTareas(curso.idAulaCurso);
     this.cargarExamenes(curso.idAulaCurso);
     this.cargarReportes(curso.idAulaCurso);
-    this.fechaAsistencia.set(this.hoy());
     this.cargarSesionAsistencia(curso.idAulaCurso);
     this.cargarFechasSesiones(curso.idAulaCurso);
+  }
+
+  abrirCursoDesdeCalendario(cursoNombre: string, grado: string, seccion: string) {
+    const curso = this.cursos().find(c =>
+      c.nombre.toLowerCase().trim() === cursoNombre.toLowerCase().trim() &&
+      c.grado.toLowerCase().trim() === grado.toLowerCase().trim() &&
+      c.seccion.toLowerCase().trim() === seccion.toLowerCase().trim()
+    );
+    if (curso) {
+      this.abrirCurso(curso);
+    }
   }
 
   /** Vuelve a la sección inicio y limpia el estado del curso activo */
@@ -2815,6 +2826,7 @@ export class PortalDocente implements OnDestroy {
     }
 
     this.replyText.set(msg);
+    this.enviarRespuesta();
   }
 
   /**
