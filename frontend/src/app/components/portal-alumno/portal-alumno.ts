@@ -297,11 +297,34 @@ export class PortalAlumno implements OnInit {
       });
     }
 
-    // Unir con tareas y exámenes
+    // Unir con tareas, exámenes y horario
     const tareas = this.tareasTotal();
     const actividades = this.actividadesTotal();
+    const mapDiaSemana: Record<number, string> = {
+      1: 'lunes',
+      2: 'martes',
+      3: 'miercoles',
+      4: 'jueves',
+      5: 'viernes'
+    };
 
     dias.forEach(dia => {
+      // Add scheduled courses for the weekday (Mon-Fri)
+      const dayOfWeek = dia.fecha.getDay();
+      const weekdayKey = mapDiaSemana[dayOfWeek];
+      if (weekdayKey) {
+        this.horarioSemanal.forEach(row => {
+          const subject = (row as any)[weekdayKey];
+          if (subject && subject !== 'Recreo' && subject !== 'Tutoría') {
+            dia.eventos.push({
+              titulo: `${row.hora}: ${subject}`,
+              tipo: 'clase',
+              curso: subject
+            });
+          }
+        });
+      }
+
       tareas.forEach(t => {
         if (t.fechaEntrega === dia.fechaStr) {
           dia.eventos.push({
@@ -332,6 +355,10 @@ export class PortalAlumno implements OnInit {
 
   /** IDs de tareas cuya entrega está en proceso (para feedback visual) */
   kanbanEntregando = signal<Set<number>>(new Set());
+
+  // Drag & Drop State
+  draggedTarea: TareaAlumnoExt | null = null;
+  activeDragOverCol = signal<string | null>(null);
 
   /** Marca una tarea pendiente como entregada llamando al endpoint del alumno */
   marcarComoEntregada(tarea: TareaAlumnoExt) {
@@ -646,6 +673,60 @@ export class PortalAlumno implements OnInit {
           alert('Error al anular la entrega.');
         }
       });
+  }
+
+  // ── Kanban Drag & Drop Methods ────────────────────────
+  onDragStart(event: DragEvent, tarea: TareaAlumnoExt) {
+    this.draggedTarea = tarea;
+    if (event.dataTransfer) {
+      event.dataTransfer.setData('text/plain', String(tarea.idTarea));
+      event.dataTransfer.effectAllowed = 'move';
+    }
+    const target = event.target as HTMLElement;
+    target.classList.add('dragging');
+  }
+
+  onDragEnd(event: DragEvent) {
+    this.draggedTarea = null;
+    this.activeDragOverCol.set(null);
+    const target = event.target as HTMLElement;
+    target.classList.remove('dragging');
+  }
+
+  onDragOver(event: DragEvent, col: string) {
+    if (this.draggedTarea) {
+      event.preventDefault();
+      this.activeDragOverCol.set(col);
+    }
+  }
+
+  onDragLeave(event: DragEvent, col: string) {
+    if (this.activeDragOverCol() === col) {
+      this.activeDragOverCol.set(null);
+    }
+  }
+
+  onDrop(event: DragEvent, col: string) {
+    event.preventDefault();
+    this.activeDragOverCol.set(null);
+    if (!this.draggedTarea) return;
+
+    const t = this.draggedTarea;
+    this.draggedTarea = null;
+
+    if (col === 'pendiente') {
+      if (t.entregado) {
+        this.anularEntrega(t);
+      }
+    } else if (col === 'entregado') {
+      if (!t.entregado) {
+        this.entregarTarea(t);
+      } else if (t.nota !== null) {
+        alert('No se puede descalificar una tarea calificada directamente.');
+      }
+    } else if (col === 'calificado') {
+      alert('Las tareas solo pueden ser calificadas por el docente.');
+    }
   }
 
   /** Vuelve a la grid de cursos */

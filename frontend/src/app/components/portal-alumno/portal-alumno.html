@@ -625,7 +625,11 @@
                       
                       <div class="pa-day-events">
                         @for (evt of dia.eventos; track evt.titulo) {
-                          <div class="pa-day-event" [class.event-tarea]="evt.tipo === 'tarea'" [class.event-actividad]="evt.tipo === 'actividad'" [title]="evt.curso + ': ' + evt.titulo">
+                          <div class="pa-day-event" 
+                               [class.event-tarea]="evt.tipo === 'tarea'" 
+                               [class.event-actividad]="evt.tipo === 'actividad'" 
+                               [class.event-clase]="evt.tipo === 'clase'"
+                               [title]="evt.curso + ': ' + evt.titulo">
                             <span class="pa-event-dot"></span>
                             <span class="pa-event-text">{{ evt.titulo }}</span>
                           </div>
@@ -714,7 +718,11 @@
           <div class="pa-kanban-board">
             
             <!-- Columna: Pendiente -->
-            <div class="pa-kanban-col col-pendiente">
+            <div class="pa-kanban-col col-pendiente"
+                 [class.drag-over]="activeDragOverCol() === 'pendiente'"
+                 (dragover)="onDragOver($event, 'pendiente')"
+                 (dragleave)="onDragLeave($event, 'pendiente')"
+                 (drop)="onDrop($event, 'pendiente')">
               <div class="pa-kanban-col-header">
                 <span class="pa-col-title">Pendientes</span>
                 <span class="pa-col-count">{{ tareasPendientes().length }}</span>
@@ -724,7 +732,10 @@
                   <div class="pa-kanban-empty">Sin tareas pendientes</div>
                 }
                 @for (t of tareasPendientes(); track t.idTarea) {
-                  <div class="pa-kanban-card">
+                  <div class="pa-kanban-card"
+                       draggable="true"
+                       (dragstart)="onDragStart($event, t)"
+                       (dragend)="onDragEnd($event)">
                     <div class="pa-kcard-header">
                       <span class="pa-kcard-curso">{{ t.cursoNombre }}</span>
                       <span class="pa-kcard-badge badge-pendiente">Pendiente</span>
@@ -734,7 +745,7 @@
                     <div class="pa-kcard-footer">
                       <span class="pa-kcard-due text-red">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                           <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                         </svg>
                         Vence: {{ t.fechaEntrega }}
                       </span>
@@ -753,7 +764,11 @@
             </div>
 
             <!-- Columna: Enviado (Por calificar) -->
-            <div class="pa-kanban-col col-enviado">
+            <div class="pa-kanban-col col-enviado"
+                 [class.drag-over]="activeDragOverCol() === 'entregado'"
+                 (dragover)="onDragOver($event, 'entregado')"
+                 (dragleave)="onDragLeave($event, 'entregado')"
+                 (drop)="onDrop($event, 'entregado')">
               <div class="pa-kanban-col-header">
                 <span class="pa-col-title">Entregados</span>
                 <span class="pa-col-count">{{ tareasEntregadas().length }}</span>
@@ -763,7 +778,10 @@
                   <div class="pa-kanban-empty">Sin entregas por calificar</div>
                 }
                 @for (t of tareasEntregadas(); track t.idTarea) {
-                  <div class="pa-kanban-card">
+                  <div class="pa-kanban-card"
+                       draggable="true"
+                       (dragstart)="onDragStart($event, t)"
+                       (dragend)="onDragEnd($event)">
                     <div class="pa-kcard-header">
                       <span class="pa-kcard-curso">{{ t.cursoNombre }}</span>
                       <span class="pa-kcard-badge badge-enviado">Enviado</span>
@@ -791,7 +809,11 @@
             </div>
 
             <!-- Columna: Calificado -->
-            <div class="pa-kanban-col col-calificado">
+            <div class="pa-kanban-col col-calificado"
+                 [class.drag-over]="activeDragOverCol() === 'calificado'"
+                 (dragover)="onDragOver($event, 'calificado')"
+                 (dragleave)="onDragLeave($event, 'calificado')"
+                 (drop)="onDrop($event, 'calificado')">
               <div class="pa-kanban-col-header">
                 <span class="pa-col-title">Calificados</span>
                 <span class="pa-col-count">{{ tareasCalificadas().length }}</span>
@@ -801,7 +823,10 @@
                   <div class="pa-kanban-empty">Sin tareas calificadas</div>
                 }
                 @for (t of tareasCalificadas(); track t.idTarea) {
-                  <div class="pa-kanban-card">
+                  <div class="pa-kanban-card"
+                       draggable="true"
+                       (dragstart)="onDragStart($event, t)"
+                       (dragend)="onDragEnd($event)">
                     <div class="pa-kcard-header">
                       <span class="pa-kcard-curso">{{ t.cursoNombre }}</span>
                       <span class="pa-kcard-badge badge-calificado">Calificado</span>
