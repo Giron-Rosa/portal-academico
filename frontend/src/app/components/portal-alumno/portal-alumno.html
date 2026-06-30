@@ -66,10 +66,22 @@
           [class.has-alert]="item.id === 'refuerzo' && tieneCursosEnRiesgo()"
           (click)="setSeccion(item.id)">
 
-          @if (item.icon === 'home') {
+           @if (item.icon === 'home') {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
               <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          }
+          @if (item.icon === 'award') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="8" r="7"/>
+              <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+            </svg>
+          }
+          @if (item.icon === 'check-circle') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
           }
           @if (item.icon === 'calendar') {
@@ -299,6 +311,33 @@
             </div>
           </div>
 
+          <!-- Tarjetas KPI Calificaciones -->
+          <div class="pa-kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 24px;">
+            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+              <div style="background: #eff6ff; color: #3b82f6; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">📈</div>
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Promedio General</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #1e3a8a;">{{ promedioGeneral() | number:'1.1-1' }}</div>
+              </div>
+            </div>
+            
+            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+              <div style="background: #e6f4ea; color: #137333; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">✅</div>
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Cursos Aprobados</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #137333;">{{ cursosAprobados() }}</div>
+              </div>
+            </div>
+
+            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+              <div style="background: #fce8e6; color: #c5221f; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">⚠️</div>
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Por Recuperar</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #c5221f;">{{ cursosPorRecuperar() }}</div>
+              </div>
+            </div>
+          </div>
+
           @if (cargandoCalificaciones()) {
             <div class="pa-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px;">
               <div class="pa-spinner"></div>
@@ -395,6 +434,55 @@
             </div>
           </div>
 
+          <!-- Tarjetas KPI Asistencia -->
+          <div class="pa-kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 24px;">
+            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+              <div style="background: #f1f5f9; color: #475569; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">📊</div>
+              <div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Clases Totales</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #1e293b;">{{ totalClasesAsistencia() }}</div>
+              </div>
+            </div>
+
+            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+              <div style="background: #e6f4ea; color: #137333; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">✔️</div>
+              <div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Asistencias</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #137333;">{{ totalPresenteAsistencia() }}</div>
+              </div>
+            </div>
+
+            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+              <div style="background: #fffbeb; color: #d97706; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">⏳</div>
+              <div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Tardanzas</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #d97706;">{{ totalTardanzaAsistencia() }}</div>
+              </div>
+            </div>
+
+            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+              <div style="background: #fce8e6; color: #c5221f; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">❌</div>
+              <div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Faltas</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #c5221f;">
+                  {{ totalFaltaAsistencia() }} 
+                  <span style="font-size: 0.7rem; font-weight: 500; color: #64748b;">(Just: {{ totalJustificadoAsistencia() }})</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+              <div 
+                [style.background]="porcentajeGlobalAsistencia() >= 90 ? '#e6f4ea' : porcentajeGlobalAsistencia() >= 80 ? '#fffbeb' : '#fce8e6'"
+                [style.color]="porcentajeGlobalAsistencia() >= 90 ? '#137333' : porcentajeGlobalAsistencia() >= 80 ? '#d97706' : '#c5221f'"
+                style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">🎯</div>
+              <div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">% Asistencia</div>
+                <div style="font-size: 1.25rem; font-weight: 800;" [style.color]="porcentajeGlobalAsistencia() >= 90 ? '#137333' : porcentajeGlobalAsistencia() >= 80 ? '#d97706' : '#c5221f'">{{ porcentajeGlobalAsistencia() | number:'1.1-1' }}%</div>
+              </div>
+            </div>
+          </div>
+
           @if (cargandoAsistencias()) {
             <div class="pa-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px;">
               <div class="pa-spinner"></div>
@@ -454,62 +542,162 @@
 
       <!-- ========== CALENDARIO ========== -->
       @if (seccionActiva() === 'calendario') {
-        <div class="pa-calendar-view animate-fade-in">
-          <div class="pa-view-header">
+        <div class="pa-calendar-view animate-fade-in" style="padding: 24px;">
+          <div class="pa-view-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
             <div class="pa-header-info">
-              <h2 class="pa-view-title">Calendario Escolar</h2>
-              <p class="pa-view-subtitle">Fechas límite de entregas y evaluaciones</p>
+              <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Calendario Escolar</h2>
+              <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Fechas límite de entregas, evaluaciones y tu horario de clases</p>
             </div>
-            <div class="pa-calendar-nav">
-              <button class="pa-btn-nav" (click)="cambiarMes(-1)" title="Mes anterior">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <polyline points="15 18 9 12 15 6"/>
-                </svg>
+            
+            <!-- Selector de Subsección (Mensual vs Horario Semanal) -->
+            <div style="display: flex; gap: 0.25rem; background: #f1f5f9; padding: 4px; border-radius: 8px;">
+              <button 
+                (click)="subSeccionCalendario.set('mensual')"
+                [style.background]="subSeccionCalendario() === 'mensual' ? 'white' : 'transparent'"
+                [style.box-shadow]="subSeccionCalendario() === 'mensual' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'"
+                style="border: none; padding: 6px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; cursor: pointer; color: #1b3a5c; transition: all 0.2s;">
+                Calendario Mensual
               </button>
-              <span class="pa-calendar-month-label">{{ nombreMesActual() }} {{ anoActual() }}</span>
-              <button class="pa-btn-nav" (click)="cambiarMes(1)" title="Mes siguiente">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
+              <button 
+                (click)="subSeccionCalendario.set('horario')"
+                [style.background]="subSeccionCalendario() === 'horario' ? 'white' : 'transparent'"
+                [style.box-shadow]="subSeccionCalendario() === 'horario' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'"
+                style="border: none; padding: 6px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; cursor: pointer; color: #1b3a5c; transition: all 0.2s;">
+                Horario Semanal
               </button>
             </div>
           </div>
 
-          <div class="pa-calendar-container">
-            <div class="pa-calendar-weekdays">
-              <div>Lun</div>
-              <div>Mar</div>
-              <div>Mié</div>
-              <div>Jue</div>
-              <div>Vie</div>
-              <div>Sáb</div>
-              <div>Dom</div>
-            </div>
-
-            <div class="pa-calendar-grid">
-              @for (dia of diasCalendario(); track dia.fechaStr) {
-                <div 
-                  class="pa-calendar-day" 
-                  [class.different-month]="dia.mesDiferente"
-                  [class.is-today]="dia.esHoy"
-                  [class.has-events]="dia.eventos.length > 0">
-                  
-                  <div class="pa-day-number-wrapper">
-                    <span class="pa-day-number">{{ dia.diaNumero }}</span>
+          <!-- SUBSECCIÓN: CALENDARIO MENSUAL -->
+          @if (subSeccionCalendario() === 'mensual') {
+            <div>
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1.5rem; margin-bottom: 1rem;">
+                <!-- Leyenda de colores -->
+                <div style="display: flex; gap: 1rem; font-size: 0.8rem; font-weight: 600;">
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #0284c7;"></span>
+                    <span style="color: #0369a1;">Tareas</span>
                   </div>
-                  
-                  <div class="pa-day-events">
-                    @for (evt of dia.eventos; track evt.titulo) {
-                      <div class="pa-day-event" [class.event-tarea]="evt.tipo === 'tarea'" [class.event-actividad]="evt.tipo === 'actividad'" [title]="evt.curso + ': ' + evt.titulo">
-                        <span class="pa-event-dot"></span>
-                        <span class="pa-event-text">{{ evt.titulo }}</span>
-                      </div>
-                    }
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #8b5cf6;"></span>
+                    <span style="color: #6b21a8;">Evaluaciones / Exámenes</span>
                   </div>
                 </div>
-              }
+
+                <!-- Navegación mensual -->
+                <div class="pa-calendar-nav" style="margin: 0;">
+                  <button class="pa-btn-nav" (click)="cambiarMes(-1)" title="Mes anterior">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                  </button>
+                  <span class="pa-calendar-month-label">{{ nombreMesActual() }} {{ anoActual() }}</span>
+                  <button class="pa-btn-nav" (click)="cambiarMes(1)" title="Mes siguiente">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="pa-calendar-container" style="margin-top: 0;">
+                <div class="pa-calendar-weekdays">
+                  <div>Lun</div>
+                  <div>Mar</div>
+                  <div>Mié</div>
+                  <div>Jue</div>
+                  <div>Vie</div>
+                  <div>Sáb</div>
+                  <div>Dom</div>
+                </div>
+
+                <div class="pa-calendar-grid">
+                  @for (dia of diasCalendario(); track dia.fechaStr) {
+                    <div 
+                      class="pa-calendar-day" 
+                      [class.different-month]="dia.mesDiferente"
+                      [class.is-today]="dia.esHoy"
+                      [class.has-events]="dia.eventos.length > 0">
+                      
+                      <div class="pa-day-number-wrapper">
+                        <span class="pa-day-number">{{ dia.diaNumero }}</span>
+                      </div>
+                      
+                      <div class="pa-day-events">
+                        @for (evt of dia.eventos; track evt.titulo) {
+                          <div class="pa-day-event" [class.event-tarea]="evt.tipo === 'tarea'" [class.event-actividad]="evt.tipo === 'actividad'" [title]="evt.curso + ': ' + evt.titulo">
+                            <span class="pa-event-dot"></span>
+                            <span class="pa-event-text">{{ evt.titulo }}</span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
             </div>
-          </div>
+          }
+
+          <!-- SUBSECCIÓN: HORARIO DE CLASES -->
+          @if (subSeccionCalendario() === 'horario') {
+            <div class="animate-fade-in" style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                <thead>
+                  <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+                    <th style="padding: 16px; font-weight: 600; color: #374151; width: 15%;">Hora</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Lunes</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Martes</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Miércoles</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Jueves</th>
+                    <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Viernes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of horarioSemanal; track row.hora) {
+                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                      <!-- Hora -->
+                      <td style="padding: 16px; font-weight: 700; color: #4b5563; background: #f9fafb;">{{ row.hora }}</td>
+                      
+                      <!-- Lunes -->
+                      <td style="padding: 16px; text-align: center;" 
+                          [style.background]="row.lunes === 'Recreo' ? '#fffbeb' : 'transparent'"
+                          [style.color]="row.lunes === 'Recreo' ? '#d97706' : '#111827'">
+                        <span [style.font-weight]="row.lunes === 'Recreo' || row.lunes === 'Tutoría' ? '700' : '600'">{{ row.lunes }}</span>
+                      </td>
+
+                      <!-- Martes -->
+                      <td style="padding: 16px; text-align: center;" 
+                          [style.background]="row.martes === 'Recreo' ? '#fffbeb' : 'transparent'"
+                          [style.color]="row.martes === 'Recreo' ? '#d97706' : '#111827'">
+                        <span [style.font-weight]="row.martes === 'Recreo' ? '700' : '600'">{{ row.martes }}</span>
+                      </td>
+
+                      <!-- Miércoles -->
+                      <td style="padding: 16px; text-align: center;" 
+                          [style.background]="row.miercoles === 'Recreo' ? '#fffbeb' : 'transparent'"
+                          [style.color]="row.miercoles === 'Recreo' ? '#d97706' : '#111827'">
+                        <span [style.font-weight]="row.miercoles === 'Recreo' ? '700' : '600'">{{ row.miercoles }}</span>
+                      </td>
+
+                      <!-- Jueves -->
+                      <td style="padding: 16px; text-align: center;" 
+                          [style.background]="row.jueves === 'Recreo' ? '#fffbeb' : 'transparent'"
+                          [style.color]="row.jueves === 'Recreo' ? '#d97706' : '#111827'">
+                        <span [style.font-weight]="row.jueves === 'Recreo' || row.jueves === 'Educación Física' ? '700' : '600'">{{ row.jueves }}</span>
+                      </td>
+
+                      <!-- Viernes -->
+                      <td style="padding: 16px; text-align: center;" 
+                          [style.background]="row.viernes === 'Recreo' ? '#fffbeb' : 'transparent'"
+                          [style.color]="row.viernes === 'Recreo' ? '#d97706' : '#111827'">
+                        <span [style.font-weight]="row.viernes === 'Recreo' ? '700' : '600'">{{ row.viernes }}</span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         </div>
       }
 
@@ -619,112 +807,219 @@
 
       <!-- ========== REFUERZO ========== -->
       @if (seccionActiva() === 'refuerzo') {
-        <div class="pa-refuerzo-view animate-fade-in">
-          <div class="pa-view-header">
+        <div class="pa-refuerzo-view animate-fade-in" style="padding: 24px;">
+          <div class="pa-view-header" style="margin-bottom: 24px;">
             <div class="pa-header-info">
-              <h2 class="pa-view-title">Refuerzo Académico (RN-10.2)</h2>
-              <p class="pa-view-subtitle">Materiales sugeridos de recuperación para cursos con promedio en riesgo (&lt; 11)</p>
+              <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Refuerzo Académico (RN-10.2)</h2>
+              <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Materiales sugeridos de recuperación para cursos con promedio en riesgo (&lt; 11) y recursos semanales</p>
             </div>
           </div>
 
-          @if (!tieneCursosEnRiesgo()) {
-            <div class="pa-refuerzo-success-panel">
-              <div class="pa-success-icon-wrapper">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
+          <!-- Alerta de Cursos en Riesgo (RN-10.2) -->
+          @if (tieneCursosEnRiesgo()) {
+            <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; color: #856404;">
+              <span style="font-size: 1.5rem;">⚠️</span>
+              <div>
+                <strong style="display: block; font-size: 0.95rem; margin-bottom: 2px;">Cursos con Promedio en Riesgo (&lt; 11):</strong>
+                <span style="font-size: 0.85rem;">Tienes asignaturas con notas bajas. Te recomendamos revisar el material de reforzamiento de cada semana: 
+                  @for (c of cursosConRiesgo(); track c.idAulaCurso; let isLast = $last) {
+                    <strong>{{ c.nombre }} (Promedio: {{ c.promedio }})</strong>{{ isLast ? '' : ', ' }}
+                  }
+                </span>
               </div>
-              <h3>¡Excelente rendimiento académico!</h3>
-              <p>No tienes cursos con promedios en riesgo de desaprobación actualmente. Sigue manteniendo tus notas por encima de 11.</p>
             </div>
           } @else {
-            <div class="pa-refuerzo-grid">
-              @for (rc of cursosConRiesgo(); track rc.idAulaCurso) {
-                <div class="pa-ref-curso-card border-red">
-                  <div class="pa-ref-curso-header">
-                    <div>
-                      <h3 class="pa-ref-curso-name">{{ rc.nombre }}</h3>
-                      <p class="pa-ref-curso-docente">Docente: {{ rc.docente }}</p>
-                    </div>
-                    <div class="pa-ref-score-badge">
-                      <span>Promedio</span>
-                      <strong class="pa-ref-score text-red">{{ rc.promedio }}</strong>
-                    </div>
-                  </div>
+            <div style="background: #e6f4ea; border: 1px solid #c3e6cb; border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; color: #155724;">
+              <span style="font-size: 1.5rem;">✅</span>
+              <div>
+                <strong style="display: block; font-size: 0.95rem; margin-bottom: 2px;">¡Buen rendimiento!</strong>
+                <span style="font-size: 0.85rem;">No tienes cursos con promedios en riesgo actualmente. Sigue revisando el material semanal para mantener tu nivel.</span>
+              </div>
+            </div>
+          }
 
-                  <div class="pa-ref-materials-section">
-                    <h4 class="pa-ref-subtitle">Material de Reforzamiento disponible:</h4>
-                    
-                    @if (materialesTotal().length === 0) {
-                      <p class="pa-ref-empty">No hay materiales de reforzamiento subidos para este curso.</p>
-                    }
-                    
-                    <div class="pa-ref-materials-list">
-                      @for (mat of materialesTotal(); track mat.idMaterial) {
-                        @if (mat.idAulaCurso === rc.idAulaCurso && (mat.tipo === 'word' || mat.titulo.toLowerCase().includes('refuerzo') || mat.titulo.toLowerCase().includes('practica'))) {
-                          <div class="pa-ref-material-item">
-                            <span class="pa-ref-mat-icon">{{ tipoIcon(mat.tipo) }}</span>
-                            <div class="pa-ref-mat-info">
-                              <span class="pa-ref-mat-title">{{ mat.titulo }}</span>
-                              <span class="pa-ref-mat-meta">Semana {{ mat.semana }} · Clase {{ mat.clase }}</span>
-                            </div>
-                            <a [href]="mat.url" target="_blank" class="pa-ref-download-btn" *ngIf="mat.url">
-                              Descargar
-                            </a>
-                            <span class="pa-ref-no-link" *ngIf="!mat.url">Enlace físico</span>
-                          </div>
-                        }
-                      }
+          <!-- Selector de Semanas -->
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 1rem; font-weight: 700; color: #1f2937; margin-bottom: 12px;">Selecciona la Semana de Estudio</h3>
+            <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 8px;">
+              @for (sem of semanasLista; track sem) {
+                <button 
+                  (click)="semanaRefuerzoSeleccionada.set(sem)"
+                  [style.background]="semanaRefuerzoSeleccionada() === sem ? '#1b3a5c' : 'white'"
+                  [style.color]="semanaRefuerzoSeleccionada() === sem ? 'white' : '#1b3a5c'"
+                  [style.border]="semanaRefuerzoSeleccionada() === sem ? '1px solid #1b3a5c' : '1px solid #cbd5e1'"
+                  style="min-width: 48px; height: 36px; padding: 0 12px; font-size: 0.85rem; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
+                  Sem {{ sem }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Contenido de Refuerzo de la Semana Seleccionada -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            
+            <!-- Bloque 1: Videos Explicativos -->
+            <div style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+              <h3 style="font-size: 1.1rem; font-weight: 700; color: #1b3a5c; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                🎬 Videos Explicativos
+              </h3>
+              @if (videosExplicativos().length === 0) {
+                <p style="font-size: 0.85rem; color: #9ca3af; text-align: center; padding: 24px 0;">No hay videos explicativos para esta semana.</p>
+              } @else {
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  @for (vid of videosExplicativos(); track vid.idMaterial) {
+                    <div style="display: flex; gap: 12px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; align-items: center;">
+                      <span style="font-size: 1.5rem; background: #fee2e2; color: #dc2626; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">▶️</span>
+                      <div style="flex: 1; min-width: 0;">
+                        <h4 style="font-size: 0.85rem; font-weight: 700; color: #111827; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ vid.titulo }}</h4>
+                        <span style="font-size: 0.75rem; color: #6b7280;">Curso: {{ vid.cursoNombre }}</span>
+                      </div>
+                      <a [href]="vid.url" target="_blank" style="background: #1b3a5c; color: white; padding: 6px 12px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; text-decoration: none; transition: background 0.2s;">Ver Video</a>
                     </div>
-                  </div>
+                  }
                 </div>
               }
             </div>
-          }
+
+            <!-- Bloque 2: Libros de Referencia y Lecturas -->
+            <div style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+              <h3 style="font-size: 1.1rem; font-weight: 700; color: #1b3a5c; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                📚 Libros y Lecturas de Apoyo
+              </h3>
+              @if (librosReferencia().length === 0) {
+                <p style="font-size: 0.85rem; color: #9ca3af; text-align: center; padding: 24px 0;">No hay libros de referencia disponibles para esta semana.</p>
+              } @else {
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  @for (lib of librosReferencia(); track lib.idMaterial) {
+                    <div style="display: flex; gap: 12px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; align-items: center;">
+                      <span style="font-size: 1.5rem; background: #e0f2fe; color: #0284c7; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">📄</span>
+                      <div style="flex: 1; min-width: 0;">
+                        <h4 style="font-size: 0.85rem; font-weight: 700; color: #111827; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ lib.titulo }}</h4>
+                        <span style="font-size: 0.75rem; color: #6b7280;">Curso: {{ lib.cursoNombre }}</span>
+                      </div>
+                      <a [href]="lib.url" target="_blank" style="background: #1b3a5c; color: white; padding: 6px 12px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; text-decoration: none; transition: background 0.2s;">Leer</a>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Bloque 3: Fichas de Práctica y Ejercicios -->
+            <div style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+              <h3 style="font-size: 1.1rem; font-weight: 700; color: #1b3a5c; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                📝 Fichas y Ejercicios de Práctica
+              </h3>
+              @if (fichasPractica().length === 0) {
+                <p style="font-size: 0.85rem; color: #9ca3af; text-align: center; padding: 24px 0;">No hay fichas de práctica disponibles para esta semana.</p>
+              } @else {
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  @for (fic of fichasPractica(); track fic.idMaterial) {
+                    <div style="display: flex; gap: 12px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; align-items: center;">
+                      <span style="font-size: 1.5rem; background: #e2f0d9; color: #385723; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">📝</span>
+                      <div style="flex: 1; min-width: 0;">
+                        <h4 style="font-size: 0.85rem; font-weight: 700; color: #111827; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ fic.titulo }}</h4>
+                        <span style="font-size: 0.75rem; color: #6b7280;">Curso: {{ fic.cursoNombre }}</span>
+                      </div>
+                      <a [href]="fic.url" target="_blank" style="background: #1b3a5c; color: white; padding: 6px 12px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; text-decoration: none; transition: background 0.2s;">Descargar</a>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+          </div>
         </div>
       }
 
       <!-- ========== RECURSOS ========== -->
       @if (seccionActiva() === 'recursos') {
-        <div class="pa-recursos-view animate-fade-in">
-          <div class="pa-view-header">
+        <div class="pa-recursos-view animate-fade-in" style="padding: 24px;">
+          <div class="pa-view-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div class="pa-header-info">
-              <h2 class="pa-view-title">Biblioteca de Recursos</h2>
-              <p class="pa-view-subtitle">Acceso a todas las guías de estudio, lecturas y materiales interactivos</p>
+              <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Biblioteca de Recursos</h2>
+              <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Buscador de recursos, herramientas digitales y material complementario externo</p>
+            </div>
+
+            <!-- Buscador Textual -->
+            <div style="position: relative; width: 100%; max-width: 320px;">
+              <input 
+                type="text" 
+                placeholder="Buscar recursos (ej. GeoGebra)..." 
+                [value]="busquedaRecurso()"
+                (input)="actualizarBusqueda($event)"
+                style="width: 100%; padding: 10px 16px 10px 40px; border-radius: 30px; border: 1px solid #cbd5e1; font-size: 0.88rem; font-weight: 500; outline: none; transition: border-color 0.2s;"
+                onfocus="this.style.borderColor='#1b3a5c'"
+                onblur="this.style.borderColor='#cbd5e1'" />
+              <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 1.1rem;">🔍</span>
             </div>
           </div>
 
-          <div class="pa-recursos-grid">
-            @for (curso of cursos(); track curso.idAulaCurso) {
-              <div class="pa-rec-card">
-                <div class="pa-rec-card-header" [style.border-left-color]="curso.color">
-                  <h3 class="pa-rec-curso-title">{{ curso.nombre }}</h3>
-                  <span class="pa-rec-docente">{{ curso.docente }}</span>
-                </div>
-                
-                <div class="pa-rec-body">
-                  <div class="pa-rec-list">
-                    @for (mat of materialesTotal(); track mat.idMaterial) {
-                      @if (mat.idAulaCurso === curso.idAulaCurso) {
-                        <div class="pa-rec-item">
-                          <span class="pa-rec-icon">{{ tipoIcon(mat.tipo) }}</span>
-                          <div class="pa-rec-info">
-                            <a [href]="mat.url" target="_blank" class="pa-rec-title-link" [class.disabled]="!mat.url">
-                              {{ mat.titulo }}
-                            </a>
-                            <span class="pa-rec-meta">Semana {{ mat.semana }} · Clase {{ mat.clase }}</span>
-                          </div>
-                        </div>
-                      }
-                    }
-                    @if (materialesTotal().length === 0) {
-                      <div class="pa-rec-empty">No hay recursos disponibles.</div>
-                    }
-                  </div>
-                </div>
+          <!-- Cuadrados de Categorías -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 32px;">
+            @for (cat of categoriasRecursos; track cat.id) {
+              <div 
+                (click)="categoriaRecursoActiva.set(cat.id); busquedaRecurso.set('')"
+                [style.background]="categoriaRecursoActiva() === cat.id && busquedaRecurso() === '' ? '#1b3a5c' : cat.color"
+                [style.color]="categoriaRecursoActiva() === cat.id && busquedaRecurso() === '' ? 'white' : '#1e293b'"
+                [style.border-color]="categoriaRecursoActiva() === cat.id && busquedaRecurso() === '' ? '#1b3a5c' : cat.border"
+                style="border: 1px solid; border-radius: 12px; padding: 1.25rem 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s; min-height: 100px;">
+                <span style="font-size: 2rem;">{{ cat.icon }}</span>
+                <span style="font-size: 0.82rem; font-weight: 700; line-height: 1.2;">{{ cat.id }}</span>
               </div>
             }
           </div>
+
+          <!-- Cabecera de Listado -->
+          <div style="border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin: 0;">
+              @if (busquedaRecurso() !== '') {
+                Resultados de búsqueda para "{{ busquedaRecurso() }}"
+              } @else {
+                Recursos en "{{ categoriaRecursoActiva() }}"
+              }
+            </h3>
+            <span style="font-size: 0.82rem; color: #64748b; font-weight: 600;">{{ recursosFiltrados().length }} recursos encontrados</span>
+          </div>
+
+          <!-- Listado de Recursos Filtrados (Recuadros Abajo) -->
+          @if (recursosFiltrados().length === 0) {
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 48px; text-align: center;">
+              <span style="font-size: 3rem; display: block; margin-bottom: 12px;">📂</span>
+              <h3 style="font-size: 1.1rem; font-weight: 700; color: #475569; margin: 0 0 6px 0;">No se encontraron recursos</h3>
+              <p style="font-size: 0.85rem; color: #94a3b8; margin: 0;">Intenta con otro término o selecciona otra categoría arriba.</p>
+            </div>
+          } @else {
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem;">
+              @for (rec of recursosFiltrados(); track rec.nombre) {
+                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.01); transition: transform 0.2s;"
+                     onmouseover="this.style.transform='translateY(-2px)'"
+                     onmouseout="this.style.transform='none'">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                      <span style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 20px;">
+                        {{ rec.cat }}
+                      </span>
+                      <span style="font-size: 1.25rem;">{{ tipoIcon(rec.tipo) }}</span>
+                    </div>
+                    <h4 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0 0 8px 0; line-height: 1.3;">
+                      {{ rec.nombre }}
+                    </h4>
+                    <p style="font-size: 0.82rem; color: #64748b; margin: 0 0 16px 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 52px;">
+                      {{ rec.desc }}
+                    </p>
+                  </div>
+                  <a 
+                    [href]="rec.url" 
+                    target="_blank" 
+                    style="display: block; width: 100%; background: #1b3a5c; color: white; text-align: center; padding: 8px 0; font-size: 0.82rem; font-weight: 700; border-radius: 8px; text-decoration: none; transition: background 0.2s;"
+                    onmouseover="this.style.background='#0d1b2a'"
+                    onmouseout="this.style.background='#1b3a5c'">
+                    Acceder
+                  </a>
+                </div>
+              }
+            </div>
+          }
         </div>
       }
 

@@ -30,6 +30,7 @@ interface Hijo {
   asistencia: number;
   cursosRiesgo: number;
   entregaTareas: number;
+  cuotasPendientes: number;
   descripcion: string;
   cursosMonitor: { nombre: string; progreso: number }[];
   cursos: CursoDetalle[];
@@ -62,6 +63,7 @@ interface HijoApi {
   cursosRiesgo: number;
   entregaTareas: number;
   estado: Estado;
+  cuotasPendientes: number;
   cursos: CursoDetalleApi[];
 }
 
@@ -247,6 +249,10 @@ export class PortalPadre implements OnDestroy {
   cargandoEventos       = signal<boolean>(false);
   errorEventos          = signal<string>('');
 
+  horarioHijo           = signal<any[]>([]);
+  cargandoHorario       = signal<boolean>(false);
+  errorHorario          = signal<string>('');
+
   /* ── Fase 4: Señales de Pagos ── */
   pagosHijo             = signal<PagoHijo[]>([]);
   cargandoPagos         = signal<boolean>(false);
@@ -326,6 +332,7 @@ export class PortalPadre implements OnDestroy {
       asistencia:    h.asistencia,
       cursosRiesgo:  h.cursosRiesgo,
       entregaTareas: h.entregaTareas,
+      cuotasPendientes: h.cuotasPendientes,
       descripcion:   `Período ${h.periodo} · Turno ${h.turno}.`,
       cursosMonitor: cursos.slice(0, 3).map(c => ({ nombre: c.nombre, progreso: c.progreso })),
       cursos,
@@ -362,7 +369,30 @@ export class PortalPadre implements OnDestroy {
 
   verDetalle(idx: number) {
     this.hijoIdx.set(idx);
+    const hijo = this.hijos()[idx];
+    if (hijo) {
+      this.cargarEventos(hijo.codigo);
+      this.cargarHorarioHijo(hijo.codigo);
+    }
     this.vista.set('detalle');
+  }
+
+  cargarHorarioHijo(codigoAlumno: string): void {
+    this.cargandoHorario.set(true);
+    this.errorHorario.set('');
+    this.http.get<any[]>(
+      `http://localhost:8080/api/portal/padre/horario/${codigoAlumno}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.horarioHijo.set(data);
+        this.cargandoHorario.set(false);
+      },
+      error: () => {
+        this.errorHorario.set('No se pudo cargar el horario del estudiante.');
+        this.cargandoHorario.set(false);
+      }
+    });
   }
 
   volverDashboard() {
@@ -550,6 +580,10 @@ export class PortalPadre implements OnDestroy {
     if (p >= 80) return 'Excelente';
     if (p >= 60) return 'Regular';
     return 'Necesita mejorar';
+  }
+
+  getClase(dia: number, hora: string): any {
+    return this.horarioHijo().find(h => h.dia === dia && h.horaInicio === hora);
   }
 
   toggleMenuUsuario() { this.menuUsuario.update(v => !v); }

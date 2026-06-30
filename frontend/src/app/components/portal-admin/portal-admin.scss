@@ -819,3 +819,160 @@ $azul-light: #eff6ff;
     }
   }
 }
+
+/* ── FASE 9: Flujo Financiero en Dashboard ── */
+.dashboard-chart-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  flex: 1;
+}
+.flujo-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 120px;
+  padding: 0.5rem 0;
+  overflow-x: auto;
+}
+.flujo-mes-col { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; min-width: 32px; }
+.flujo-bar-wrap { display: flex; align-items: flex-end; gap: 3px; height: 100px; }
+.flujo-bar { width: 12px; border-radius: 3px 3px 0 0; min-height: 4px; transition: height 0.4s; }
+.flujo-bar.ingreso { background: #6366f1; }
+.flujo-bar.gasto   { background: #f59e0b; }
+.flujo-mes-lbl { font-size: 0.65rem; color: #9ca3af; }
+.flujo-leyenda { display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: #6b7280; margin-top: 0.75rem; }
+.leyenda-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+
+/* ── FASE 8: Badges de área y estado ── */
+.badge-area {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  background: #ede9fe;
+  color: #7c3aed;
+}
+.estado-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.73rem; font-weight: 600; }
+.estado-badge.activo { background: #d1fae5; color: #065f46; }
+.estado-badge.inactivo { background: #f3f4f6; color: #6b7280; }
+.estado-badge.riesgo { background: #fee2e2; color: #dc2626; }
+
+/* ── FASE 10: Calendario ── */
+.cal-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.cal-nav-btn {
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  width: 28px; height: 28px;
+  cursor: pointer; font-size: 1.1rem; color: #374151;
+  transition: background 0.15s;
+}
+.cal-nav-btn:hover { background: #f3f4f6; }
+.cal-mes-label { font-weight: 700; color: #111827; font-size: 0.9rem; }
+.cal-grid-header { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 4px; }
+.cal-day-name { text-align: center; font-size: 0.7rem; font-weight: 600; color: #9ca3af; padding: 4px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+.cal-cell {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+  font-size: 0.8rem; color: #374151;
+}
+.cal-cell:hover:not(.empty) { background: #f3f4f6; }
+.cal-cell.empty { cursor: default; }
+.cal-cell.has-events { background: #ede9fe; }
+.cal-cell.selected { background: #6366f1 !important; color: #fff; font-weight: 700; }
+.cal-day-num { font-size: 0.78rem; }
+.cal-event-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%; background: #6366f1;
+  position: absolute; bottom: 4px;
+}
+.cal-cell.selected .cal-event-dot { background: #fff; }
+.cal-eventos-panel {
+  background: #f9fafb;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  border: 1px solid #e5e7eb;
+}
+.evento-item {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.evento-item:last-child { border-bottom: none; }
+.evento-tipo-badge {
+  display: inline-block; padding: 2px 7px;
+  border-radius: 20px; font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.03em;
+  background: #fef3c7; color: #92400e;
+  white-space: nowrap;
+}
+
+/* ── FASE 11: BI Cards ── */
+.bi-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.bi-card-title { font-size: 0.9rem; font-weight: 700; color: #111827; margin: 0 0 0.75rem; }
+.bi-bars { display: flex; flex-direction: column; gap: 0.5rem; }
+.bi-bar-row { display: flex; align-items: center; gap: 0.75rem; }
+.bi-lbl { font-size: 0.78rem; color: #374151; width: 100px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bi-bar-bg { flex: 1; background: #f3f4f6; border-radius: 4px; height: 10px; overflow: hidden; }
+.bi-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+.bi-val { font-size: 0.78rem; font-weight: 600; color: #111827; width: 40px; text-align: right; }
+.dist-nota-chip {
+  display: flex; flex-direction: column; align-items: center;
+  background: #f3f4f6; border-radius: 8px;
+  padding: 0.4rem 0.75rem; border: 1px solid #e5e7eb;
+}
+.dist-nota-rango { font-size: 0.78rem; font-weight: 700; color: #374151; }
+.dist-nota-cant  { font-size: 0.7rem; color: #6b7280; }
+
+/* ── FASE 7/Padre: Pagos en card ── */
+.pagos-kpi-card {
+  background: #fff;
+  border: 1.5px solid #fee2e2;
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  text-align: center;
+  cursor: pointer;
+}
+.pagos-kpi-card .metrica-val { color: #dc2626; }
+
+/* btn-secondary global */
+.btn-secondary {
+  padding: 0.5rem 1.1rem;
+  border-radius: 8px;
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-secondary:hover { background: #f3f4f6; border-color: #9ca3af; }

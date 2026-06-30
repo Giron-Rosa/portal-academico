@@ -16,5 +16,6 @@ public record HijoResumenDto(
         int               cursosRiesgo,
         double            entregaTareas,
         String            estado,
+        int               cuotasPendientes,
         List<CursoHijoDto> cursos
 ) {}

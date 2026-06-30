@@ -116,4 +116,15 @@ public class AdminController {
         adminService.eliminarNotaKanban(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/dashboard/financiero")
+    public ResponseEntity<List<FlujoCajaMensualDto>> getDashboardFinanciero(
+            @RequestParam(defaultValue = "2026") int anio) {
+        return ResponseEntity.ok(adminService.getFlujoCaja(anio));
+    }
+
+    @GetMapping("/dashboard/ultimos-pagos")
+    public ResponseEntity<List<UltimoPagoDto>> getUltimosPagos() {
+        return ResponseEntity.ok(adminService.getUltimosPagos());
+    }
 }

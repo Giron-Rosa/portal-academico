@@ -5,7 +5,36 @@ import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 
-type Seccion = 'dashboard' | 'estudiantes' | 'docentes' | 'padres' | 'kanban' | 'finanzas' | 'caja' | 'configuracion';
+type Seccion = 'dashboard' | 'estudiantes' | 'docentes' | 'padres' | 'kanban' | 'finanzas' | 'caja' | 'configuracion' | 'cursos' | 'personal';
+
+interface Curso {
+  idCurso?: number | null;
+  nombre: string;
+  area: string;
+  activo: boolean;
+}
+
+interface CursoAsignacion {
+  idAulaCurso?: number | null;
+  idCurso: number;
+  cursoNombre?: string;
+  area?: string;
+  idAula: number;
+  gradoNombre?: string;
+  seccionNombre?: string;
+  horasSemana: number;
+  idMaestro: number | null;
+  docenteNombre?: string;
+}
+
+interface Personal {
+  idPersonal?: number | null;
+  nombre: string;
+  cargo: string;
+  tipoContrato: string;
+  salarioBase: number;
+  activo: boolean;
+}
 
 interface ConceptoPago {
   idConcepto?: number;
@@ -207,6 +236,24 @@ export class PortalAdmin implements OnInit {
   modalCaja = signal<'movimiento' | null>(null);
   formMovimiento = { tipo: 'gasto' as 'ingreso'|'gasto', idCategoria: null as number|null, descripcion: '', monto: 0, fecha: this.today, referencia: '' };
 
+  // Cursos & Asignaciones signals
+  cursos = signal<Curso[]>([]);
+  asignaciones = signal<CursoAsignacion[]>([]);
+  aulasDisponibles = signal<{ idAula: number, grado: string, seccion: string, periodo: string }[]>([]);
+  maestrosDisponibles = signal<{ idMaestro: number, nombreCompleto: string }[]>([]);
+  cargandoCursos = signal(false);
+  modalCursos = signal<'curso' | 'asignar' | null>(null);
+  formCurso = { idCurso: null as number | null, nombre: '', area: '', activo: true };
+  formAsignar = { idAulaCurso: null as number | null, idCurso: null as number | null, idAula: null as number | null, horasSemana: 4, idMaestro: null as number | null };
+
+  // Personal (RRHH) signals
+  personal = signal<Personal[]>([]);
+  pagosPersonalMap = signal<Record<number, any[]>>({});
+  cargandoPersonal = signal(false);
+  modalPersonal = signal<'empleado' | 'pago' | null>(null);
+  formEmpleado = { idPersonal: null as number | null, nombre: '', cargo: '', tipoContrato: 'pleno', salarioBase: 1200, activo: true };
+  formPagoPersonal = { idPersonal: null as number | null, empleadoNombre: '', mes: '2026-06', montoNeto: 1200, nroRecibo: '' };
+
   // Config signals
   private readonly CONFIG_URL = 'http://localhost:8080/api/portal/admin/config';
   colegioConfig = signal<ColegioConfig | null>(null);
@@ -247,6 +294,10 @@ export class PortalAdmin implements OnInit {
     if (sec === 'finanzas')      this.cargarFinanzas();
     if (sec === 'caja')          this.cargarCaja();
     if (sec === 'configuracion') this.cargarConfiguracion();
+    if (sec === 'cursos')        this.cargarCursosData();
+    if (sec === 'personal')      this.cargarPersonalData();
+    if (sec === 'cursos')        this.cargarEventosData(); // Calendario
+    if (sec === 'personal')      this.cargarBiData();      // Reportes BI
   }
 
   private getHeaders(): HttpHeaders {
@@ -261,8 +312,18 @@ export class PortalAdmin implements OnInit {
 
     if (this.seccionActiva() === 'dashboard') {
       this.http.get<Kpis>(`${this.API_BASE}/dashboard/kpis`, { headers }).subscribe({
-        next: (data) => { this.kpis.set(data); this.cargando.set(false); },
-        error: () => { this.errorCarga.set('Error al cargar KPIs.'); this.cargando.set(false); }
+        next: (data) => { this.kpis.set(data); },
+        error: () => { this.errorCarga.set('Error al cargar KPIs.'); }
+      });
+      // Cargar flujo financiero para el gráfico del dashboard
+      this.http.get<FlujoCajaMensual[]>(`${this.API_BASE}/dashboard/financiero?anio=2026`, { headers }).subscribe({
+        next: (data) => { this.dashboardFinanciero.set(data); },
+        error: () => {}
+      });
+      // Cargar últimos 10 pagos
+      this.http.get<any[]>(`${this.API_BASE}/dashboard/ultimos-pagos`, { headers }).subscribe({
+        next: (data) => { this.ultimosPagos.set(data); this.cargando.set(false); },
+        error: () => { this.cargando.set(false); }
       });
     } else if (this.seccionActiva() === 'estudiantes') {
       this.http.get<Estudiante[]>(`${this.API_BASE}/estudiantes`, { headers }).subscribe({
@@ -286,6 +347,12 @@ export class PortalAdmin implements OnInit {
         next: (data) => { this.notas.set(data); this.cargando.set(false); },
         error: () => { this.errorCarga.set('Error al cargar el tablero Kanban.'); this.cargando.set(false); }
       });
+    } else if (this.seccionActiva() === 'cursos') {
+      this.cargarCursosData();
+      this.cargarEventosData(); // FASE 10
+    } else if (this.seccionActiva() === 'personal') {
+      this.cargarPersonalData();
+      this.cargarBiData();      // FASE 11
     }
   }
 
@@ -595,6 +662,340 @@ export class PortalAdmin implements OnInit {
     if (campo === 'puedeBorrar') return p.puedeBorrar;
     return false;
   }
+
+  // ── FASE 8: Cursos & Asignaciones ─────────────────────────────────────
+  cargarCursosData() {
+    this.cargando.set(true);
+    this.errorCarga.set('');
+    const headers = this.getHeaders();
+
+    this.http.get<Curso[]>(`${this.API_BASE}/cursos`, { headers }).subscribe({
+      next: (cData) => {
+        this.cursos.set(cData);
+        // Cargar asignaciones
+        this.http.get<CursoAsignacion[]>(`${this.API_BASE}/cursos/asignaciones`, { headers }).subscribe({
+          next: (aData) => {
+            this.asignaciones.set(aData);
+            this.cargando.set(false);
+          },
+          error: () => { this.errorCarga.set('Error al cargar asignaciones.'); this.cargando.set(false); }
+        });
+      },
+      error: () => { this.errorCarga.set('Error al cargar catálogo de cursos.'); this.cargando.set(false); }
+    });
+
+    // Cargar combos auxiliares
+    this.http.get<any[]>(`${this.API_BASE}/cursos/auxiliares/aulas`, { headers }).subscribe({
+      next: (data) => this.aulasDisponibles.set(data),
+      error: () => {}
+    });
+    this.http.get<any[]>(`${this.API_BASE}/cursos/auxiliares/maestros`, { headers }).subscribe({
+      next: (data) => this.maestrosDisponibles.set(data),
+      error: () => {}
+    });
+  }
+
+  abrirNuevoCurso() {
+    this.formCurso = { idCurso: null, nombre: '', area: 'Ciencias', activo: true };
+    this.modalCursos.set('curso');
+  }
+
+  editarCurso(c: Curso) {
+    this.formCurso = { idCurso: c.idCurso ?? null, nombre: c.nombre, area: c.area, activo: c.activo };
+    this.modalCursos.set('curso');
+  }
+
+  guardarCurso() {
+    const headers = this.getHeaders();
+    const isEdit = this.formCurso.idCurso !== null;
+    const req = { ...this.formCurso };
+
+    const obs$ = isEdit 
+      ? this.http.put<Curso>(`${this.API_BASE}/cursos/${req.idCurso}`, req, { headers })
+      : this.http.post<Curso>(`${this.API_BASE}/cursos`, req, { headers });
+
+    obs$.subscribe({
+      next: () => {
+        this.modalCursos.set(null);
+        this.cargarCursosData();
+      },
+      error: () => alert('Error al guardar curso')
+    });
+  }
+
+  eliminarCurso(id: number) {
+    if (!confirm('¿Seguro que desea desactivar/eliminar este curso?')) return;
+    const headers = this.getHeaders();
+    this.http.delete(`${this.API_BASE}/cursos/${id}`, { headers }).subscribe({
+      next: () => this.cargarCursosData(),
+      error: () => alert('Error al eliminar curso')
+    });
+  }
+
+  abrirAsignar() {
+    this.formAsignar = { idAulaCurso: null, idCurso: null, idAula: null, horasSemana: 4, idMaestro: null };
+    this.modalCursos.set('asignar');
+  }
+
+  editarAsignacion(a: CursoAsignacion) {
+    this.formAsignar = {
+      idAulaCurso: a.idAulaCurso ?? null,
+      idCurso: a.idCurso,
+      idAula: a.idAula,
+      horasSemana: a.horasSemana,
+      idMaestro: a.idMaestro
+    };
+    this.modalCursos.set('asignar');
+  }
+
+  guardarAsignacion() {
+    const headers = this.getHeaders();
+    const isEdit = this.formAsignar.idAulaCurso !== null;
+    const req = { ...this.formAsignar };
+
+    const obs$ = isEdit
+      ? this.http.put(`${this.API_BASE}/cursos/asignaciones/${req.idAulaCurso}`, req, { headers })
+      : this.http.post(`${this.API_BASE}/cursos/asignaciones`, req, { headers });
+
+    obs$.subscribe({
+      next: () => {
+        this.modalCursos.set(null);
+        this.cargarCursosData();
+      },
+      error: () => alert('Error al guardar asignación')
+    });
+  }
+
+  eliminarAsignacion(id: number) {
+    if (!confirm('¿Seguro que desea eliminar esta asignación?')) return;
+    const headers = this.getHeaders();
+    this.http.delete(`${this.API_BASE}/cursos/asignaciones/${id}`, { headers }).subscribe({
+      next: () => this.cargarCursosData(),
+      error: () => alert('Error al eliminar asignación')
+    });
+  }
+
+  // ── FASE 13: Personal (RRHH) ──────────────────────────────────────────
+  cargarPersonalData() {
+    this.cargando.set(true);
+    this.errorCarga.set('');
+    const headers = this.getHeaders();
+
+    this.http.get<Personal[]>(`${this.API_BASE}/personal`, { headers }).subscribe({
+      next: (data) => {
+        this.personal.set(data);
+        this.cargando.set(false);
+        // Cargar pagos para cada empleado
+        data.forEach(p => {
+          if (p.idPersonal) this.cargarPagosPersonal(p.idPersonal);
+        });
+      },
+      error: () => { this.errorCarga.set('Error al cargar personal.'); this.cargando.set(false); }
+    });
+  }
+
+  cargarPagosPersonal(idPersonal: number) {
+    const headers = this.getHeaders();
+    this.http.get<any[]>(`${this.API_BASE}/personal/${idPersonal}/pagos`, { headers }).subscribe({
+      next: (pagos) => {
+        this.pagosPersonalMap.update(map => ({ ...map, [idPersonal]: pagos }));
+      }
+    });
+  }
+
+  abrirNuevoEmpleado() {
+    this.formEmpleado = { idPersonal: null, nombre: '', cargo: '', tipoContrato: 'pleno', salarioBase: 1200, activo: true };
+    this.modalPersonal.set('empleado');
+  }
+
+  editarEmpleado(p: Personal) {
+    this.formEmpleado = { idPersonal: p.idPersonal ?? null, nombre: p.nombre, cargo: p.cargo, tipoContrato: p.tipoContrato, salarioBase: p.salarioBase, activo: p.activo };
+    this.modalPersonal.set('empleado');
+  }
+
+  guardarEmpleado() {
+    const headers = this.getHeaders();
+    const isEdit = this.formEmpleado.idPersonal !== null;
+    const req = { ...this.formEmpleado };
+
+    const obs$ = isEdit
+      ? this.http.put<Personal>(`${this.API_BASE}/personal/${req.idPersonal}`, req, { headers })
+      : this.http.post<Personal>(`${this.API_BASE}/personal`, req, { headers });
+
+    obs$.subscribe({
+      next: () => {
+        this.modalPersonal.set(null);
+        this.cargarPersonalData();
+      },
+      error: () => alert('Error al guardar personal')
+    });
+  }
+
+  eliminarEmpleado(id: number) {
+    if (!confirm('¿Seguro que desea desactivar/dar de baja a este empleado?')) return;
+    const headers = this.getHeaders();
+    this.http.delete(`${this.API_BASE}/personal/${id}`, { headers }).subscribe({
+      next: () => this.cargarPersonalData(),
+      error: () => alert('Error al desactivar personal')
+    });
+  }
+
+  abrirRegistrarPagoPersonal(p: Personal) {
+    this.formPagoPersonal = { idPersonal: p.idPersonal ?? null, empleadoNombre: p.nombre, mes: new Date().toISOString().substring(0, 7), montoNeto: p.salarioBase, nroRecibo: 'REC-' + Math.floor(1000 + Math.random() * 9000) };
+    this.modalPersonal.set('pago');
+  }
+
+  guardarPagoPersonal() {
+    const headers = this.getHeaders();
+    const id = this.formPagoPersonal.idPersonal;
+    if (!id) return;
+    const req = { mes: this.formPagoPersonal.mes, montoNeto: this.formPagoPersonal.montoNeto, nroRecibo: this.formPagoPersonal.nroRecibo };
+
+    this.http.post(`${this.API_BASE}/personal/${id}/pagos`, req, { headers }).subscribe({
+      next: () => {
+        this.modalPersonal.set(null);
+        this.cargarPagosPersonal(id);
+      },
+      error: () => alert('Error al registrar pago')
+    });
+  }
+
+  // ── FASE 10: Eventos (Calendario) ─────────────────────────────────────
+  eventosAdmin = signal<any[]>([]);
+  modalEventos = signal<'crear' | null>(null);
+  formEvento = { idEvento: null as number | null, tipo: 'reunion', titulo: '', fecha: this.today, horaInicio: '08:00:00', horaFin: '10:00:00', lugar: '', descripcion: '' };
+  diasCalendario = signal<any[]>([]);
+  fechaFiltroCalendario = signal<string>(new Date().toISOString().substring(0, 7)); // "2026-06"
+  eventoDiaSeleccionado = signal<any[]>([]);
+  diaSeleccionadoStr = signal<string>(new Date().toISOString().substring(0, 10));
+
+  cargarEventosData() {
+    this.cargando.set(true);
+    const headers = this.getHeaders();
+    this.http.get<any[]>(`${this.API_BASE}/eventos`, { headers }).subscribe({
+      next: (data) => {
+        this.eventosAdmin.set(data);
+        this.generarCalendario();
+        this.filtrarEventosDia(this.diaSeleccionadoStr());
+        this.cargando.set(false);
+      },
+      error: () => { this.cargando.set(false); }
+    });
+  }
+
+  generarCalendario() {
+    const [yearStr, monthStr] = this.fechaFiltroCalendario().split('-');
+    const year = parseInt(yearStr);
+    const month = parseInt(monthStr) - 1;
+
+    const primerDiaSemana = new Date(year, month, 1).getDay();
+    const offset = primerDiaSemana === 0 ? 6 : primerDiaSemana - 1;
+
+    const diasEnMes = new Date(year, month + 1, 0).getDate();
+    const totalCeldas = offset + diasEnMes > 35 ? 42 : 35;
+
+    const arrayCeldas = [];
+    for (let i = 0; i < offset; i++) {
+      arrayCeldas.push({ dia: '', fechaStr: '', eventos: [] as any[] });
+    }
+
+    for (let d = 1; d <= diasEnMes; d++) {
+      const fechaStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const evs = this.eventosAdmin().filter(e => e.fecha === fechaStr);
+      arrayCeldas.push({ dia: d, fechaStr, eventos: evs });
+    }
+
+    while (arrayCeldas.length < totalCeldas) {
+      arrayCeldas.push({ dia: '', fechaStr: '', eventos: [] as any[] });
+    }
+
+    this.diasCalendario.set(arrayCeldas);
+  }
+
+  seleccionarDia(fechaStr: string) {
+    if (!fechaStr) return;
+    this.diaSeleccionadoStr.set(fechaStr);
+    this.filtrarEventosDia(fechaStr);
+  }
+
+  filtrarEventosDia(fechaStr: string) {
+    this.eventoDiaSeleccionado.set(this.eventosAdmin().filter(e => e.fecha === fechaStr));
+  }
+
+  cambiarMesCalendario(incremento: number) {
+    const [yearStr, monthStr] = this.fechaFiltroCalendario().split('-');
+    let year = parseInt(yearStr);
+    let month = parseInt(monthStr) - 1 + incremento;
+    if (month < 0) { month = 11; year--; }
+    if (month > 11) { month = 0; year++; }
+    this.fechaFiltroCalendario.set(`${year}-${String(month + 1).padStart(2, '0')}`);
+    this.generarCalendario();
+  }
+
+  abrirNuevoEvento() {
+    this.formEvento = { idEvento: null, tipo: 'reunion', titulo: '', fecha: this.diaSeleccionadoStr(), horaInicio: '08:00:00', horaFin: '10:00:00', lugar: 'Auditorio', descripcion: '' };
+    this.modalEventos.set('crear');
+  }
+
+  guardarEvento() {
+    const headers = this.getHeaders();
+    const isEdit = this.formEvento.idEvento !== null;
+    const req = { ...this.formEvento };
+
+    const obs$ = isEdit
+      ? this.http.put(`${this.API_BASE}/eventos/${req.idEvento}`, req, { headers })
+      : this.http.post(`${this.API_BASE}/eventos`, req, { headers });
+
+    obs$.subscribe({
+      next: () => {
+        this.modalEventos.set(null);
+        this.cargarEventosData();
+      },
+      error: () => alert('Error al guardar evento')
+    });
+  }
+
+  eliminarEvento(id: number) {
+    if (!confirm('¿Seguro que desea eliminar este evento?')) return;
+    const headers = this.getHeaders();
+    this.http.delete(`${this.API_BASE}/eventos/${id}`, { headers }).subscribe({
+      next: () => this.cargarEventosData(),
+      error: () => alert('Error al eliminar evento')
+    });
+  }
+
+  // ── FASE 11: BI & Estadísticas ────────────────────────────────────────
+  biPromedioGrado = signal<any[]>([]);
+  biDistribucionNotas = signal<any[]>([]);
+  biAsistenciaInst = signal<any[]>([]);
+  biRankingMorosos = signal<any[]>([]);
+  cargandoBi = signal(false);
+
+  cargarBiData() {
+    this.cargandoBi.set(true);
+    const headers = this.getHeaders();
+
+    this.http.get<any[]>(`${this.API_BASE}/bi/promedio-grado`, { headers }).subscribe({
+      next: (data) => this.biPromedioGrado.set(data)
+    });
+    this.http.get<any[]>(`${this.API_BASE}/bi/distribucion-notas`, { headers }).subscribe({
+      next: (data) => this.biDistribucionNotas.set(data)
+    });
+    this.http.get<any[]>(`${this.API_BASE}/bi/asistencia-institucional`, { headers }).subscribe({
+      next: (data) => this.biAsistenciaInst.set(data)
+    });
+    this.http.get<any[]>(`${this.API_BASE}/bi/ranking-morosos`, { headers }).subscribe({
+      next: (data) => {
+        this.biRankingMorosos.set(data);
+        this.cargandoBi.set(false);
+      },
+      error: () => this.cargandoBi.set(false)
+    });
+  }
+
+  // ── FASE 9: Dashboard KPI Avanzado ─────────────────────────────────────
+  dashboardFinanciero = signal<FlujoCajaMensual[]>([]);
+  ultimosPagos = signal<any[]>([]);
 
   logout() {
     this.auth.logout();

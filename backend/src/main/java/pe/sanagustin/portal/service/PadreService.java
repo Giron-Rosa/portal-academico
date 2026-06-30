@@ -11,6 +11,7 @@ import pe.sanagustin.portal.dto.ExamenHijoDto;
 import pe.sanagustin.portal.dto.EventoHijoDto;
 import pe.sanagustin.portal.dto.PagoHijoDto;
 import pe.sanagustin.portal.dto.HijoResumenDto;
+import pe.sanagustin.portal.dto.HorarioDocenteDto;
 import pe.sanagustin.portal.dto.TareaHijoDto;
 
 import java.util.ArrayList;
@@ -141,6 +142,14 @@ public class PadreService {
                 estado = "observacion";
             }
 
+            int cuotasPendientes = ((Number) entityManager.createNativeQuery("""
+                    SELECT COUNT(*)
+                    FROM cuotas_estudiante
+                    WHERE id_estudiante = :idAlumno AND pagado = false
+                    """)
+                    .setParameter("idAlumno", idAlumno)
+                    .getSingleResult()).intValue();
+
             resultado.add(new HijoResumenDto(
                     (String) r[1],
                     (String) r[2],
@@ -155,6 +164,7 @@ public class PadreService {
                     cursosRiesgo,
                     entregaGral,
                     estado,
+                    cuotasPendientes,
                     cursos
             ));
         }
@@ -500,18 +510,112 @@ public class PadreService {
                     org.springframework.http.HttpStatus.FORBIDDEN, "Acceso no autorizado");
         }
 
+        // Obtener id_alumno
+        Long idAlumno = ((Number) entityManager.createNativeQuery(
+                "SELECT a.id_alumno FROM alumnos a JOIN usuarios u ON u.id_usuario=a.id_usuario WHERE u.codigo=:cod")
+                .setParameter("cod", codigoAlumno)
+                .getSingleResult()).longValue();
+
+        String sql = """
+                SELECT cp.nombre,
+                       cp.monto,
+                       TO_CHAR(ce.fecha_vencimiento, 'DD/MM/YYYY') AS fecha_venc,
+                       CASE
+                         WHEN ce.pagado = true THEN 'PAGADO'
+                         WHEN ce.fecha_vencimiento < CURRENT_DATE THEN 'VENCIDO'
+                         ELSE 'PENDIENTE'
+                       END AS estado,
+                       TO_CHAR(ce.fecha_pago, 'DD/MM/YYYY') AS fecha_pago,
+                       ce.nro_transaccion
+                FROM cuotas_estudiante ce
+                JOIN conceptos_pago cp ON cp.id_concepto = ce.id_concepto
+                WHERE ce.id_estudiante = :idAlumno
+                ORDER BY ce.fecha_vencimiento ASC
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = entityManager.createNativeQuery(sql)
+                .setParameter("idAlumno", idAlumno)
+                .getResultList();
+
         List<PagoHijoDto> list = new ArrayList<>();
-        list.add(new PagoHijoDto("Cuota de Matrícula 2026", 350.00, "15/02/2026", "PAGADO", "12/02/2026", "B001-000451"));
-        list.add(new PagoHijoDto("Pensión Escolar - Marzo 2026", 380.00, "10/03/2026", "PAGADO", "08/03/2026", "B001-001092"));
-        list.add(new PagoHijoDto("Pensión Escolar - Abril 2026", 380.00, "10/04/2026", "PAGADO", "09/04/2026", "B001-001853"));
-        list.add(new PagoHijoDto("Pensión Escolar - Mayo 2026", 380.00, "10/05/2026", "PAGADO", "09/05/2026", "B001-002704"));
-        list.add(new PagoHijoDto("Pensión Escolar - Junio 2026", 380.00, "10/06/2026", "VENCIDO", null, null));
-        list.add(new PagoHijoDto("Pensión Escolar - Julio 2026", 380.00, "10/07/2026", "PENDIENTE", null, null));
-        list.add(new PagoHijoDto("Pensión Escolar - Agosto 2026", 380.00, "10/08/2026", "PENDIENTE", null, null));
-        list.add(new PagoHijoDto("Pensión Escolar - Setiembre 2026", 380.00, "10/09/2026", "PENDIENTE", null, null));
-        list.add(new PagoHijoDto("Pensión Escolar - Octubre 2026", 380.00, "10/10/2026", "PENDIENTE", null, null));
-        list.add(new PagoHijoDto("Pensión Escolar - Noviembre 2026", 380.00, "10/11/2026", "PENDIENTE", null, null));
-        list.add(new PagoHijoDto("Pensión Escolar - Diciembre 2026", 380.00, "10/12/2026", "PENDIENTE", null, null));
+        for (Object[] r : rows) {
+            list.add(new PagoHijoDto(
+                    (String) r[0],
+                    ((Number) r[1]).doubleValue(),
+                    (String) r[2],
+                    (String) r[3],
+                    r[4] != null ? (String) r[4] : null,
+                    r[5] != null ? (String) r[5] : null
+            ));
+        }
+        return list;
+    }
+
+    public List<HorarioDocenteDto> getHorarioHijo(String codigoPadre, String codigoAlumno) {
+        // Verificar relación padre-hijo
+        @SuppressWarnings("unchecked")
+        List<?> check = entityManager.createNativeQuery("""
+                SELECT 1
+                FROM padre_hijo ph
+                JOIN padres   p   ON p.id_padre     = ph.id_padre
+                JOIN usuarios u_p ON u_p.id_usuario = p.id_usuario
+                JOIN alumnos  a   ON a.id_alumno    = ph.id_alumno
+                JOIN usuarios u_a ON u_a.id_usuario = a.id_usuario
+                WHERE u_p.codigo = :codPadre AND u_a.codigo = :codAlumno
+                """)
+                .setParameter("codPadre",  codigoPadre)
+                .setParameter("codAlumno", codigoAlumno)
+                .getResultList();
+
+        if (check.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Acceso no autorizado");
+        }
+
+        String[] DIAS = { "", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes" };
+
+        String sql = """
+                SELECT h.dia_semana,
+                       TO_CHAR(h.hora_inicio, 'HH24:MI') AS hora_inicio,
+                       TO_CHAR(h.hora_fin,    'HH24:MI') AS hora_fin,
+                       c.nombre   AS curso,
+                       g.nombre   AS grado,
+                       s.nombre   AS seccion,
+                       ac.id_aula_curso
+                FROM horarios h
+                JOIN aula_cursos ac ON ac.id_aula_curso = h.id_aula_curso
+                JOIN cursos      c  ON c.id_curso       = ac.id_curso
+                JOIN aulas       a  ON a.id_aula        = ac.id_aula
+                JOIN grados      g  ON g.id_grado       = a.id_grado
+                JOIN secciones   s  ON s.id_seccion     = a.id_seccion
+                JOIN matriculas  m  ON m.id_aula        = a.id_aula
+                JOIN alumnos     al ON al.id_alumno     = m.id_alumno
+                JOIN usuarios    u  ON u.id_usuario     = al.id_usuario
+                WHERE u.codigo = :codAlumno AND m.estado = 'activa'
+                ORDER BY h.dia_semana, h.hora_inicio
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = entityManager.createNativeQuery(sql)
+                .setParameter("codAlumno", codigoAlumno)
+                .getResultList();
+
+        List<HorarioDocenteDto> list = new ArrayList<>();
+        for (Object[] r : rows) {
+            int dia = ((Number) r[0]).intValue();
+            list.add(new HorarioDocenteDto(
+                    dia,
+                    DIAS[dia],
+                    (String) r[1],
+                    (String) r[2],
+                    (String) r[3],
+                    (String) r[4],
+                    (String) r[5],
+                    r[6] != null ? ((Number) r[6]).longValue() : null
+            ));
+        }
         return list;
     }
 }
+

@@ -76,6 +76,22 @@
         <span class="sidebar-label">Caja y Análisis</span>
       </button>
 
+      <button class="sidebar-item" [class.active]="seccionActiva() === 'cursos'" (click)="setSeccion('cursos')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          <line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/>
+        </svg>
+        <span class="sidebar-label">Cursos y Aulas</span>
+      </button>
+
+      <button class="sidebar-item" [class.active]="seccionActiva() === 'personal'" (click)="setSeccion('personal')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          <line x1="17" y1="21" x2="17" y2="17"/><path d="M20 17h-6"/>
+        </svg>
+        <span class="sidebar-label">RRHH</span>
+      </button>
+
       <button class="sidebar-item" [class.active]="seccionActiva() === 'configuracion'" (click)="setSeccion('configuracion')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3"/>
@@ -167,25 +183,52 @@
             </div>
           </div>
 
+          <!-- FASE 9: Gráfico Ingresos vs Gastos + Últimos Pagos -->
           <div class="charts-and-recent mt-lg">
-            <div class="recent-card">
-              <h3>Distribución Académica</h3>
-              <p>Clasificación del alumnado matriculado en el periodo lectivo activo.</p>
-              <div class="distribution-list">
-                <div class="dist-item"><span class="lbl">5to Secundaria</span><span class="bar bar-5"><span class="fill w-80"></span></span><span class="pct">32 alumnos</span></div>
-                <div class="dist-item"><span class="lbl">3ro Secundaria</span><span class="bar bar-3"><span class="fill w-60"></span></span><span class="pct">24 alumnos</span></div>
-                <div class="dist-item"><span class="lbl">1ro Primaria</span><span class="bar bar-1"><span class="fill w-40"></span></span><span class="pct">18 alumnos</span></div>
+            <div class="dashboard-chart-card">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+                <div>
+                  <h3 style="margin:0; color:#111827; font-size:1rem; font-weight:600;">Flujo Financiero 2026</h3>
+                  <p style="margin:0.2rem 0 0; color:#6b7280; font-size:0.8rem;">Ingresos vs Gastos por mes</p>
+                </div>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <div class="flujo-bars">
+                @for (mes of dashboardFinanciero(); track mes.mes) {
+                  <div class="flujo-mes-col">
+                    <div class="flujo-bar-wrap">
+                      <div class="flujo-bar ingreso" [style.height.px]="mes.totalIngresos / 100 | number:'1.0-0'" title="Ingreso S/. {{ mes.totalIngresos }}"></div>
+                      <div class="flujo-bar gasto" [style.height.px]="mes.totalGastos / 100 | number:'1.0-0'" title="Gasto S/. {{ mes.totalGastos }}"></div>
+                    </div>
+                    <span class="flujo-mes-lbl">{{ mes.mes }}</span>
+                  </div>
+                }
+                @if (dashboardFinanciero().length === 0) {
+                  <div style="text-align:center; color:#9ca3af; padding:2rem; width:100%;">No hay datos financieros disponibles. Registra movimientos en Caja.</div>
+                }
+              </div>
+              <div class="flujo-leyenda">
+                <span class="leyenda-dot" style="background:#6366f1;"></span> Ingresos
+                <span class="leyenda-dot" style="background:#f59e0b; margin-left:1rem;"></span> Gastos
               </div>
             </div>
 
             <div class="recent-card">
-              <h3>Actividad Reciente</h3>
-              <p>Últimos registros y actualizaciones del campus.</p>
-              <ul class="activity-feed">
-                <li><span class="dot azul"></span><strong>Matrícula Registrada:</strong> Diego Martínez en 1ro Primaria A.</li>
-                <li><span class="dot verde"></span><strong>Nueva Asignación:</strong> Oscar Castillo en Matemática (3ro A).</li>
-                <li><span class="dot naranja"></span><strong>Alerta de Reserva:</strong> Auditorio ocupado el Miércoles 10:00 AM.</li>
-              </ul>
+              <h3>Últimos Pagos Recibidos</h3>
+              <p style="color:#6b7280; font-size:0.82rem; margin-bottom:0.75rem;">Cuotas cobradas recientemente</p>
+              @if (ultimosPagos().length > 0) {
+                <ul class="activity-feed">
+                  @for (pago of ultimosPagos(); track pago.idCuota) {
+                    <li>
+                      <span class="dot verde"></span>
+                      <strong>{{ pago.estudianteNombre }} {{ pago.estudianteApellido }}</strong><br/>
+                      <span style="font-size:0.78rem; color:#6b7280;">{{ pago.conceptoNombre }} · S/. {{ pago.monto }} · {{ pago.fechaPago }}</span>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p style="color:#9ca3af; font-size:0.85rem;">No hay pagos recientes registrados.</p>
+              }
             </div>
           </div>
         </div>
@@ -1173,6 +1216,447 @@
         </div>
       }
     </div>
-
   </div>
 }
+
+      <!-- ========== SECCIÓN: CURSOS & AULAS (FASE 8) ========== -->
+      @if (seccionActiva() === 'cursos') {
+        <div class="seccion-crud">
+          <div class="crud-header">
+            <div>
+              <h1 class="page-title">Cursos y Asignaciones de Aula</h1>
+              <p class="page-subtitle">Gestiona el catálogo de asignaturas y su asignación a docentes y secciones</p>
+            </div>
+            <div class="crud-actions">
+              <button class="btn-secondary" (click)="abrirAsignar()">+ Asignar Curso</button>
+              <button class="btn-primary" (click)="abrirNuevoCurso()">+ Nuevo Curso</button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1.6fr; gap:1.5rem; margin-top:1.25rem;">
+            <div class="table-container">
+              <h3 style="font-size:0.9rem; font-weight:600; color:#374151; padding:0.75rem 1rem 0;">Catálogo de Asignaturas</h3>
+              <table class="admin-table">
+                <thead><tr><th>Nombre</th><th>Área</th><th>Estado</th><th></th></tr></thead>
+                <tbody>
+                  @for (c of cursos(); track c.idCurso) {
+                    <tr>
+                      <td><strong>{{ c.nombre }}</strong></td>
+                      <td><span class="badge-area">{{ c.area }}</span></td>
+                      <td><span [class]="c.activo ? 'estado-badge activo' : 'estado-badge inactivo'">{{ c.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                      <td class="acciones-td">
+                        <button class="btn-edit" (click)="editarCurso(c)" title="Editar">✏️</button>
+                        <button class="btn-delete" (click)="eliminarCurso(c.idCurso!)" title="Eliminar">🗑</button>
+                      </td>
+                    </tr>
+                  }
+                  @if (cursos().length === 0) {
+                    <tr><td colspan="4" style="text-align:center; color:#9ca3af; padding:2rem;">No hay cursos registrados</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="table-container">
+              <h3 style="font-size:0.9rem; font-weight:600; color:#374151; padding:0.75rem 1rem 0;">Asignaciones Docente–Sección</h3>
+              <table class="admin-table">
+                <thead><tr><th>Curso</th><th>Aula</th><th>Docente</th><th>Hrs/sem</th><th></th></tr></thead>
+                <tbody>
+                  @for (a of asignaciones(); track a.idAulaCurso) {
+                    <tr>
+                      <td><strong>{{ a.cursoNombre }}</strong><br/><span style="font-size:0.75rem; color:#6b7280;">{{ a.area }}</span></td>
+                      <td>{{ a.gradoNombre }} {{ a.seccionNombre }}</td>
+                      <td>{{ a.docenteNombre ?? '—' }}</td>
+                      <td>{{ a.horasSemana }}</td>
+                      <td class="acciones-td">
+                        <button class="btn-edit" (click)="editarAsignacion(a)" title="Editar">✏️</button>
+                        <button class="btn-delete" (click)="eliminarAsignacion(a.idAulaCurso!)" title="Eliminar">🗑</button>
+                      </td>
+                    </tr>
+                  }
+                  @if (asignaciones().length === 0) {
+                    <tr><td colspan="5" style="text-align:center; color:#9ca3af; padding:2rem;">No hay asignaciones registradas</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Calendario Institucional (FASE 10) -->
+          <div style="margin-top:2rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+              <div>
+                <h2 style="font-size:1.1rem; font-weight:700; color:#111827; margin:0;">📅 Calendario Institucional</h2>
+                <p style="color:#6b7280; font-size:0.82rem; margin:0.2rem 0 0;">Eventos, reuniones y actividades del colegio</p>
+              </div>
+              <button class="btn-primary" (click)="abrirNuevoEvento()">+ Nuevo Evento</button>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 320px; gap:1.5rem;">
+              <div class="cal-card">
+                <div class="cal-nav">
+                  <button class="cal-nav-btn" (click)="cambiarMesCalendario(-1)">‹</button>
+                  <span class="cal-mes-label">{{ fechaFiltroCalendario() }}</span>
+                  <button class="cal-nav-btn" (click)="cambiarMesCalendario(1)">›</button>
+                </div>
+                <div class="cal-grid-header">
+                  @for (d of ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']; track d) {
+                    <div class="cal-day-name">{{ d }}</div>
+                  }
+                </div>
+                <div class="cal-grid">
+                  @for (celda of diasCalendario(); track celda.fechaStr) {
+                    <div class="cal-cell"
+                         [class.empty]="!celda.dia"
+                         [class.has-events]="celda.eventos.length > 0"
+                         [class.selected]="celda.fechaStr === diaSeleccionadoStr()"
+                         (click)="seleccionarDia(celda.fechaStr)">
+                      @if (celda.dia) {
+                        <span class="cal-day-num">{{ celda.dia }}</span>
+                        @if (celda.eventos.length > 0) {
+                          <span class="cal-event-dot"></span>
+                        }
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="cal-eventos-panel">
+                <h4 style="font-size:0.9rem; font-weight:600; color:#374151; margin:0 0 0.75rem;">Eventos el {{ diaSeleccionadoStr() }}</h4>
+                @if (eventoDiaSeleccionado().length === 0) {
+                  <p style="color:#9ca3af; font-size:0.85rem;">Sin eventos este día.</p>
+                }
+                @for (ev of eventoDiaSeleccionado(); track ev.idEvento) {
+                  <div class="evento-item">
+                    <div class="evento-tipo-badge">{{ ev.tipo }}</div>
+                    <div>
+                      <strong style="font-size:0.9rem;">{{ ev.titulo }}</strong>
+                      <p style="font-size:0.78rem; color:#6b7280; margin:0.15rem 0 0;">{{ ev.horaInicio }} – {{ ev.horaFin }} · {{ ev.lugar }}</p>
+                      <p style="font-size:0.76rem; color:#9ca3af; margin:0.1rem 0 0;">{{ ev.descripcion }}</p>
+                    </div>
+                    <button class="btn-delete" (click)="eliminarEvento(ev.idEvento)" title="Eliminar">🗑</button>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ========== SECCIÓN: PERSONAL / RRHH & BI (FASES 11 y 13) ========== -->
+      @if (seccionActiva() === 'personal') {
+        <div class="seccion-crud">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem;">
+
+            <!-- FASE 13: RRHH -->
+            <div>
+              <div class="crud-header" style="margin-bottom:1.25rem;">
+                <div>
+                  <h1 class="page-title">RRHH — Personal</h1>
+                  <p class="page-subtitle">Gestión de empleados y registro de pagos salariales</p>
+                </div>
+                <button class="btn-primary" (click)="abrirNuevoEmpleado()">+ Empleado</button>
+              </div>
+
+              <div class="table-container">
+                <table class="admin-table">
+                  <thead><tr><th>Nombre</th><th>Cargo</th><th>Contrato</th><th>Salario</th><th>Estado</th><th></th></tr></thead>
+                  <tbody>
+                    @for (p of personal(); track p.idPersonal) {
+                      <tr>
+                        <td><strong>{{ p.nombre }}</strong></td>
+                        <td>{{ p.cargo }}</td>
+                        <td><span class="badge-area">{{ p.tipoContrato }}</span></td>
+                        <td>S/. {{ p.salarioBase | number:'1.0-0' }}</td>
+                        <td><span [class]="p.activo ? 'estado-badge activo' : 'estado-badge inactivo'">{{ p.activo ? 'Activo' : 'Baja' }}</span></td>
+                        <td class="acciones-td">
+                          <button class="btn-edit" (click)="abrirRegistrarPagoPersonal(p)" title="Registrar Pago">💰</button>
+                          <button class="btn-edit" (click)="editarEmpleado(p)" title="Editar">✏️</button>
+                          <button class="btn-delete" (click)="eliminarEmpleado(p.idPersonal!)" title="Dar de baja">🗑</button>
+                        </td>
+                      </tr>
+                    }
+                    @if (personal().length === 0) {
+                      <tr><td colspan="6" style="text-align:center; color:#9ca3af; padding:2rem;">No hay personal registrado</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              @if (formPagoPersonal.idPersonal) {
+                <div style="margin-top:1.5rem;">
+                  <h4 style="font-size:0.9rem; font-weight:600; color:#374151;">Historial de pagos — {{ formPagoPersonal.empleadoNombre }}</h4>
+                  <div class="table-container">
+                    <table class="admin-table">
+                      <thead><tr><th>Mes</th><th>Monto Neto</th><th>Fecha Pago</th><th>Recibo</th></tr></thead>
+                      <tbody>
+                        @for (pg of (pagosPersonalMap()[formPagoPersonal.idPersonal!] ?? []); track pg[0]) {
+                          <tr>
+                            <td>{{ pg[1] }}</td>
+                            <td>S/. {{ pg[2] | number:'1.2-2' }}</td>
+                            <td>{{ pg[3] }}</td>
+                            <td>{{ pg[4] }}</td>
+                          </tr>
+                        }
+                        @if ((pagosPersonalMap()[formPagoPersonal.idPersonal!] ?? []).length === 0) {
+                          <tr><td colspan="4" style="text-align:center; color:#9ca3af; padding:1rem;">Sin pagos registrados</td></tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- FASE 11: BI / Reportes -->
+            <div>
+              <div style="margin-bottom:1.25rem;">
+                <h1 class="page-title">Reportes & Estadísticas BI</h1>
+                <p class="page-subtitle">Indicadores académicos y financieros del colegio</p>
+              </div>
+
+              @if (cargandoBi()) {
+                <div style="text-align:center; padding:2rem; color:#6b7280;">Cargando datos BI...</div>
+              } @else {
+                <div class="bi-card">
+                  <h4 class="bi-card-title">📊 Promedio por Grado</h4>
+                  <div class="bi-bars">
+                    @for (g of biPromedioGrado(); track g.grado) {
+                      <div class="bi-bar-row">
+                        <span class="bi-lbl">{{ g.grado }}</span>
+                        <div class="bi-bar-bg">
+                          <div class="bi-bar-fill" [style.width.%]="(g.promedio / 20) * 100" style="background:#6366f1;"></div>
+                        </div>
+                        <span class="bi-val">{{ g.promedio | number:'1.1-1' }}</span>
+                      </div>
+                    }
+                    @if (biPromedioGrado().length === 0) {
+                      <p style="color:#9ca3af; font-size:0.85rem;">Sin datos suficientes</p>
+                    }
+                  </div>
+                </div>
+
+                <div class="bi-card" style="margin-top:1rem;">
+                  <h4 class="bi-card-title">📈 Distribución de Notas</h4>
+                  <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.5rem;">
+                    @for (d of biDistribucionNotas(); track d.rango) {
+                      <div class="dist-nota-chip">
+                        <span class="dist-nota-rango">{{ d.rango }}</span>
+                        <span class="dist-nota-cant">{{ d.cantidad }} alumnos</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <div class="bi-card" style="margin-top:1rem;">
+                  <h4 class="bi-card-title">🎯 Asistencia por Grado</h4>
+                  <div class="bi-bars">
+                    @for (a of biAsistenciaInst(); track a.grado) {
+                      <div class="bi-bar-row">
+                        <span class="bi-lbl">{{ a.grado }}</span>
+                        <div class="bi-bar-bg">
+                          <div class="bi-bar-fill" [style.width.%]="a.asistencia" [style.background]="a.asistencia >= 90 ? '#10b981' : a.asistencia >= 80 ? '#f59e0b' : '#ef4444'"></div>
+                        </div>
+                        <span class="bi-val">{{ a.asistencia | number:'1.1-1' }}%</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <div class="bi-card" style="margin-top:1rem;">
+                  <h4 class="bi-card-title">⚠️ Top Morosos</h4>
+                  <table class="admin-table" style="font-size:0.82rem;">
+                    <thead><tr><th>#</th><th>Estudiante</th><th>Cuotas pend.</th><th>Deuda total</th></tr></thead>
+                    <tbody>
+                      @for (m of biRankingMorosos(); track m.idEstudiante; let idx = $index) {
+                        <tr>
+                          <td>{{ idx + 1 }}</td>
+                          <td>{{ m.nombre }} {{ m.apellido }}</td>
+                          <td><span class="estado-badge riesgo">{{ m.cuotasPendientes }}</span></td>
+                          <td style="font-weight:600; color:#ef4444;">S/. {{ m.deudaTotal | number:'1.2-2' }}</td>
+                        </tr>
+                      }
+                      @if (biRankingMorosos().length === 0) {
+                        <tr><td colspan="4" style="text-align:center; color:#9ca3af; padding:1rem;">Sin morosos registrados ✅</td></tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ====== MODAL: Curso ====== -->
+      @if (modalCursos() === 'curso') {
+        <div class="modal-overlay" (click)="modalCursos.set(null)">
+          <div class="modal-box" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>{{ formCurso.idCurso ? 'Editar' : 'Nuevo' }} Curso</h2>
+              <button class="modal-close" (click)="modalCursos.set(null)">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Nombre del Curso</label>
+                <input class="form-input" [(ngModel)]="formCurso.nombre" placeholder="Ej: Matemática"/>
+              </div>
+              <div class="form-group">
+                <label>Área</label>
+                <select class="form-input" [(ngModel)]="formCurso.area">
+                  <option>Ciencias</option><option>Letras</option><option>Arte</option>
+                  <option>Deporte</option><option>Tecnología</option><option>Idiomas</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+                  <input type="checkbox" [(ngModel)]="formCurso.activo"/> Activo
+                </label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-secondary" (click)="modalCursos.set(null)">Cancelar</button>
+              <button class="btn-primary" (click)="guardarCurso()">Guardar</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ====== MODAL: Asignación Docente ====== -->
+      @if (modalCursos() === 'asignar') {
+        <div class="modal-overlay" (click)="modalCursos.set(null)">
+          <div class="modal-box" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>{{ formAsignar.idAulaCurso ? 'Editar' : 'Nueva' }} Asignación</h2>
+              <button class="modal-close" (click)="modalCursos.set(null)">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Curso</label>
+                <select class="form-input" [(ngModel)]="formAsignar.idCurso">
+                  <option [ngValue]="null">-- Seleccionar --</option>
+                  @for (c of cursos(); track c.idCurso) {
+                    <option [ngValue]="c.idCurso">{{ c.nombre }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Aula / Sección</label>
+                <select class="form-input" [(ngModel)]="formAsignar.idAula">
+                  <option [ngValue]="null">-- Seleccionar --</option>
+                  @for (a of aulasDisponibles(); track a.idAula) {
+                    <option [ngValue]="a.idAula">{{ a.grado }} – Sec. {{ a.seccion }} ({{ a.periodo }})</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Docente Asignado</label>
+                <select class="form-input" [(ngModel)]="formAsignar.idMaestro">
+                  <option [ngValue]="null">-- Sin docente --</option>
+                  @for (m of maestrosDisponibles(); track m.idMaestro) {
+                    <option [ngValue]="m.idMaestro">{{ m.nombreCompleto }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Horas por Semana</label>
+                <input class="form-input" type="number" [(ngModel)]="formAsignar.horasSemana" min="1" max="20"/>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-secondary" (click)="modalCursos.set(null)">Cancelar</button>
+              <button class="btn-primary" (click)="guardarAsignacion()">Guardar</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ====== MODAL: Evento Institucional ====== -->
+      @if (modalEventos() === 'crear') {
+        <div class="modal-overlay" (click)="modalEventos.set(null)">
+          <div class="modal-box" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>Nuevo Evento Institucional</h2>
+              <button class="modal-close" (click)="modalEventos.set(null)">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group"><label>Título</label><input class="form-input" [(ngModel)]="formEvento.titulo"/></div>
+              <div class="form-group">
+                <label>Tipo</label>
+                <select class="form-input" [(ngModel)]="formEvento.tipo">
+                  <option value="reunion">Reunión</option><option value="examen">Examen</option>
+                  <option value="feriado">Feriado</option><option value="actividad">Actividad</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Fecha</label><input class="form-input" type="date" [(ngModel)]="formEvento.fecha"/></div>
+              <div class="form-row-2">
+                <div class="form-group"><label>Hora Inicio</label><input class="form-input" type="time" [(ngModel)]="formEvento.horaInicio"/></div>
+                <div class="form-group"><label>Hora Fin</label><input class="form-input" type="time" [(ngModel)]="formEvento.horaFin"/></div>
+              </div>
+              <div class="form-group"><label>Lugar</label><input class="form-input" [(ngModel)]="formEvento.lugar"/></div>
+              <div class="form-group"><label>Descripción</label><textarea class="form-input" [(ngModel)]="formEvento.descripcion" rows="2"></textarea></div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-secondary" (click)="modalEventos.set(null)">Cancelar</button>
+              <button class="btn-primary" (click)="guardarEvento()">Guardar</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ====== MODAL: Empleado ====== -->
+      @if (modalPersonal() === 'empleado') {
+        <div class="modal-overlay" (click)="modalPersonal.set(null)">
+          <div class="modal-box" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>{{ formEmpleado.idPersonal ? 'Editar' : 'Nuevo' }} Empleado</h2>
+              <button class="modal-close" (click)="modalPersonal.set(null)">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group"><label>Nombre completo</label><input class="form-input" [(ngModel)]="formEmpleado.nombre"/></div>
+              <div class="form-group"><label>Cargo</label><input class="form-input" [(ngModel)]="formEmpleado.cargo"/></div>
+              <div class="form-group">
+                <label>Tipo de Contrato</label>
+                <select class="form-input" [(ngModel)]="formEmpleado.tipoContrato">
+                  <option value="pleno">Tiempo completo</option>
+                  <option value="parcial">Tiempo parcial</option>
+                  <option value="honorarios">Honorarios</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Salario Base (S/.)</label><input class="form-input" type="number" [(ngModel)]="formEmpleado.salarioBase"/></div>
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+                  <input type="checkbox" [(ngModel)]="formEmpleado.activo"/> Activo
+                </label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-secondary" (click)="modalPersonal.set(null)">Cancelar</button>
+              <button class="btn-primary" (click)="guardarEmpleado()">Guardar</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ====== MODAL: Pago Personal ====== -->
+      @if (modalPersonal() === 'pago') {
+        <div class="modal-overlay" (click)="modalPersonal.set(null)">
+          <div class="modal-box" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>Registrar Pago Salarial</h2>
+              <button class="modal-close" (click)="modalPersonal.set(null)">✕</button>
+            </div>
+            <div class="modal-body">
+              <p style="font-size:0.9rem; color:#374151; margin-bottom:1rem;">Empleado: <strong>{{ formPagoPersonal.empleadoNombre }}</strong></p>
+              <div class="form-group"><label>Mes (AAAA-MM)</label><input class="form-input" type="month" [(ngModel)]="formPagoPersonal.mes"/></div>
+              <div class="form-group"><label>Monto Neto (S/.)</label><input class="form-input" type="number" [(ngModel)]="formPagoPersonal.montoNeto"/></div>
+              <div class="form-group"><label>N° Recibo</label><input class="form-input" [(ngModel)]="formPagoPersonal.nroRecibo"/></div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-secondary" (click)="modalPersonal.set(null)">Cancelar</button>
+              <button class="btn-primary" (click)="guardarPagoPersonal()">Registrar Pago</button>
+            </div>
+          </div>
+        </div>
+      }

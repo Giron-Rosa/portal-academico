@@ -893,6 +893,7 @@ export class PortalDocente implements OnDestroy {
     this.cargarMisAulas();
     this.cargarTiposEvento();
     this.cargarPendientes();
+    this.cargarAlertasCriticas();
     this.cargarReservas();
     this.cargarEspaciosDisponibles();
     // Conectar WebSocket para recibir notificaciones en tiempo real
@@ -2754,6 +2755,66 @@ export class PortalDocente implements OnDestroy {
       'http://localhost:8080/api/portal/docente/pendientes',
       { headers }
     ).subscribe({ next: data => this.pendientes.set(data) });
+  }
+
+  cargarAlertasCriticas() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<any[]>(
+      'http://localhost:8080/api/portal/docente/predicciones',
+      { headers }
+    ).subscribe({
+      next: (data) => {
+        const alertas: AlertaCritica[] = [];
+        data.forEach(al => {
+          if (al.promedio > 0 && al.promedio < 11) {
+            alertas.push({
+              idAlumno: al.idAlumno,
+              nombre: `${al.nombre} ${al.apellido}`,
+              descripcion: `Promedio bajo en ${al.curso} (${al.promedio})`,
+              tipo: 'rendimiento',
+              inicial: al.nombre[0] + al.apellido[0],
+              color: '#ef476f'
+            });
+          }
+          if (al.totalClases > 0) {
+            const pct = (al.clasesPresente / al.totalClases) * 100;
+            if (pct < 85) {
+              alertas.push({
+                idAlumno: al.idAlumno,
+                nombre: `${al.nombre} ${al.apellido}`,
+                descripcion: `Baja asistencia en ${al.curso} (${Math.round(pct)}%)`,
+                tipo: 'asistencia',
+                inicial: al.nombre[0] + al.apellido[0],
+                color: '#f4a261'
+              });
+            }
+          }
+        });
+        this.alertasCriticas.set(alertas);
+      }
+    });
+  }
+
+  aplicarAccionRapida(tipo: 'citacion' | 'inasistencia' | 'rendimiento' | 'recuperacion') {
+    const ctx = this.contextoAlumno();
+    if (!ctx) return;
+
+    let msg = '';
+    const alumnoNombre = `${ctx.nombre} ${ctx.apellido}`;
+    
+    if (tipo === 'citacion') {
+      msg = `Estimado apoderado(a) de ${alumnoNombre}, solicito coordinar una citación formal para conversar detalladamente sobre su progreso académico en el curso de ${ctx.curso}. Quedo atento a su disponibilidad horaria. Atte. Prof. ${this.nombre}.`;
+    } else if (tipo === 'inasistencia') {
+      msg = `Estimado apoderado(a), le informo que su hijo(a) ${alumnoNombre} registró una inasistencia a la clase de ${ctx.curso} en la fecha de hoy. Agradeceré enviar la justificación correspondiente a la brevedad. Saludos cordiales.`;
+    } else if (tipo === 'rendimiento') {
+      msg = `Estimado apoderado(a), le escribo para notificarle que ${alumnoNombre} ha presentado notas por debajo del promedio regular en el curso de ${ctx.curso} (Promedio actual: ${ctx.promedio}). Le recomiendo revisar el material de Refuerzo Académico disponible en el portal del alumno.`;
+    } else if (tipo === 'recuperacion') {
+      msg = `Estimado apoderado(a), le informo que ${alumnoNombre} ha culminado con éxito las tareas y talleres de recuperación planificados para esta semana en ${ctx.curso}, mostrando una excelente actitud y mejora en su desempeño. ¡Felicitaciones!`;
+    }
+
+    this.replyText.set(msg);
   }
 
   /**

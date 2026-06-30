@@ -2545,10 +2545,10 @@
                 <!-- Acciones rápidas -->
                 <div class="msg-ctx-section-title">ACCIONES RÁPIDAS</div>
                 <div class="msg-ctx-actions">
-                  <button class="msg-ctx-action-btn">Enviar citación formal</button>
-                  <button class="msg-ctx-action-btn">Reportar inasistencia</button>
-                  <button class="msg-ctx-action-btn">Notificar bajo rendimiento</button>
-                  <button class="msg-ctx-action-btn">Confirmar recuperación</button>
+                  <button class="msg-ctx-action-btn" (click)="aplicarAccionRapida('citacion')">Enviar citación formal</button>
+                  <button class="msg-ctx-action-btn" (click)="aplicarAccionRapida('inasistencia')">Reportar inasistencia</button>
+                  <button class="msg-ctx-action-btn" (click)="aplicarAccionRapida('rendimiento')">Notificar bajo rendimiento</button>
+                  <button class="msg-ctx-action-btn" (click)="aplicarAccionRapida('recuperacion')">Confirmar recuperación</button>
                 </div>
 
                 <!-- Datos del alumno -->

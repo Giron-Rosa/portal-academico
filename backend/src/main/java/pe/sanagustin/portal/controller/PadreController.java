@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pe.sanagustin.portal.dto.AsistenciaDetalleHijoDto;
 import pe.sanagustin.portal.dto.CursoDetalleHijoDto;
 import pe.sanagustin.portal.dto.HijoResumenDto;
+import pe.sanagustin.portal.dto.HorarioDocenteDto;
 import pe.sanagustin.portal.service.PadreService;
 
 import java.util.List;
@@ -70,5 +71,16 @@ public class PadreController {
             @PathVariable String codigoAlumno) {
         return ResponseEntity.ok(
                 padreService.getPagos(userDetails.getUsername(), codigoAlumno));
+    }
+
+    /** GET /api/portal/padre/horario/{codigoAlumno}
+     *  Devuelve el horario de clases semanal del estudiante.
+     */
+    @GetMapping("/horario/{codigoAlumno}")
+    public ResponseEntity<List<HorarioDocenteDto>> getHorarioHijo(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String codigoAlumno) {
+        return ResponseEntity.ok(
+                padreService.getHorarioHijo(userDetails.getUsername(), codigoAlumno));
     }
 }

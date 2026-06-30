@@ -1,4 +1,4 @@
-// ============================================================
+ï»¿// ============================================================
 // Portal del Padre â€” Paleta San AgustÃ­n
 // Rojo: #c1121f | Azul: #0d1b2a | Azul medio: #003566 | Blanco: #ffffff
 // ============================================================
@@ -399,7 +399,7 @@ $amarillo:   #eab308;
 
 .hijo-metricas {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.5rem;
 }
 
@@ -918,7 +918,7 @@ $amarillo:   #eab308;
 }
 
 /* -----------------------------------------------------------
-   WEBSOCKET — Toast notificación en tiempo real
+   WEBSOCKET ï¿½ Toast notificaciï¿½n en tiempo real
 ----------------------------------------------------------- */
 
 .ws-toast-padre {
@@ -966,7 +966,7 @@ $amarillo:   #eab308;
 }
 
 /* -----------------------------------------------------------
-   MENSAJES — Chat layout del portal padre
+   MENSAJES ï¿½ Chat layout del portal padre
 ----------------------------------------------------------- */
 
 .msg-layout {
@@ -1577,7 +1577,7 @@ $amarillo:   #eab308;
 }
 
 /* -----------------------------------------------------------
-   FASE 2 — CURSOS del portal padre
+   FASE 2 ï¿½ CURSOS del portal padre
 ----------------------------------------------------------- */
 
 .cursos-layout {
@@ -1709,7 +1709,7 @@ $amarillo:   #eab308;
   text-transform: uppercase;
 }
 
-/* -- Lista de cursos acordeón -- */
+/* -- Lista de cursos acordeï¿½n -- */
 .curso-list {
   display: flex;
   flex-direction: column;
@@ -1962,7 +1962,7 @@ $amarillo:   #eab308;
 }
 
 /* -----------------------------------------------------------
-   FASE 3 — ASISTENCIA del portal padre
+   FASE 3 ï¿½ ASISTENCIA del portal padre
 ----------------------------------------------------------- */
 
 .asistencia-layout {
@@ -2146,7 +2146,7 @@ $amarillo:   #eab308;
 }
 
 /* -----------------------------------------------------------
-   FASE 4 — EVENTOS del portal padre
+   FASE 4 ï¿½ EVENTOS del portal padre
 ----------------------------------------------------------- */
 
 .eventos-layout {
@@ -2172,7 +2172,7 @@ $amarillo:   #eab308;
   position: relative;
   overflow: hidden;
 
-  /* Borde izquierdo dinámico según tipo de evento */
+  /* Borde izquierdo dinï¿½mico segï¿½n tipo de evento */
   border-left: 6px solid #64748b;
 }
 
@@ -2258,7 +2258,7 @@ $amarillo:   #eab308;
 }
 
 /* -----------------------------------------------------------
-   FASE 4 — PAGOS del portal padre
+   FASE 4 ï¿½ PAGOS del portal padre
 ----------------------------------------------------------- */
 
 .pagos-layout {
@@ -2303,7 +2303,7 @@ $amarillo:   #eab308;
 
 .pagos-kpis {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
 }
 
@@ -2413,3 +2413,4 @@ $amarillo:   #eab308;
   font-weight: 600;
   color: #16a34a;
 }
+

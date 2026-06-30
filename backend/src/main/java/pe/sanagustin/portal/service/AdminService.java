@@ -30,7 +30,21 @@ public class AdminService {
         long totalEstudiantes = ((Number) em.createNativeQuery("SELECT COUNT(*) FROM alumnos").getSingleResult()).longValue();
         long totalDocentes = ((Number) em.createNativeQuery("SELECT COUNT(*) FROM maestros").getSingleResult()).longValue();
         long totalCursos = ((Number) em.createNativeQuery("SELECT COUNT(*) FROM cursos").getSingleResult()).longValue();
-        double morosidad = 15.5; // Mockeado por no existir tabla finanzas aún
+        
+        double morosidad = 0.0;
+        try {
+            Number morososVal = (Number) em.createNativeQuery("""
+                SELECT COALESCE(
+                  (COUNT(DISTINCT ce.id_estudiante) * 100.0) / NULLIF((SELECT COUNT(*) FROM alumnos), 0),
+                  0.0
+                )
+                FROM cuotas_estudiante ce
+                WHERE ce.pagado = false AND ce.fecha_vencimiento < CURRENT_DATE
+                """).getSingleResult();
+            morosidad = Math.round(morososVal.doubleValue() * 10.0) / 10.0;
+        } catch (Exception e) {
+            morosidad = 15.5; // fallback
+        }
 
         return new AdminDashboardKpisDto(totalEstudiantes, totalDocentes, totalCursos, morosidad);
     }
@@ -305,5 +319,54 @@ public class AdminService {
 
     public void eliminarNotaKanban(Long id) {
         notaKanbanRepository.deleteById(id);
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<UltimoPagoDto> getUltimosPagos() {
+        String sql = """
+                SELECT ce.id_cuota,
+                       al.nombre || ' ' || al.apellido AS estudiante_nombre,
+                       cp.nombre AS concepto_nombre,
+                       cp.monto,
+                       TO_CHAR(ce.fecha_pago, 'DD/MM/YYYY HH24:MI') AS fecha_pago,
+                       ce.nro_transaccion
+                FROM cuotas_estudiante ce
+                JOIN alumnos al ON al.id_alumno = ce.id_estudiante
+                JOIN conceptos_pago cp ON cp.id_concepto = ce.id_concepto
+                WHERE ce.pagado = true
+                ORDER BY ce.fecha_pago DESC
+                LIMIT 10
+                """;
+        List<Object[]> rows = em.createNativeQuery(sql).getResultList();
+        return rows.stream().map(r -> new UltimoPagoDto(
+                ((Number) r[0]).longValue(),
+                (String) r[1],
+                (String) r[2],
+                ((Number) r[3]).doubleValue(),
+                (String) r[4],
+                (String) r[5]
+        )).toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<FlujoCajaMensualDto> getFlujoCaja(int anio) {
+        String sql = """
+                SELECT EXTRACT(YEAR FROM fecha)::int  AS anio,
+                       EXTRACT(MONTH FROM fecha)::int AS mes,
+                       COALESCE(SUM(CASE WHEN tipo='ingreso' THEN monto ELSE 0 END),0) AS total_ingresos,
+                       COALESCE(SUM(CASE WHEN tipo='gasto'   THEN monto ELSE 0 END),0) AS total_gastos,
+                       COALESCE(SUM(CASE WHEN tipo='ingreso' THEN monto ELSE -monto END),0) AS saldo
+                FROM movimientos_caja
+                WHERE EXTRACT(YEAR FROM fecha) = :anio
+                GROUP BY anio, mes ORDER BY mes
+                """;
+        List<Object[]> rows = em.createNativeQuery(sql).setParameter("anio", anio).getResultList();
+        return rows.stream().map(r -> new FlujoCajaMensualDto(
+                ((Number) r[0]).intValue(),
+                ((Number) r[1]).intValue(),
+                (java.math.BigDecimal) r[2],
+                (java.math.BigDecimal) r[3],
+                (java.math.BigDecimal) r[4]
+        )).toList();
     }
 }
