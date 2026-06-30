@@ -505,6 +505,7 @@ export class PortalDocente implements OnDestroy {
   cursos       = signal<Curso[]>([]);
   pendientes       = signal<Pendiente[]>([]);
   alertasCriticas  = signal<AlertaCritica[]>([]);
+  alertaSeleccionada = signal<AlertaCritica | null>(null);
 
   /* ── Signals de mensajería ── */
 
@@ -2845,6 +2846,43 @@ export class PortalDocente implements OnDestroy {
   setGrade(grado: string)  { this.activeGrade.set(grado);  }
   setYear(year: string)    { this.selectedYear.set(year);  }
   toggleDropdown()         { this.dropdownOpen.update(v => !v); }
+
+  iniciarComunicacionConPadre(idAlumno: number) {
+    this.setSection('mensajes');
+    this.modalNuevoChat.set(true);
+    this.nuevoChatGrado.set('');
+    this.nuevoChatSeccion.set('');
+    this.nuevoChatBusqueda.set('');
+    this.nuevoChatAlumnoSel.set(null);
+    this.nuevoChatAsunto.set('');
+    this.nuevoChatMensaje.set('');
+
+    const preselect = () => {
+      const alumno = this.alumnosDisponibles().find(a => a.idAlumno === idAlumno);
+      if (alumno) {
+        this.seleccionarAlumnoModal(alumno);
+      }
+    };
+
+    if (this.alumnosDisponibles().length === 0) {
+      const token = this.auth.getToken();
+      if (!token) return;
+      this.cargandoAlumnos.set(true);
+      const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+      this.http.get<AlumnoDisponible[]>(
+        'http://localhost:8080/api/portal/docente/mensajes/alumnos-disponibles', { headers }
+      ).subscribe({
+        next: data => {
+          this.alumnosDisponibles.set(data);
+          this.cargandoAlumnos.set(false);
+          preselect();
+        },
+        error: () => { this.cargandoAlumnos.set(false); }
+      });
+    } else {
+      preselect();
+    }
+  }
 
   @HostListener('document:click', ['$event'])
   onDocClick(e: MouseEvent) {
