@@ -23,6 +23,7 @@ public class NuevoComunicadoRequest {
     private String descripcion; // opcional
 
     private String fechaEvento; // "YYYY-MM-DD" o null
+    private String horaEvento;  // "HH:mm" o null
 
     /* ── getters / setters ── */
     public String getTitulo()        { return titulo;        }
@@ -42,4 +43,7 @@ public class NuevoComunicadoRequest {
 
     public String getFechaEvento()       { return fechaEvento;    }
     public void   setFechaEvento(String v){ this.fechaEvento = v; }
+
+    public String getHoraEvento()        { return horaEvento;     }
+    public void   setHoraEvento(String v){ this.horaEvento = v;   }
 }
