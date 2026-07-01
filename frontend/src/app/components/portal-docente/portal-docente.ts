@@ -1516,9 +1516,30 @@ export class PortalDocente implements OnDestroy {
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
+    let nombreAlumno = 'el estudiante';
+    let nombreDestinatario = 'Apoderado';
+
+    if (tipo === 'respuesta') {
+      const activo = this.mensajeActivo();
+      if (activo) {
+        nombreAlumno = activo.nombreAlumno || 'el estudiante';
+        nombreDestinatario = activo.nombrePadre || 'Apoderado';
+      }
+    } else {
+      const sel = this.nuevoChatAlumnoSel();
+      if (sel) {
+        nombreAlumno = sel.nombreAlumno || 'el estudiante';
+        nombreDestinatario = sel.nombrePadre || 'Apoderado';
+      }
+    }
+
     this.http.post<{ resultado: string }>(
       'http://localhost:8080/api/portal/docente/mensajes/ia-redactar',
-      { texto },
+      { 
+        texto,
+        nombreAlumno,
+        nombreDestinatario
+      },
       { headers }
     ).subscribe({
       next: (res) => {

@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // Portal del Padre — Paleta San Agustín
 // Rojo: #c1121f | Azul: #0d1b2a | Azul medio: #003566 | Blanco: #ffffff
 // ============================================================
@@ -1326,7 +1326,9 @@ $amarillo:   #eab308;
   padding: 0.65rem 1rem;
   font-size: 0.875rem;
   font-family: inherit;
-  resize: none;
+  resize: vertical;
+  min-height: 48px;
+  max-height: 250px;
   outline: none;
   transition: border-color 0.2s;
   color: #1e293b;

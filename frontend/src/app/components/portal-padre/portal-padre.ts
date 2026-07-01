@@ -35,6 +35,7 @@ interface Hijo {
   cursosMonitor: { nombre: string; progreso: number }[];
   cursos: CursoDetalle[];
   eventos: string[];
+  parentesco?: string;
 }
 
 interface CursoDetalleApi {
@@ -338,6 +339,7 @@ export class PortalPadre implements OnDestroy {
       cursosMonitor: cursos.slice(0, 3).map(c => ({ nombre: c.nombre, progreso: c.progreso })),
       cursos,
       eventos:       [],
+      parentesco:    h.parentesco,
     };
   }
 
@@ -718,9 +720,38 @@ export class PortalPadre implements OnDestroy {
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
+    let nombreAlumno = 'mi hijo(a)';
+    let nombreDestinatario = 'Profesor(a)';
+    let relacion = 'Apoderado';
+
+    const hijo = this.hijoActual();
+    if (hijo) {
+      nombreAlumno = hijo.nombre || 'mi hijo(a)';
+      relacion = hijo.parentesco || 'Apoderado';
+    }
+
+    if (tipo === 'respuesta') {
+      const activo = this.mensajeActivo();
+      if (activo) {
+        nombreAlumno = activo.nombreAlumno || nombreAlumno;
+        nombreDestinatario = activo.nombrePadre || 'Profesor(a)'; // nombrePadre es el nombre del profesor en la bandeja del padre
+      }
+    } else {
+      const sel = this.nuevoChatDocenteSel();
+      if (sel) {
+        nombreAlumno = sel.nombreAlumno || nombreAlumno;
+        nombreDestinatario = sel.nombreMaestro || 'Profesor(a)';
+      }
+    }
+
     this.http.post<{ resultado: string }>(
       'http://localhost:8080/api/portal/padre/mensajes/ia-redactar',
-      { texto },
+      { 
+        texto,
+        nombreAlumno,
+        nombreDestinatario,
+        relacion
+      },
       { headers }
     ).subscribe({
       next: (res) => {

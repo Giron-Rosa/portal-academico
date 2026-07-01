@@ -2514,13 +2514,14 @@
 
               <!-- Input de respuesta estilo chat -->
               <div class="msg-reply-bar">
-                <input class="msg-reply-input-chat"
-                       type="text"
-                       placeholder="Escribe un mensaje..."
-                       [ngModel]="replyText()"
-                       (ngModelChange)="replyText.set($event)"
-                       (keyup.enter)="enviarRespuesta()"
-                       [disabled]="enviandoReply()"/>
+                <textarea class="msg-reply-input-chat"
+                          placeholder="Escribe un mensaje..."
+                          rows="2"
+                          style="resize: vertical; min-height: 48px; max-height: 200px; border-radius: 12px; margin-bottom: 8px; padding: 0.55rem 1rem;"
+                          [ngModel]="replyText()"
+                          (ngModelChange)="replyText.set($event)"
+                          (keydown.control.enter)="enviarRespuesta()"
+                          [disabled]="enviandoReply()"></textarea>
                 <div class="msg-reply-bar-actions">
                   <button class="msg-reply-icon-btn" title="Adjuntar">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">

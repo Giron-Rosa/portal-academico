@@ -165,7 +165,7 @@
                 <span style="font-size: 12.5px; font-weight: 500; color: #64748b;">Consolidando métricas del BI y consultando a la IA...</span>
               </div>
             } @else if (analisisResultado()) {
-              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 13.5px; line-height: 1.6; color: #334155; white-space: pre-wrap; font-family: system-ui, -apple-system, sans-serif;">{{ analisisResultado() }}</div>
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 13.5px; line-height: 1.6; color: #334155; font-family: system-ui, -apple-system, sans-serif;" [innerHTML]="analisisResultado()"></div>
             }
           </div>
 
