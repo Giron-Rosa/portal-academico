@@ -520,6 +520,7 @@ export class PortalDocente implements OnDestroy {
   /** Texto que el docente está escribiendo como respuesta */
   replyText          = signal('');
   enviandoReply      = signal(false);
+  refinandoConIA     = signal(false);
   /** Panel contexto alumno: datos + estado de carga */
   contextoAlumno     = signal<AlumnoContexto | null>(null);
   cargandoContexto   = signal(false);
@@ -1499,6 +1500,42 @@ export class PortalDocente implements OnDestroy {
         error: () => { this.enviandoReply.set(false); },
       });
   }
+
+  /**
+   * Refina el mensaje escrito usando IA (OpenAI).
+   */
+  refinarMensajeConIA(tipo: 'respuesta' | 'nuevo'): void {
+    const texto = tipo === 'respuesta' ? this.replyText().trim() : this.nuevoChatMensaje().trim();
+    if (!texto || this.refinandoConIA()) return;
+
+    this.refinandoConIA.set(true);
+    const token = this.auth.getToken();
+    if (!token) {
+      this.refinandoConIA.set(false);
+      return;
+    }
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http.post<{ resultado: string }>(
+      'http://localhost:8080/api/portal/docente/mensajes/ia-redactar',
+      { texto },
+      { headers }
+    ).subscribe({
+      next: (res) => {
+        if (tipo === 'respuesta') {
+          this.replyText.set(res.resultado);
+        } else {
+          this.nuevoChatMensaje.set(res.resultado);
+        }
+        this.refinandoConIA.set(false);
+      },
+      error: () => {
+        this.refinandoConIA.set(false);
+        alert('No se pudo refinar el mensaje con IA. Por favor, inténtalo más tarde.');
+      }
+    });
+  }
+
 
   /**
    * Convierte una cadena "DD/MM/YYYY HH:MM" a tiempo relativo legible.

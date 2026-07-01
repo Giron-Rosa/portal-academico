@@ -144,6 +144,31 @@
             </div>
           </div>
 
+          <!-- Análisis de Gestión Escolar con IA -->
+          <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; margin-top: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+                  🤖 Reporte de Dirección & Inteligencia Artificial
+                </h3>
+                <p style="margin: 3px 0 0 0; font-size: 12px; color: #64748b;">Analiza promedios, inasistencias y cartera vencida del colegio en tiempo real.</p>
+              </div>
+              <button (click)="generarAnalisisIA()" [disabled]="cargandoAnalisis()"
+                      style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(15, 23, 42, 0.1); transition: all 0.2s;">
+                ✨ {{ cargandoAnalisis() ? 'Generando...' : 'Generar Análisis Directivo' }}
+              </button>
+            </div>
+
+            @if (cargandoAnalisis()) {
+              <div style="display: flex; flex-direction: column; align-items: center; padding: 20px 0;">
+                <div style="width: 28px; height: 28px; border: 3px solid #f1f5f9; border-top-color: #0f172a; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 8px;"></div>
+                <span style="font-size: 12.5px; font-weight: 500; color: #64748b;">Consolidando métricas del BI y consultando a la IA...</span>
+              </div>
+            } @else if (analisisResultado()) {
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 13.5px; line-height: 1.6; color: #334155; white-space: pre-wrap; font-family: system-ui, -apple-system, sans-serif;">{{ analisisResultado() }}</div>
+            }
+          </div>
+
           <div class="charts-and-recent mt-lg">
             <div class="recent-card">
               <h3>Distribución Académica</h3>

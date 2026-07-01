@@ -217,6 +217,7 @@ export class PortalPadre implements OnDestroy {
   errorMensajes         = signal<string>('');
   cargandoDetalleChat   = signal<boolean>(false);
   enviandoReply         = signal<boolean>(false);
+  refinandoConIA        = signal<boolean>(false);
 
   // Paginación de respuestas (Infinite scroll hacia arriba)
   currentPage           = signal<number>(0);
@@ -704,6 +705,39 @@ export class PortalPadre implements OnDestroy {
       error: () => { this.enviandoReply.set(false); },
     });
   }
+
+  refinarMensajeConIA(tipo: 'respuesta' | 'nuevo'): void {
+    const texto = tipo === 'respuesta' ? this.replyText().trim() : this.nuevoChatMensaje().trim();
+    if (!texto || this.refinandoConIA()) return;
+
+    this.refinandoConIA.set(true);
+    const token = this.auth.getToken();
+    if (!token) {
+      this.refinandoConIA.set(false);
+      return;
+    }
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http.post<{ resultado: string }>(
+      'http://localhost:8080/api/portal/padre/mensajes/ia-redactar',
+      { texto },
+      { headers }
+    ).subscribe({
+      next: (res) => {
+        if (tipo === 'respuesta') {
+          this.replyText.set(res.resultado);
+        } else {
+          this.nuevoChatMensaje.set(res.resultado);
+        }
+        this.refinandoConIA.set(false);
+      },
+      error: () => {
+        this.refinandoConIA.set(false);
+        alert('No se pudo refinar el mensaje con IA. Por favor, inténtalo más tarde.');
+      }
+    });
+  }
+
 
   abrirNuevoChat(): void {
     this.http.get<DocenteDisponible[]>(

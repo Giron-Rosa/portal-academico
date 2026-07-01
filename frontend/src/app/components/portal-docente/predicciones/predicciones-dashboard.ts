@@ -43,6 +43,42 @@ export class PrediccionesDashboard implements OnInit {
   alumnos    = signal<AlumnoRiesgo[]>([]);
   filtroRiesgo = signal<'todos' | 'alto' | 'medio' | 'bajo'>('todos');
 
+  // ── IA Advisory Signals & Methods ──
+  consejoIA = signal<string | null>(null);
+  cargandoIA = signal(false);
+  alumnoSeleccionado = signal<AlumnoRiesgo | null>(null);
+
+  consultarIA(alumno: AlumnoRiesgo) {
+    this.alumnoSeleccionado.set(alumno);
+    this.cargandoIA.set(true);
+    this.consejoIA.set(null);
+
+    const token = this.auth.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    const url = `http://localhost:8080/api/portal/docente/predicciones/${alumno.idAlumno}/ia-advisory` +
+                `?asistencia=${alumno.porcentajeAsistencia}` +
+                `&promedio=${alumno.promedio}` +
+                `&causas=${encodeURIComponent(alumno.causas.join(', '))}`;
+
+    this.http.get<{ resultado: string }>(url, { headers }).subscribe({
+      next: res => {
+        this.consejoIA.set(res.resultado);
+        this.cargandoIA.set(false);
+      },
+      error: () => {
+        this.consejoIA.set('No se pudo obtener el consejo pedagógico de la IA en este momento. Revisa la conexión o intenta más tarde.');
+        this.cargandoIA.set(false);
+      }
+    });
+  }
+
+  cerrarModalIA() {
+    this.consejoIA.set(null);
+    this.alumnoSeleccionado.set(null);
+  }
+
+
   // ── Estadísticas de resumen ──────────────────────────────────────────
   totalAlumnos = computed(() => this.alumnos().length);
   enRiesgoAlto = computed(() => this.alumnos().filter(a => a.nivelRiesgo === 'alto').length);

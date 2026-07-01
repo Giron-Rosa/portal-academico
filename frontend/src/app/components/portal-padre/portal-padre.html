@@ -964,6 +964,14 @@
                 </textarea>
                 <button
                   class="btn-send-reply"
+                  title="Refinar con IA"
+                  style="margin-right: 6px; background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe;"
+                  [disabled]="!replyText().trim() || refinandoConIA()"
+                  (click)="refinarMensajeConIA('respuesta')">
+                  @if (refinandoConIA()) { ⏳ } @else { ✨ }
+                </button>
+                <button
+                  class="btn-send-reply"
                   [disabled]="!replyText().trim() || enviandoReply()"
                   (click)="enviarRespuesta()">
                   @if (enviandoReply()) {
@@ -1015,7 +1023,14 @@
                        (input)="nuevoChatAsunto.set($any($event.target).value)" />
 
                 <!-- Mensaje -->
-                <label class="modal-label" for="nc-msg">Mensaje</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                  <label class="modal-label" for="nc-msg" style="margin: 0;">Mensaje</label>
+                  <button type="button" (click)="refinarMensajeConIA('nuevo')" 
+                          [disabled]="refinandoConIA() || !nuevoChatMensaje().trim()"
+                          style="background: #f3e8ff; color: #7e22ce; border: 1px solid #c084fc; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                    ✨ {{ refinandoConIA() ? 'Refinando...' : 'Refinar con IA' }}
+                  </button>
+                </div>
                 <textarea id="nc-msg"
                           class="modal-textarea"
                           placeholder="Escribe tu mensaje aquí..."

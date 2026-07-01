@@ -78,6 +78,30 @@ export class PortalAdmin implements OnInit {
   cargando = signal(false);
   errorCarga = signal('');
 
+  // ── AI Analysis Signals & Methods ──
+  cargandoAnalisis = signal(false);
+  analisisResultado = signal<string | null>(null);
+
+  generarAnalisisIA() {
+    this.cargandoAnalisis.set(true);
+    this.analisisResultado.set(null);
+
+    const token = this.auth.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http.get<{ resultado: string }>('http://localhost:8080/api/admin/bi/ia-analisis', { headers }).subscribe({
+      next: (res) => {
+        this.analisisResultado.set(res.resultado);
+        this.cargandoAnalisis.set(false);
+      },
+      error: () => {
+        this.analisisResultado.set('Error: No se pudo generar el reporte ejecutivo escolar con IA. Por favor, verifica tu conexión o los límites de la API Key.');
+        this.cargandoAnalisis.set(false);
+      }
+    });
+  }
+
+
   // Data signals
   kpis = signal<Kpis>({ totalEstudiantes: 0, totalDocentes: 0, totalCursos: 0, morosidadPct: 0 });
   estudiantes = signal<Estudiante[]>([]);

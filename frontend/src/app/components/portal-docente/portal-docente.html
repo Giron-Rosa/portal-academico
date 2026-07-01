@@ -2532,6 +2532,12 @@
                       <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                     </svg>
                   </button>
+                  <button class="msg-reply-icon-btn" title="Refinar con IA"
+                          (click)="refinarMensajeConIA('respuesta')"
+                          [disabled]="refinandoConIA() || !replyText().trim()"
+                          style="color: #7e22ce;">
+                    @if (refinandoConIA()) { ⏳ } @else { ✨ }
+                  </button>
                   <button class="msg-reply-send"
                           (click)="enviarRespuesta()"
                           [disabled]="!replyText().trim() || enviandoReply()">
@@ -2722,7 +2728,14 @@
 
                 <!-- Mensaje -->
                 <div class="nc-field">
-                  <label class="nc-label">Mensaje</label>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <label class="nc-label" style="margin: 0;">Mensaje</label>
+                    <button type="button" (click)="refinarMensajeConIA('nuevo')" 
+                            [disabled]="refinandoConIA() || !nuevoChatMensaje().trim()"
+                            style="background: #f3e8ff; color: #7e22ce; border: 1px solid #c084fc; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                      ✨ {{ refinandoConIA() ? 'Refinando...' : 'Refinar con IA' }}
+                    </button>
+                  </div>
                   <textarea class="nc-textarea"
                             rows="5"
                             placeholder="Escribe el mensaje que recibirá el apoderado..."
