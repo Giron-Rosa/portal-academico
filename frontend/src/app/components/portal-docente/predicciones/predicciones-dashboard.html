@@ -296,9 +296,14 @@
                  <div style="border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-top: 5px;">
                    <div style="background: #f1f5f9; padding: 12px 18px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
                      <span style="font-weight: 700; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">💬 Mensaje sugerido para el Apoderado</span>
-                     <button (click)="copiarMensajePadres()" style="background: #312e81; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 4px;">
-                       📋 Copiar mensaje
-                     </button>
+                     <div style="display: flex; gap: 8px;">
+                       <button (click)="copiarMensajePadres()" style="background: #e2e8f0; color: #334155; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 4px;">
+                         📋 Copiar mensaje
+                       </button>
+                       <button (click)="irAlChatConPadre()" style="background: #312e81; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 4px;">
+                         💬 Enviar al Chat
+                       </button>
+                     </div>
                    </div>
                    <div style="padding: 16px; font-size: 13px; color: #334155;">
                      <div style="margin-bottom: 8px; font-weight: 700; color: #1e293b;">Asunto: <span style="font-weight: 500; color: #475569;">{{ planIA().sugerencia_mensaje_padres.asunto }}</span></div>

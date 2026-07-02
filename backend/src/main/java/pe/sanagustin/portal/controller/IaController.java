@@ -27,7 +27,7 @@ public class IaController {
     private EntityManager em;
 
     /**
-     * Asegura la existencia de la tabla planes_apoyo
+     * Asegura la existencia de la tabla planes_apoyo y sus columnas correspondientes
      */
     private void initTable() {
         try {
@@ -44,6 +44,10 @@ public class IaController {
                     fecha_creacion TIMESTAMP NOT NULL DEFAULT NOW()
                 )
             """).executeUpdate();
+            
+            // Alterar la tabla para agregar las columnas de seguimiento si no existen
+            em.createNativeQuery("ALTER TABLE planes_apoyo ADD COLUMN IF NOT EXISTS asistencia_reg DOUBLE PRECISION DEFAULT 0.0").executeUpdate();
+            em.createNativeQuery("ALTER TABLE planes_apoyo ADD COLUMN IF NOT EXISTS promedio_reg DOUBLE PRECISION DEFAULT 0.0").executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -73,29 +77,40 @@ public class IaController {
             // fallback
         }
 
-        // 2. Comprobar si ya existe un plan en la base de datos
+        // 2. Comprobar si ya existe un plan en la base de datos y si las notas/asistencia cambiaron
         try {
             List<?> results = em.createNativeQuery(
-                "SELECT plan_json, checks_state, feedback_1, feedback_2, feedback_3 FROM planes_apoyo WHERE id_alumno = :idAlumno AND id_maestro = :idMaestro")
+                "SELECT id_plan, plan_json, checks_state, feedback_1, feedback_2, feedback_3, asistencia_reg, promedio_reg FROM planes_apoyo WHERE id_alumno = :idAlumno AND id_maestro = :idMaestro")
                 .setParameter("idAlumno", idAlumno)
                 .setParameter("idMaestro", idMaestro)
                 .getResultList();
 
             if (!results.isEmpty()) {
                 Object[] row = (Object[]) results.get(0);
-                String planJson = (String) row[0];
-                String checksState = (String) row[1];
-                String f1 = (String) row[2];
-                String f2 = (String) row[3];
-                String f3 = (String) row[4];
+                String planJson = (String) row[1];
+                String checksState = (String) row[2];
+                String f1 = (String) row[3];
+                String f2 = (String) row[4];
+                String f3 = (String) row[5];
+                Double storedAsistencia = ((Number) (row[6] != null ? row[6] : 0.0)).doubleValue();
+                Double storedPromedio = ((Number) (row[7] != null ? row[7] : 0.0)).doubleValue();
 
-                return ResponseEntity.ok(Map.of(
-                    "resultado", planJson,
-                    "checksState", checksState,
-                    "feedback_1", f1 != null ? f1 : "",
-                    "feedback_2", f2 != null ? f2 : "",
-                    "feedback_3", f3 != null ? f3 : ""
-                ));
+                // Si no hay cambio en las notas ni en asistencia, cargamos el plan estático sin llamar a la IA
+                if (Math.abs(storedAsistencia - asistencia) < 0.01 && Math.abs(storedPromedio - promedio) < 0.01) {
+                    return ResponseEntity.ok(Map.of(
+                        "resultado", planJson,
+                        "checksState", checksState,
+                        "feedback_1", f1 != null ? f1 : "",
+                        "feedback_2", f2 != null ? f2 : "",
+                        "feedback_3", f3 != null ? f3 : ""
+                    ));
+                } else {
+                    // Si cambiaron, eliminamos el plan anterior para regenerarlo
+                    em.createNativeQuery("DELETE FROM planes_apoyo WHERE id_alumno = :idAlumno AND id_maestro = :idMaestro")
+                        .setParameter("idAlumno", idAlumno)
+                        .setParameter("idMaestro", idMaestro)
+                        .executeUpdate();
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -129,7 +144,7 @@ public class IaController {
             "Sigue estrictamente la siguiente estructura JSON:\n" +
             "{\n" +
             "  \"alumno\": \"%s\",\n" +
-            "  \"introduccion\": \"Frase breve y cálida sobre la situación y el compromiso de ayudar al alumno.\",\n" +
+            "  \"introduccion\": \"Frase breve y cálida sobre el rendimiento del alumno y el compromiso de ayudarlo (IMPORTANTE: Esta frase debe estar redactada en tercera persona y dirigida al docente tutor. NUNCA te dirijas directamente al alumno ni uses saludos como 'Querido [Nombre]').\",\n" +
             "  \"metricas_criticas\": [\n" +
             "    {\n" +
             "      \"tipo\": \"Asistencia o Promedio\",\n" +
@@ -154,15 +169,17 @@ public class IaController {
 
         String consejo = openAiService.llamarOpenAi(systemPrompt, userPrompt, true);
 
-        // Guardar nuevo plan en BD
+        // Guardar nuevo plan en BD con métricas registradas
         try {
             em.createNativeQuery("""
-                INSERT INTO planes_apoyo (id_alumno, id_maestro, plan_json, checks_state)
-                VALUES (:idAlumno, :idMaestro, :planJson, '0,0,0')
+                INSERT INTO planes_apoyo (id_alumno, id_maestro, plan_json, checks_state, asistencia_reg, promedio_reg)
+                VALUES (:idAlumno, :idMaestro, :planJson, '0,0,0', :asistencia, :promedio)
             """)
             .setParameter("idAlumno", idAlumno)
             .setParameter("idMaestro", idMaestro)
             .setParameter("planJson", consejo)
+            .setParameter("asistencia", asistencia)
+            .setParameter("promedio", promedio)
             .executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
@@ -240,7 +257,7 @@ public class IaController {
             "Plan de Acompañamiento actual:\n%s\n\n" +
             "El profesor interactuó con el alumno para la acción #%d y registró esta micro-bitácora de interacción:\n" +
             "\"%s\"\n\n" +
-            "Modifica y adapta el plan de apoyo considerando este feedback (ej: flexibilizar requerimientos si hay problemas de horario o familiares). Mantén y respeta exactamente la misma estructura de campos JSON.",
+            "Modifica y adapta el plan de apoyo considerando este feedback (ej: flexibilizar requerimientos si hay problemas de horario o familiares). Mantén y respeta exactamente la misma estructura de campos JSON. Asegúrate de que la introduccion NUNCA esté dirigida al alumno (ej: no uses 'Querido Ramiro'). Debe ser dirigida exclusivamente al docente tutor.",
             planJson, checkIndex + 1, feedback
         );
 

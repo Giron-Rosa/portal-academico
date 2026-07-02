@@ -55,6 +55,9 @@ public class SecurityConfig {
                         // WebSocket handshake: SockJS necesita acceso libre al endpoint /ws
                         .requestMatchers("/ws/**").permitAll()
 
+                        // Descarga de acta imprimible libre (para permitir apertura directa con window.open en pestaña)
+                        .requestMatchers("/api/portal/docente/predicciones/*/generar-acta").permitAll()
+
                         .requestMatchers("/api/portal/docente/**").hasAnyAuthority("ROLE_MAESTRO", "MAESTRO", "ROLE_DOCENTE", "DOCENTE", "ROLE_PROFESOR", "PROFESOR")
                         .requestMatchers("/api/portal/alumno/**").hasRole("ALUMNO")
                         .requestMatchers("/api/portal/padre/**").hasAnyAuthority("ROLE_PADRE", "PADRE")

@@ -2,6 +2,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../services/auth.service';
+import { PortalDocente } from '../portal-docente';
 
 /** Datos crudos que devuelve el endpoint /predicciones */
 interface AlumnoRaw {
@@ -35,6 +36,7 @@ export interface AlumnoRiesgo extends AlumnoRaw {
 export class PrediccionesDashboard implements OnInit {
   private http = inject(HttpClient);
   private auth = inject(AuthService);
+  private parent = inject(PortalDocente, { optional: true });
 
   private readonly API = 'http://localhost:8080/api/portal/docente/predicciones';
 
@@ -182,6 +184,46 @@ export class PrediccionesDashboard implements OnInit {
         alert('¡Mensaje copiado al portapapeles con éxito!');
       });
     }
+  }
+
+  irAlChatConPadre() {
+    const parent = this.parent;
+    const alumno = this.alumnoSeleccionado();
+    const plan = this.planIA();
+    if (!parent || !alumno || !plan || !plan.sugerencia_mensaje_padres) return;
+
+    const suggestedMessage = plan.sugerencia_mensaje_padres.cuerpo;
+
+    // 1. Cambiar la sección activa a 'mensajes'
+    parent.activeSection.set('mensajes');
+
+    // 2. Buscar conversación existente
+    const thread = parent.mensajes().find(m => m.idAlumno === alumno.idAlumno);
+    if (thread) {
+      parent.abrirMensaje(thread.id);
+      parent.replyText.set(suggestedMessage);
+    } else {
+      // Si no existe, abrir el modal de nuevo chat
+      parent.abrirModalNuevoChat();
+      if (parent.alumnosDisponibles().length === 0) {
+        parent.cargarAlumnosDisponibles();
+      }
+
+      // Esperar a que la lista cargue para seleccionar al alumno
+      const checkAndSelect = () => {
+        const sel = parent.alumnosDisponibles().find(a => a.idAlumno === alumno.idAlumno);
+        if (sel) {
+          parent.seleccionarAlumnoModal(sel);
+          parent.nuevoChatMensaje.set(suggestedMessage);
+        } else {
+          setTimeout(checkAndSelect, 100);
+        }
+      };
+      setTimeout(checkAndSelect, 100);
+    }
+
+    // Cerrar el modal de predicción
+    this.cerrarModalIA();
   }
 
   cerrarModalIA() {
