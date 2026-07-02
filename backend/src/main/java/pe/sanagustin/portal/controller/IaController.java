@@ -77,7 +77,21 @@ public class IaController {
             // fallback
         }
 
-        // 2. Comprobar si ya existe un plan en la base de datos y si las notas/asistencia cambiaron
+        // 2. Obtener id del padre del alumno
+        long idPadre = 1L;
+        try {
+            var padreIdNum = em.createNativeQuery(
+                "SELECT id_padre FROM padre_hijo WHERE id_alumno = :idAlumno LIMIT 1")
+                .setParameter("idAlumno", idAlumno)
+                .getSingleResult();
+            if (padreIdNum != null) {
+                idPadre = ((Number) padreIdNum).longValue();
+            }
+        } catch (Exception e) {
+            // fallback
+        }
+
+        // 3. Comprobar si ya existe un plan en la base de datos y si las notas/asistencia cambiaron
         try {
             List<?> results = em.createNativeQuery(
                 "SELECT id_plan, plan_json, checks_state, feedback_1, feedback_2, feedback_3, asistencia_reg, promedio_reg FROM planes_apoyo WHERE id_alumno = :idAlumno AND id_maestro = :idMaestro")
@@ -133,7 +147,7 @@ public class IaController {
 
         String systemPrompt = "Eres el motor psicopedagógico central de una plataforma web de gestión escolar de última generación. " +
                 "Tu rol exclusivo es analizar las métricas académicas críticas de un estudiante junto con el historial de intervenciones y el feedback directo para estructurar planes de acompañamiento. " +
-                "Toda la información debe estar dirigida de forma profesional al DOCENTE o TUTOR de aula. Jamás saludes al alumno ni le escribas en primera persona (prohibido usar frases como 'Hola Ramiro' o 'Querido estudiante'). " +
+                "Toda la información debe estar dirigida de forma profesional al DOCENTE o TUTOR de aula. Jamás saludes al alumno ni le escribas en primera persona. " +
                 "Debes devolver ÚNICAMENTE un objeto JSON válido. No uses formato Markdown, ni bloques ```json ni texto adicional fuera del JSON.";
 
         String userPrompt = String.format(
@@ -142,10 +156,14 @@ public class IaController {
             "Asistencia: %.1f%%\n" +
             "Promedio Académico: %.1f/20\n" +
             "Alertas iniciales: %s\n\n" +
-            "Devuelve estrictamente el JSON con la siguiente estructura:\n" +
+            "Instrucciones de formato para el mensaje de WhatsApp:\n" +
+            "- Párrafos muy cortos (máximo 2 o 3 líneas por bloque).\n" +
+            "- Uso sutil de emojis escolares (📚, 📝, 📅, 💬).\n" +
+            "- Tono respetuoso y colaborador, invitando a una cita corta.\n\n" +
+            "Devuelve estrictamente el JSON con la siguiente estructura (escapa comillas internas \\\" y saltos de línea \\n en el campo markdown y cuerpo_mensaje):\n" +
             "{\n" +
             "  \"alumno\": \"%s\",\n" +
-            "  \"modo_procesado\": \"GENERACION\",\n" +
+            "  \"modo_processed\": \"GENERACION\",\n" +
             "  \"introduccion_docente\": \"Mensaje estratégico, profesional y motivador diseñado para el profesor. Debe explicar brevemente la naturaleza del acompañamiento y cómo su guía liderará la recuperación del estudiante. Redactada exclusivamente para el docente.\",\n" +
             "  \"metricas_analizadas\": [\n" +
             "    {\n" +
@@ -155,6 +173,7 @@ public class IaController {
             "      \"meta_dos_semanas\": \"Meta cuantitativa y medible a corto plazo.\"\n" +
             "    }\n" +
             "  ],\n" +
+            "  \"plan_fases_markdown\": \"Plan estratégico completo estructurado por fases (Fase 1: Intervención Inmediata, Fase 2: Seguimiento Continuo, Fase 3: Consolidación) en formato Markdown (.md). Detalla objetivos cronológicos, metas específicas y pautas paso a paso para el profesor.\",\n" +
             "  \"checklist_pedagogico\": [\n" +
             "    {\n" +
             "      \"id_accion\": \"ACC_001\",\n" +
@@ -173,9 +192,9 @@ public class IaController {
             "    }\n" +
             "  ],\n" +
             "  \"comunicacion_apoderado\": {\n" +
-            "    \"canal_sugerido\": \"Mensajería Interna de la Plataforma\",\n" +
+            "    \"id_apoderado_estudiante\": \"%d\",\n" +
             "    \"asunto\": \"Asunto empático, colaborativo y profesional que invite a la cooperación.\",\n" +
-            "    \"cuerpo_mensaje\": \"Texto completo redactado en primera persona, simulando la voz del docente tutor hacia los padres del alumno. Debe ser muy respetuoso, valorar el potencial del alumno e invitar al chat, listo para enviar. Sin placeholders entre corchetes.\"\n" +
+            "    \"cuerpo_mensaje\": \"Texto completo optimizado para chat de WhatsApp, en primera persona (voz del docente tutor). Párrafos cortos de máximo 2 o 3 líneas, saltos de línea dobles y emojis escolares. Listo para precargarse en la barra elástica.\"\n" +
             "  },\n" +
             "  \"recomendaciones_entrevista_padres\": [\n" +
             "    \"3 consejos o pautas específicas para que el docente las plantee oralmente a los padres.\"\n" +
@@ -185,7 +204,7 @@ public class IaController {
             "    \"proxima_evaluacion_sugerida\": \"Hito recomendado para revisar si las métricas del alumno mejoraron.\"\n" +
             "  }\n" +
             "}",
-            nombreAlumno, asistencia, promedio, causas, nombreAlumno, asistencia, promedio
+            nombreAlumno, asistencia, promedio, causas, nombreAlumno, asistencia, promedio, idPadre
         );
 
         String consejo = openAiService.llamarOpenAi(systemPrompt, userPrompt, true);
@@ -239,6 +258,20 @@ public class IaController {
             // fallback
         }
 
+        // Obtener id del padre del alumno
+        long idPadre = 1L;
+        try {
+            var padreIdNum = em.createNativeQuery(
+                "SELECT id_padre FROM padre_hijo WHERE id_alumno = :idAlumno LIMIT 1")
+                .setParameter("idAlumno", idAlumno)
+                .getSingleResult();
+            if (padreIdNum != null) {
+                idPadre = ((Number) padreIdNum).longValue();
+            }
+        } catch (Exception e) {
+            // fallback
+        }
+
         // Buscar plan actual
         List<?> results = em.createNativeQuery(
             "SELECT id_plan, plan_json, checks_state, feedback_1, feedback_2, feedback_3 FROM planes_apoyo WHERE id_alumno = :idAlumno AND id_maestro = :idMaestro")
@@ -272,17 +305,20 @@ public class IaController {
 
         // Llamar a OpenAI en MODO 2: Seguimiento, bitácora y refinamiento
         String systemPrompt = "Eres el motor psicopedagógico central de una plataforma web de gestión escolar de última generación. " +
-                "Tu rol es analizar el plan anterior y el feedback del docente para reajustar dinámicamente las estrategias del checklist. " +
-                "Toda la información debe estar dirigida de forma profesional al DOCENTE o TUTOR de aula. Jamás saludes al alumno ni le escribas en primera persona (prohibido usar frases como 'Hola Ramiro' o 'Querido estudiante'). " +
+                "Tu rol es analizar el plan anterior y el feedback de voz o texto del docente para reajustar dinámicamente las estrategias. " +
+                "Toda la información debe estar dirigida de forma profesional al DOCENTE o TUTOR de aula. Jamás saludes al alumno ni le escribas en primera persona. " +
                 "Debes devolver ÚNICAMENTE un objeto JSON válido con el mismo esquema estructural anterior. No uses formato Markdown, ni bloques ```json ni texto adicional fuera del JSON.";
 
         String userPrompt = String.format(
             "Plan de Acompañamiento anterior:\n%s\n\n" +
-            "Métricas en MODO: SEGUIMIENTO\n" +
-            "El profesor interactuó para la acción #%d y registró este micro-comentario:\n" +
+            "Métricas en MODO: SEGUIMIENTO (Feedback de voz/micrófono)\n" +
+            "El profesor interactuó para la acción #%d e ingresó este dictado/bitácora:\n" +
             "\"%s\"\n\n" +
-            "Modifica y adapta el plan de apoyo considerando este feedback (ej: flexibilizar requerimientos si hay problemas de horario o familiares). Mantén exactamente la misma estructura de campos JSON.",
-            planJson, checkIndex + 1, feedback
+            "Instrucciones de formato para el mensaje de WhatsApp:\n" +
+            "- Párrafos muy cortos (máximo 2 o 3 líneas por bloque).\n" +
+            "- Uso sutil de emojis escolares (📚, 📝, 📅, 💬).\n\n" +
+            "Modifica y adapta el plan de apoyo considerando este feedback. Mantén exactamente la misma estructura de campos JSON y pon el ID de padre como: \"%d\".",
+            planJson, checkIndex + 1, feedback, idPadre
         );
 
         String planActualizado = openAiService.llamarOpenAi(systemPrompt, userPrompt, true);

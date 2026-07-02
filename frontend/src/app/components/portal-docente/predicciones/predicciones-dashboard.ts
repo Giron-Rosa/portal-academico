@@ -186,6 +186,24 @@ export class PrediccionesDashboard implements OnInit {
     }
   }
 
+  convertirMarkdownAHtml(md: string): string {
+    if (!md) return '';
+    let html = md;
+    // Escapar saltos de línea con <br>
+    html = html.replace(/\n/g, '<br>');
+    // Encabezados ###
+    html = html.replace(/### (.*?)(<br>|$)/g, '<h5 style="margin: 12px 0 6px 0; color: #1e3a8a; font-weight: 700; font-size: 13px;">$1</h5>');
+    // Encabezados ##
+    html = html.replace(/## (.*?)(<br>|$)/g, '<h4 style="margin: 16px 0 8px 0; color: #1e3a8a; font-weight: 800; font-size: 14px; text-transform: uppercase;">$1</h4>');
+    // Encabezados #
+    html = html.replace(/# (.*?)(<br>|$)/g, '<h3 style="margin: 18px 0 10px 0; color: #1e1b4b; font-weight: 900; font-size: 15px; text-transform: uppercase;">$1</h3>');
+    // Negrita
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Viñetas -
+    html = html.replace(/- (.*?)(<br>|$)/g, '<li style="margin-left: 15px; margin-bottom: 4px; list-style-type: disc;">$1</li>');
+    return html;
+  }
+
   irAlChatConPadre() {
     const parent = this.parent;
     const alumno = this.alumnoSeleccionado();
@@ -203,23 +221,25 @@ export class PrediccionesDashboard implements OnInit {
       parent.abrirMensaje(thread.id);
       parent.replyText.set(suggestedMessage);
     } else {
-      // Si no existe, abrir el modal de nuevo chat
-      parent.abrirModalNuevoChat();
-      if (parent.alumnosDisponibles().length === 0) {
-        parent.cargarAlumnosDisponibles();
-      }
+      // Si no existe, crear la conversación en background
+      const token = parent.auth.getToken();
+      const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
 
-      // Esperar a que la lista cargue para seleccionar al alumno
-      const checkAndSelect = () => {
-        const sel = parent.alumnosDisponibles().find(a => a.idAlumno === alumno.idAlumno);
-        if (sel) {
-          parent.seleccionarAlumnoModal(sel);
-          parent.nuevoChatMensaje.set(suggestedMessage);
-        } else {
-          setTimeout(checkAndSelect, 100);
+      parent.http.post<any>('http://localhost:8080/api/portal/docente/mensajes/iniciar', {
+        idAlumno: alumno.idAlumno,
+        idPadre: Number(plan.comunicacion_apoderado.id_apoderado_estudiante),
+        idAulaCurso: alumno.idAulaCurso,
+        asunto: plan.comunicacion_apoderado.asunto,
+        cuerpo: suggestedMessage
+      }, { headers }).subscribe({
+        next: (res) => {
+          parent.cargarMensajes();
+          setTimeout(() => parent.abrirMensaje(res.id), 400);
+        },
+        error: () => {
+          alert('No se pudo iniciar el chat con el apoderado en este momento.');
         }
-      };
-      setTimeout(checkAndSelect, 100);
+      });
     }
 
     // Cerrar el modal de predicción
