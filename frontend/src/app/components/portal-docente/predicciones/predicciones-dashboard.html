@@ -210,41 +210,50 @@
            } @else {
              @if (planIA()) {
                <div style="font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; gap: 20px;">
-                 <!-- Introducción Cálida -->
+                 <!-- Introducción al Docente -->
                  <div style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 14px 18px; border-radius: 8px; font-size: 13px; line-height: 1.6; color: #14532d; font-weight: 500; box-shadow: 0 1px 2px rgba(22, 163, 74, 0.05);">
-                   ✨ {{ planIA().introduccion }}
+                   ✨ {{ planIA().introduccion_docente }}
                  </div>
 
-                 <!-- Métricas Críticas -->
+                 <!-- Análisis Avanzado de Causa Raíz -->
+                 @if (planIA().analisis_avanzado) {
+                   <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 16px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.02);">
+                     <h4 style="margin: 0 0 8px 0; font-size: 12.5px; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.3px;">🧠 Diagnóstico & Análisis Avanzado</h4>
+                     <p style="margin: 0 0 8px 0; font-size: 13px; color: #1e3a8a; line-height: 1.5;"><strong>Causa Raíz Probable:</strong> {{ planIA().analisis_avanzado.causa_raiz_probable }}</p>
+                     <div style="font-size: 11.5px; color: #2563eb; font-weight: 600;">📅 Hito de Próxima Evaluación Recomendada: {{ planIA().analisis_avanzado.proxima_evaluacion_sugerida }}</div>
+                   </div>
+                 }
+
+                 <!-- Métricas Analizadas -->
                  <div>
                    <h4 style="margin: 0 0 10px 0; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
-                     📊 Métricas Críticas
+                     📊 Métricas Analizadas
                    </h4>
                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-                     @for (metrica of planIA().metricas_criticas; track metrica.tipo) {
+                     @for (metrica of planIA().metricas_analizadas; track metrica.tipo) {
                        <div style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; background: #fafafa; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
                          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                            <span style="font-weight: 600; color: #64748b; font-size: 11px; text-transform: uppercase;">{{ metrica.tipo }}</span>
-                           <span [style.background]="metrica.estado === 'Crítico' ? '#fef2f2' : '#fffbeb'"
-                                 [style.color]="metrica.estado === 'Crítico' ? '#991b1b' : '#92400e'"
+                           <span [style.background]="metrica.estado_alerta.includes('Severa') ? '#fef2f2' : '#fffbeb'"
+                                 [style.color]="metrica.estado_alerta.includes('Severa') ? '#991b1b' : '#92400e'"
                                  style="font-size: 9px; font-weight: 750; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px;">
-                             {{ metrica.estado }}
+                             {{ metrica.estado_alerta }}
                            </span>
                          </div>
                          <div style="font-size: 22px; font-weight: 850; color: #1e1b4b; margin-bottom: 6px;">{{ metrica.valor_actual }}</div>
                          <div style="font-size: 11.5px; color: #334155; line-height: 1.4;">
-                           <strong style="color: #475569;">Meta corta plazo (2 semanas):</strong><br>
-                           {{ metrica.meta_corta_plazo }}
+                           <strong style="color: #475569;">Meta a corto plazo:</strong><br>
+                           {{ metrica.meta_dos_semanas }}
                          </div>
                        </div>
                      }
                    </div>
                  </div>
 
-                 <!-- Checklist Profesor -->
+                 <!-- Checklist Pedagógico -->
                  <div>
                    <h4 style="margin: 0 0 10px 0; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
-                     👨‍🏫 Plan de Acción del Docente
+                     👨‍🏫 Checklist Pedagógico del Plan de Acompañamiento
                    </h4>
 
                    <!-- Popover/Card Flotante de Feedback -->
@@ -255,7 +264,7 @@
                        
                        <div style="margin-bottom: 12px;">
                          <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">¿Cómo reaccionó el alumno o qué acordaron brevemente?</label>
-                         <textarea #txtFeedback placeholder="Ej: Ramiro dice que llega tarde porque cuida a su hermano menor..." rows="2" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; font-size: 12px; font-family: inherit; outline: none; box-sizing: border-box; resize: vertical;"></textarea>
+                         <textarea #txtFeedback placeholder="Ej: El alumno indica dificultades..." rows="2" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; font-size: 12px; font-family: inherit; outline: none; box-sizing: border-box; resize: vertical;"></textarea>
                        </div>
                        
                        <div style="display: flex; justify-content: flex-end; gap: 8px;">
@@ -265,51 +274,56 @@
                      </div>
                    }
 
-                   <div style="display: flex; flex-direction: column; gap: 8px;">
-                     @for (accion of planIA().checklist_profesor; track accion; let idx = $index) {
-                       <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: #334155; cursor: pointer; padding: 10px 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; transition: background 0.15s; user-select: none;">
-                         <input type="checkbox" 
-                                [checked]="isCheckActive(idx)"
-                                (change)="onCheckToggle(idx, $event)"
-                                style="margin-top: 3px; cursor: pointer; width: 16px; height: 16px; border-radius: 4px; border: 1px solid #cbd5e1; accent-color: #312e81;" />
-                         <span style="line-height: 1.4;" [style.text-decoration]="isCheckActive(idx) ? 'line-through' : 'none'" [style.color]="isCheckActive(idx) ? '#94a3b8' : '#334155'">{{ accion }}</span>
+                   <div style="display: flex; flex-direction: column; gap: 10px;">
+                     @for (item of planIA().checklist_pedagogico; track item.id_accion; let idx = $index) {
+                       <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: #334155; cursor: pointer; padding: 12px 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; transition: background 0.15s; user-select: none;">
+                         <div style="display: flex; align-items: flex-start; gap: 10px;">
+                           <input type="checkbox" 
+                                  [checked]="isCheckActive(idx)"
+                                  (change)="onCheckToggle(idx, $event)"
+                                  style="margin-top: 3px; cursor: pointer; width: 16px; height: 16px; border-radius: 4px; border: 1px solid #cbd5e1; accent-color: #312e81;" />
+                           <span style="line-height: 1.4; font-weight: 600;" [style.text-decoration]="isCheckActive(idx) ? 'line-through' : 'none'" [style.color]="isCheckActive(idx) ? '#94a3b8' : '#1e293b'">{{ item.accion }}</span>
+                         </div>
+                         <span style="font-size: 11px; color: #64748b; margin-left: 26px; line-height: 1.4;"><em>Justificación IA: {{ item.justificacion_ia }}</em></span>
                        </label>
                      }
                    </div>
                  </div>
 
-                 <!-- Guía para Casa -->
+                 <!-- Recomendaciones Entrevista Padres -->
                  <div>
                    <h4 style="margin: 0 0 10px 0; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
-                     🏡 Guía de Apoyo para el Hogar
+                     🏡 Recomendaciones para Entrevista con Padres
                    </h4>
                    <div style="background: #faf5ff; border: 1px solid #f3e8ff; border-radius: 10px; padding: 16px;">
                      <ul style="margin: 0; padding-left: 20px; font-size: 12.5px; color: #581c87; display: flex; flex-direction: column; gap: 8px; line-height: 1.5;">
-                       @for (consejo of planIA().guia_para_casa; track consejo) {
+                       @for (consejo of planIA().recomendaciones_entrevista_padres; track consejo) {
                          <li>{{ consejo }}</li>
                        }
                      </ul>
                    </div>
                  </div>
 
-                 <!-- Mensaje para Padres -->
-                 <div style="border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-top: 5px;">
-                   <div style="background: #f1f5f9; padding: 12px 18px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
-                     <span style="font-weight: 700; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">💬 Mensaje sugerido para el Apoderado</span>
-                     <div style="display: flex; gap: 8px;">
-                       <button (click)="copiarMensajePadres()" style="background: #e2e8f0; color: #334155; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 4px;">
-                         📋 Copiar mensaje
-                       </button>
-                       <button (click)="irAlChatConPadre()" style="background: #312e81; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 4px;">
-                         💬 Enviar al Chat
-                       </button>
-                     </div>
-                   </div>
-                   <div style="padding: 16px; font-size: 13px; color: #334155;">
-                     <div style="margin-bottom: 8px; font-weight: 700; color: #1e293b;">Asunto: <span style="font-weight: 500; color: #475569;">{{ planIA().sugerencia_mensaje_padres.asunto }}</span></div>
-                     <div style="background: #fafafa; border: 1px dashed #cbd5e1; padding: 12px 14px; border-radius: 6px; white-space: pre-wrap; font-style: italic; color: #475569; line-height: 1.5;">{{ planIA().sugerencia_mensaje_padres.cuerpo }}</div>
-                   </div>
-                 </div>
+                  <!-- Mensaje para Padres -->
+                  @if (planIA().comunicacion_apoderado) {
+                    <div style="border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-top: 5px;">
+                      <div style="background: #f1f5f9; padding: 12px 18px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 700; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">💬 Mensaje sugerido para el Apoderado</span>
+                        <div style="display: flex; gap: 8px;">
+                          <button (click)="copiarMensajePadres()" style="background: #e2e8f0; color: #334155; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 4px;">
+                            📋 Copiar mensaje
+                          </button>
+                          <button (click)="irAlChatConPadre()" style="background: #312e81; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 4px;">
+                            💬 Enviar al Chat
+                          </button>
+                        </div>
+                      </div>
+                      <div style="padding: 16px; font-size: 13px; color: #334155;">
+                        <div style="margin-bottom: 8px; font-weight: 700; color: #1e293b;">Asunto: <span style="font-weight: 500; color: #475569;">{{ planIA().comunicacion_apoderado.asunto }}</span></div>
+                        <div style="background: #fafafa; border: 1px dashed #cbd5e1; padding: 12px 14px; border-radius: 6px; white-space: pre-wrap; font-style: italic; color: #475569; line-height: 1.5;">{{ planIA().comunicacion_apoderado.cuerpo_mensaje }}</div>
+                      </div>
+                    </div>
+                  }
 
                  <!-- Golden Button para Generar Acta (desbloqueado con checks completos) -->
                  @if (esPlanCompletado()) {

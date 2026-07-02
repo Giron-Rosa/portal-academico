@@ -53,7 +53,7 @@ public class IaController {
         }
     }
 
-    // ── IDEA 1: Plan de Apoyo Pedagógico (Docente) ──
+    // ── MODO 1: GENERACIÓN INICIAL DEL PLAN ──
     @GetMapping("/api/portal/docente/predicciones/{idAlumno}/ia-advisory")
     public ResponseEntity<Map<String, String>> obtenerRecomendaciones(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -118,7 +118,7 @@ public class IaController {
 
         // Si los datos no cumplen con el riesgo, respondemos inmediatamente de forma estructurada
         if (promedio >= 11.0 && asistencia >= 70.0) {
-            return ResponseEntity.ok(Map.of("resultado", "{\"error\": \"El alumno no requiere plan de apoyo.\"}"));
+            return ResponseEntity.ok(Map.of("resultado", "{\"error\": \"El alumno no requiere plan de apoyo en este momento.\"}"));
         }
 
         String nombreAlumno = "el estudiante";
@@ -131,40 +131,61 @@ public class IaController {
             // fallback
         }
 
-        String systemPrompt = "Eres un asistente de IA experto en psicopedagogía y gestión escolar dentro de una plataforma web educativa peruana. " +
-                "Tu objetivo es transformar métricas críticas en un \"Plan de Acompañamiento Integral\" empático, accionable y modular. " +
-                "Debes responder EXCLUSIVAMENTE con un objeto JSON válido. No uses formato Markdown, ni bloques ```json ni texto adicional fuera del JSON.";
+        String systemPrompt = "Eres el motor psicopedagógico central de una plataforma web de gestión escolar de última generación. " +
+                "Tu rol exclusivo es analizar las métricas académicas críticas de un estudiante junto con el historial de intervenciones y el feedback directo para estructurar planes de acompañamiento. " +
+                "Toda la información debe estar dirigida de forma profesional al DOCENTE o TUTOR de aula. Jamás saludes al alumno ni le escribas en primera persona (prohibido usar frases como 'Hola Ramiro' o 'Querido estudiante'). " +
+                "Debes devolver ÚNICAMENTE un objeto JSON válido. No uses formato Markdown, ni bloques ```json ni texto adicional fuera del JSON.";
 
         String userPrompt = String.format(
-            "Genera el Plan de Acompañamiento para el alumno: %s.\n\n" +
-            "Métricas actuales:\n" +
-            "- Asistencia: %.1f%%\n" +
-            "- Promedio Académico: %.1f/20\n" +
-            "- Alertas iniciales: %s\n\n" +
-            "Sigue estrictamente la siguiente estructura JSON:\n" +
+            "Analiza las siguientes métricas en MODO: GENERACION\n\n" +
+            "Estudiante: %s\n" +
+            "Asistencia: %.1f%%\n" +
+            "Promedio Académico: %.1f/20\n" +
+            "Alertas iniciales: %s\n\n" +
+            "Devuelve estrictamente el JSON con la siguiente estructura:\n" +
             "{\n" +
             "  \"alumno\": \"%s\",\n" +
-            "  \"introduccion\": \"Frase breve y cálida sobre el rendimiento del alumno y el compromiso de ayudarlo (IMPORTANTE: Esta frase debe estar redactada en tercera persona y dirigida al docente tutor. NUNCA te dirijas directamente al alumno ni uses saludos como 'Querido [Nombre]').\",\n" +
-            "  \"metricas_criticas\": [\n" +
+            "  \"modo_procesado\": \"GENERACION\",\n" +
+            "  \"introduccion_docente\": \"Mensaje estratégico, profesional y motivador diseñado para el profesor. Debe explicar brevemente la naturaleza del acompañamiento y cómo su guía liderará la recuperación del estudiante. Redactada exclusivamente para el docente.\",\n" +
+            "  \"metricas_analizadas\": [\n" +
             "    {\n" +
-            "      \"tipo\": \"Asistencia o Promedio\",\n" +
-            "      \"valor_actual\": \"Ej. %.1f%%\",\n" +
-            "      \"estado\": \"Crítico o Alerta\",\n" +
-            "      \"meta_corta_plazo\": \"Meta medible a 2 semanas\"\n" +
+            "      \"tipo\": \"Asistencia o Calificaciones\",\n" +
+            "      \"valor_actual\": \"%.1f%% o %.1f/20\",\n" +
+            "      \"estado_alerta\": \"Alerta Moderada / Alerta Severa\",\n" +
+            "      \"meta_dos_semanas\": \"Meta cuantitativa y medible a corto plazo.\"\n" +
             "    }\n" +
             "  ],\n" +
-            "  \"checklist_profesor\": [\n" +
-            "    \"Lista de 3 acciones concretas que el docente puede marcar como hechas (Checkboxes). Usa verbos en infinitivo.\"\n" +
+            "  \"checklist_pedagogico\": [\n" +
+            "    {\n" +
+            "      \"id_accion\": \"ACC_001\",\n" +
+            "      \"accion\": \"Acción real, concreta y pedagógica que el docente debe ejecutar dentro del aula o mediante el sistema. Empieza con verbo en infinitivo.\",\n" +
+            "      \"justificacion_ia\": \"Explicación de cómo esta acción mitiga el problema específico.\"\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"id_accion\": \"ACC_002\",\n" +
+            "      \"accion\": \"Acción de seguimiento o flexibilidad del profesor. Empieza con verbo en infinitivo.\",\n" +
+            "      \"justificacion_ia\": \"Explicación del impacto de esta segunda acción.\"\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"id_accion\": \"ACC_003\",\n" +
+            "      \"accion\": \"Acción de coordinación con los padres de familia. Empieza con verbo en infinitivo.\",\n" +
+            "      \"justificacion_ia\": \"Explicación del impacto de esta tercera acción.\"\n" +
+            "    }\n" +
             "  ],\n" +
-            "  \"sugerencia_mensaje_padres\": {\n" +
-            "    \"asunto\": \"Asunto empático para el mensaje\",\n" +
-            "    \"cuerpo\": \"Mensaje redactado en primera persona para que el profesor se lo envíe a los padres por el chat interno, invitándolos a coordinar una cita de apoyo sin sonar acusatorio.\"\n" +
+            "  \"comunicacion_apoderado\": {\n" +
+            "    \"canal_sugerido\": \"Mensajería Interna de la Plataforma\",\n" +
+            "    \"asunto\": \"Asunto empático, colaborativo y profesional que invite a la cooperación.\",\n" +
+            "    \"cuerpo_mensaje\": \"Texto completo redactado en primera persona, simulando la voz del docente tutor hacia los padres del alumno. Debe ser muy respetuoso, valorar el potencial del alumno e invitar al chat, listo para enviar. Sin placeholders entre corchetes.\"\n" +
             "  },\n" +
-            "  \"guia_para_casa\": [\n" +
-            "    \"3 consejos prácticos y sencillos para aplicar en el hogar.\"\n" +
-            "  ]\n" +
+            "  \"recomendaciones_entrevista_padres\": [\n" +
+            "    \"3 consejos o pautas específicas para que el docente las plantee oralmente a los padres.\"\n" +
+            "  ],\n" +
+            "  \"analisis_avanzado\": {\n" +
+            "    \"causa_raiz_probable\": \"Deducción lógica basada en las métricas e historial sobre el origen del estancamiento.\",\n" +
+            "    \"proxima_evaluacion_sugerida\": \"Hito recomendado para revisar si las métricas del alumno mejoraron.\"\n" +
+            "  }\n" +
             "}",
-            nombreAlumno, asistencia, promedio, causas, nombreAlumno, asistencia
+            nombreAlumno, asistencia, promedio, causas, nombreAlumno, asistencia, promedio
         );
 
         String consejo = openAiService.llamarOpenAi(systemPrompt, userPrompt, true);
@@ -194,9 +215,7 @@ public class IaController {
         ));
     }
 
-    /**
-     * Guarda el feedback del profesor sobre un check y adapta dinámicamente el plan
-     */
+    // ── MODO 2: SEGUIMIENTO, BITÁCORA Y REFINAMIENTO ──
     @PostMapping("/api/portal/docente/predicciones/feedback-plan")
     public ResponseEntity<Map<String, String>> guardarFeedbackPlan(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -251,13 +270,18 @@ public class IaController {
         else if (checkIndex == 1) f2 = feedback;
         else if (checkIndex == 2) f3 = feedback;
 
-        // Llamar a OpenAI para adaptar el plan basado en el feedback del profesor
-        String systemPrompt = "Eres un asistente de IA experto en psicopedagogía. Tu labor es adaptar y actualizar dinámicamente el plan de apoyo de un alumno según la micro-bitácora/feedback que te proporciona el profesor. Devuelve estrictamente el JSON sin bloques Markdown.";
+        // Llamar a OpenAI en MODO 2: Seguimiento, bitácora y refinamiento
+        String systemPrompt = "Eres el motor psicopedagógico central de una plataforma web de gestión escolar de última generación. " +
+                "Tu rol es analizar el plan anterior y el feedback del docente para reajustar dinámicamente las estrategias del checklist. " +
+                "Toda la información debe estar dirigida de forma profesional al DOCENTE o TUTOR de aula. Jamás saludes al alumno ni le escribas en primera persona (prohibido usar frases como 'Hola Ramiro' o 'Querido estudiante'). " +
+                "Debes devolver ÚNICAMENTE un objeto JSON válido con el mismo esquema estructural anterior. No uses formato Markdown, ni bloques ```json ni texto adicional fuera del JSON.";
+
         String userPrompt = String.format(
-            "Plan de Acompañamiento actual:\n%s\n\n" +
-            "El profesor interactuó con el alumno para la acción #%d y registró esta micro-bitácora de interacción:\n" +
+            "Plan de Acompañamiento anterior:\n%s\n\n" +
+            "Métricas en MODO: SEGUIMIENTO\n" +
+            "El profesor interactuó para la acción #%d y registró este micro-comentario:\n" +
             "\"%s\"\n\n" +
-            "Modifica y adapta el plan de apoyo considerando este feedback (ej: flexibilizar requerimientos si hay problemas de horario o familiares). Mantén y respeta exactamente la misma estructura de campos JSON. Asegúrate de que la introduccion NUNCA esté dirigida al alumno (ej: no uses 'Querido Ramiro'). Debe ser dirigida exclusivamente al docente tutor.",
+            "Modifica y adapta el plan de apoyo considerando este feedback (ej: flexibilizar requerimientos si hay problemas de horario o familiares). Mantén exactamente la misma estructura de campos JSON.",
             planJson, checkIndex + 1, feedback
         );
 

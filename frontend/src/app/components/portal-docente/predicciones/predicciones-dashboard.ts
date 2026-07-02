@@ -122,9 +122,9 @@ export class PrediccionesDashboard implements OnInit {
     event.target.checked = this.isCheckActive(index);
 
     if (isChecked) {
-      const acciones = this.planIA()?.checklist_profesor;
+      const acciones = this.planIA()?.checklist_pedagogico;
       if (acciones && acciones[index]) {
-        this.abrirPopoverFeedback.set({ index, accion: acciones[index] });
+        this.abrirPopoverFeedback.set({ index, accion: acciones[index].accion });
       }
     }
   }
@@ -178,8 +178,8 @@ export class PrediccionesDashboard implements OnInit {
 
   copiarMensajePadres() {
     const plan = this.planIA();
-    if (plan && plan.sugerencia_mensaje_padres) {
-      const fullText = `Asunto: ${plan.sugerencia_mensaje_padres.asunto}\n\n${plan.sugerencia_mensaje_padres.cuerpo}`;
+    if (plan && plan.comunicacion_apoderado) {
+      const fullText = `Asunto: ${plan.comunicacion_apoderado.asunto}\n\n${plan.comunicacion_apoderado.cuerpo_mensaje}`;
       navigator.clipboard.writeText(fullText).then(() => {
         alert('¡Mensaje copiado al portapapeles con éxito!');
       });
@@ -190,9 +190,9 @@ export class PrediccionesDashboard implements OnInit {
     const parent = this.parent;
     const alumno = this.alumnoSeleccionado();
     const plan = this.planIA();
-    if (!parent || !alumno || !plan || !plan.sugerencia_mensaje_padres) return;
+    if (!parent || !alumno || !plan || !plan.comunicacion_apoderado) return;
 
-    const suggestedMessage = plan.sugerencia_mensaje_padres.cuerpo;
+    const suggestedMessage = plan.comunicacion_apoderado.cuerpo_mensaje;
 
     // 1. Cambiar la sección activa a 'mensajes'
     parent.activeSection.set('mensajes');
