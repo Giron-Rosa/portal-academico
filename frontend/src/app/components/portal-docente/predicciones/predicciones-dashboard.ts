@@ -222,10 +222,10 @@ export class PrediccionesDashboard implements OnInit {
       parent.replyText.set(suggestedMessage);
     } else {
       // Si no existe, crear la conversación en background
-      const token = parent.auth.getToken();
+      const token = this.auth.getToken();
       const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
 
-      parent.http.post<any>('http://localhost:8080/api/portal/docente/mensajes/iniciar', {
+      this.http.post<any>('http://localhost:8080/api/portal/docente/mensajes/iniciar', {
         idAlumno: alumno.idAlumno,
         idPadre: Number(plan.comunicacion_apoderado.id_apoderado_estudiante),
         idAulaCurso: alumno.idAulaCurso,

@@ -56,6 +56,10 @@ export interface RespuestaResumen {
   fecha: string;
   nombreAutor: string;
   esMaestro: boolean;
+  isPlaying?: boolean;
+  audioProgress?: number;
+  currentTime?: number;
+  duration?: number;
 }
 
 /** Detalle completo de un mensaje (incluye cuerpo + hilo de respuestas) */
@@ -63,6 +67,10 @@ export interface MensajeDetalle extends MensajeResumen {
   cuerpo: string;
   respuestas: RespuestaResumen[];
   iniciadoPorDocente: boolean;
+  isPlaying?: boolean;
+  audioProgress?: number;
+  currentTime?: number;
+  duration?: number;
 }
 
 /** Contexto del alumno para el panel lateral en mensajes */
