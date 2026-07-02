@@ -31,33 +31,58 @@ public class IaController {
             @RequestParam double promedio,
             @RequestParam String causas) {
 
+        // Si los datos no cumplen con el riesgo, respondemos inmediatamente de forma estructurada
+        if (promedio >= 11.0 && asistencia >= 70.0) {
+            return ResponseEntity.ok(Map.of("resultado", "{\"error\": \"El alumno no requiere plan de apoyo.\"}"));
+        }
+
         String nombreAlumno = "el estudiante";
-        String gradoSeccion = "";
         try {
             var al = em.find(pe.sanagustin.portal.entity.Alumno.class, idAlumno.longValue());
             if (al != null) {
                 nombreAlumno = al.getNombre() + " " + al.getApellido();
-                gradoSeccion = al.getGrado() + " " + al.getSeccion();
             }
         } catch (Exception e) {
             // fallback
         }
 
-        String systemPrompt = "Eres un psicopedagogo y asesor educativo del Colegio San Agustín. Propones planes de apoyo sumamente detallados, estructurados en HTML y centrados en el alumno.";
+        String systemPrompt = "Eres un asistente de IA experto en psicopedagogía y gestión escolar dentro de una plataforma web educativa peruana. " +
+                "Tu objetivo es transformar métricas críticas en un \"Plan de Acompañamiento Integral\" empático, accionable y modular. " +
+                "Debes responder EXCLUSIVAMENTE con un objeto JSON válido. No uses formato Markdown, ni bloques ```json ni texto adicional fuera del JSON.";
+
         String userPrompt = String.format(
-            "Diseña un Plan de Apoyo Pedagógico integral, formal y muy detallado para el estudiante %s de %s.\n\n" +
-            "Métricas actuales del estudiante:\n" +
-            "- Porcentaje de Asistencia: %.1f%%\n" +
-            "- Promedio General Acumulado: %.1f/20 (Nota aprobatoria mínima: 11)\n" +
-            "- Alertas de riesgo detectadas: %s\n\n" +
-            "Instrucciones para la respuesta:\n" +
-            "1. Organiza la respuesta en 3 secciones principales: 'I. Diagnóstico de Riesgo', 'II. Plan de Acción Académica y Tutorías' y 'III. Recomendaciones para el Entorno Familiar'.\n" +
-            "2. Proporciona recomendaciones específicas y realistas basadas en las alertas del estudiante.\n" +
-            "3. IMPORTANTE: Genera la respuesta utilizando exclusivamente etiquetas HTML para dar formato (como <h3>, <p>, <ul>, <li>, <strong>, <br>). NO uses formato Markdown (como ** o *).",
-            nombreAlumno, gradoSeccion, asistencia, promedio, causas
+            "Genera el Plan de Acompañamiento para el alumno: %s.\n\n" +
+            "Métricas actuales:\n" +
+            "- Asistencia: %.1f%%\n" +
+            "- Promedio Académico: %.1f/20\n" +
+            "- Alertas iniciales: %s\n\n" +
+            "Sigue estrictamente la siguiente estructura JSON:\n" +
+            "{\n" +
+            "  \"alumno\": \"%s\",\n" +
+            "  \"introduccion\": \"Frase breve y cálida sobre la situación y el compromiso de ayudar al alumno.\",\n" +
+            "  \"metricas_criticas\": [\n" +
+            "    {\n" +
+            "      \"tipo\": \"Asistencia o Promedio\",\n" +
+            "      \"valor_actual\": \"Ej. %.1f%%\",\n" +
+            "      \"estado\": \"Crítico o Alerta\",\n" +
+            "      \"meta_corta_plazo\": \"Meta medible a 2 semanas\"\n" +
+            "    }\n" +
+            "  ],\n" +
+            "  \"checklist_profesor\": [\n" +
+            "    \"Lista de 3 acciones concretas que el docente puede marcar como hechas (Checkboxes). Usa verbos en infinitivo.\"\n" +
+            "  ],\n" +
+            "  \"sugerencia_mensaje_padres\": {\n" +
+            "    \"asunto\": \"Asunto empático para el mensaje\",\n" +
+            "    \"cuerpo\": \"Mensaje redactado en primera persona para que el profesor se lo envíe a los padres por el chat interno, invitándolos a coordinar una cita de apoyo sin sonar acusatorio.\"\n" +
+            "  },\n" +
+            "  \"guia_para_casa\": [\n" +
+            "    \"3 consejos prácticos y sencillos para aplicar en el hogar.\"\n" +
+            "  ]\n" +
+            "}",
+            nombreAlumno, asistencia, promedio, causas, nombreAlumno, asistencia
         );
 
-        String consejo = openAiService.llamarOpenAi(systemPrompt, userPrompt);
+        String consejo = openAiService.llamarOpenAi(systemPrompt, userPrompt, true);
         return ResponseEntity.ok(Map.of("resultado", consejo));
     }
 
@@ -102,7 +127,7 @@ public class IaController {
             borrador, nombreAlumno, nombreDestinatario, nombreDocente, nombreDocente
         );
 
-        String redactado = openAiService.llamarOpenAi(systemPrompt, userPrompt);
+        String redactado = openAiService.llamarOpenAi(systemPrompt, userPrompt, false);
         return ResponseEntity.ok(Map.of("resultado", redactado));
     }
 
@@ -148,7 +173,7 @@ public class IaController {
             borrador, nombreAlumno, nombreDestinatario, nombrePadre, relacion, nombrePadre, relacion, nombreAlumno
         );
 
-        String redactado = openAiService.llamarOpenAi(systemPrompt, userPrompt);
+        String redactado = openAiService.llamarOpenAi(systemPrompt, userPrompt, false);
         return ResponseEntity.ok(Map.of("resultado", redactado));
     }
 
@@ -172,7 +197,7 @@ public class IaController {
             promedioGrados.toString(), asistenciaMes.toString(), morosidad.toString()
         );
 
-        String analisis = openAiService.llamarOpenAi(systemPrompt, userPrompt);
+        String analisis = openAiService.llamarOpenAi(systemPrompt, userPrompt, false);
         return ResponseEntity.ok(Map.of("resultado", analisis));
     }
 }

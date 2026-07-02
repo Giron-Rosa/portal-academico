@@ -45,6 +45,8 @@ export class PrediccionesDashboard implements OnInit {
 
   // ── IA Advisory Signals & Methods ──
   consejoIA = signal<string | null>(null);
+  planIA = signal<any | null>(null);
+  planIAError = signal<string | null>(null);
   cargandoIA = signal(false);
   alumnoSeleccionado = signal<AlumnoRiesgo | null>(null);
 
@@ -52,6 +54,8 @@ export class PrediccionesDashboard implements OnInit {
     this.alumnoSeleccionado.set(alumno);
     this.cargandoIA.set(true);
     this.consejoIA.set(null);
+    this.planIA.set(null);
+    this.planIAError.set(null);
 
     const token = this.auth.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
@@ -63,18 +67,46 @@ export class PrediccionesDashboard implements OnInit {
 
     this.http.get<{ resultado: string }>(url, { headers }).subscribe({
       next: res => {
-        this.consejoIA.set(res.resultado);
+        try {
+          // Intentar parsear el JSON retornado por la IA
+          const data = JSON.parse(res.resultado);
+          if (data.error) {
+            this.planIAError.set(data.error);
+            this.planIA.set(null);
+          } else {
+            this.planIA.set(data);
+            this.planIAError.set(null);
+          }
+        } catch (e) {
+          // Fallback a texto/HTML plano si la respuesta no es un JSON válido
+          this.consejoIA.set(res.resultado);
+          this.planIA.set(null);
+          this.planIAError.set(null);
+        }
         this.cargandoIA.set(false);
       },
       error: () => {
-        this.consejoIA.set('No se pudo obtener el consejo pedagógico de la IA en este momento. Revisa la conexión o intenta más tarde.');
+        this.planIAError.set('No se pudo obtener el consejo pedagógico de la IA en este momento. Revisa la conexión o intenta más tarde.');
+        this.planIA.set(null);
         this.cargandoIA.set(false);
       }
     });
   }
 
+  copiarMensajePadres() {
+    const plan = this.planIA();
+    if (plan && plan.sugerencia_mensaje_padres) {
+      const fullText = `Asunto: ${plan.sugerencia_mensaje_padres.asunto}\n\n${plan.sugerencia_mensaje_padres.cuerpo}`;
+      navigator.clipboard.writeText(fullText).then(() => {
+        alert('¡Mensaje copiado al portapapeles con éxito!');
+      });
+    }
+  }
+
   cerrarModalIA() {
     this.consejoIA.set(null);
+    this.planIA.set(null);
+    this.planIAError.set(null);
     this.alumnoSeleccionado.set(null);
   }
 

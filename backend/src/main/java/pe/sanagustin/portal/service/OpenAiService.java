@@ -25,20 +25,24 @@ public class OpenAiService {
     private String apiModel;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(15))
+            .connectTimeout(Duration.ofSeconds(30))
             .build();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public String llamarOpenAi(String systemPrompt, String userPrompt) {
+    public String llamarOpenAi(String systemPrompt, String userPrompt, boolean forceJson) {
         try {
-            Map<String, Object> requestBody = Map.of(
+            java.util.Map<String, Object> requestBody = new java.util.HashMap<>(Map.of(
                 "model", apiModel,
                 "messages", List.of(
                     Map.of("role", "system", "content", systemPrompt),
                     Map.of("role", "user", "content", userPrompt)
                 ),
                 "temperature", 0.7
-            );
+            ));
+
+            if (forceJson) {
+                requestBody.put("response_format", Map.of("type", "json_object"));
+            }
 
             String requestBodyJson = objectMapper.writeValueAsString(requestBody);
 
@@ -47,7 +51,7 @@ public class OpenAiService {
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + apiKey)
                     .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
-                    .timeout(Duration.ofSeconds(20))
+                    .timeout(Duration.ofSeconds(60))
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
