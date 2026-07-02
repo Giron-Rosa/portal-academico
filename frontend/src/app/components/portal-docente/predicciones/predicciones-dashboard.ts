@@ -50,12 +50,26 @@ export class PrediccionesDashboard implements OnInit {
   cargandoIA = signal(false);
   alumnoSeleccionado = signal<AlumnoRiesgo | null>(null);
 
+  // Persistence signals
+  checksState = signal<string>('0,0,0');
+  feedback1 = signal<string>('');
+  feedback2 = signal<string>('');
+  feedback3 = signal<string>('');
+  abrirPopoverFeedback = signal<{ index: number; accion: string } | null>(null);
+
+  esPlanCompletado = computed(() => this.checksState() === '1,1,1');
+
   consultarIA(alumno: AlumnoRiesgo) {
     this.alumnoSeleccionado.set(alumno);
     this.cargandoIA.set(true);
     this.consejoIA.set(null);
     this.planIA.set(null);
     this.planIAError.set(null);
+    this.checksState.set('0,0,0');
+    this.feedback1.set('');
+    this.feedback2.set('');
+    this.feedback3.set('');
+    this.abrirPopoverFeedback.set(null);
 
     const token = this.auth.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
@@ -65,10 +79,14 @@ export class PrediccionesDashboard implements OnInit {
                 `&promedio=${alumno.promedio}` +
                 `&causas=${encodeURIComponent(alumno.causas.join(', '))}`;
 
-    this.http.get<{ resultado: string }>(url, { headers }).subscribe({
+    this.http.get<{ resultado: string, checksState: string, feedback_1?: string, feedback_2?: string, feedback_3?: string }>(url, { headers }).subscribe({
       next: res => {
+        this.checksState.set(res.checksState || '0,0,0');
+        this.feedback1.set(res.feedback_1 || '');
+        this.feedback2.set(res.feedback_2 || '');
+        this.feedback3.set(res.feedback_3 || '');
+
         try {
-          // Intentar parsear el JSON retornado por la IA
           const data = JSON.parse(res.resultado);
           if (data.error) {
             this.planIAError.set(data.error);
@@ -78,7 +96,6 @@ export class PrediccionesDashboard implements OnInit {
             this.planIAError.set(null);
           }
         } catch (e) {
-          // Fallback a texto/HTML plano si la respuesta no es un JSON válido
           this.consejoIA.set(res.resultado);
           this.planIA.set(null);
           this.planIAError.set(null);
@@ -91,6 +108,70 @@ export class PrediccionesDashboard implements OnInit {
         this.cargandoIA.set(false);
       }
     });
+  }
+
+  isCheckActive(index: number): boolean {
+    const states = this.checksState().split(',');
+    return states[index] === '1';
+  }
+
+  onCheckToggle(index: number, event: any) {
+    const isChecked = event.target.checked;
+    event.target.checked = this.isCheckActive(index);
+
+    if (isChecked) {
+      const acciones = this.planIA()?.checklist_profesor;
+      if (acciones && acciones[index]) {
+        this.abrirPopoverFeedback.set({ index, accion: acciones[index] });
+      }
+    }
+  }
+
+  cancelarFeedback() {
+    this.abrirPopoverFeedback.set(null);
+  }
+
+  guardarFeedback(index: number | undefined, comment: string) {
+    if (index === undefined || this.cargandoIA()) return;
+    this.cargandoIA.set(true);
+    this.abrirPopoverFeedback.set(null);
+
+    const token = this.auth.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http.post<any>('http://localhost:8080/api/portal/docente/predicciones/feedback-plan', {
+      idAlumno: this.alumnoSeleccionado()?.idAlumno,
+      checkIndex: index,
+      feedback: comment
+    }, { headers }).subscribe({
+      next: (res) => {
+        this.checksState.set(res.checksState);
+        this.feedback1.set(res.feedback_1 || '');
+        this.feedback2.set(res.feedback_2 || '');
+        this.feedback3.set(res.feedback_3 || '');
+
+        try {
+          const data = JSON.parse(res.resultado);
+          this.planIA.set(data);
+          this.planIAError.set(null);
+        } catch (e) {
+          this.consejoIA.set(res.resultado);
+          this.planIA.set(null);
+        }
+        this.cargandoIA.set(false);
+      },
+      error: () => {
+        alert('No se pudo registrar la bitácora en este momento.');
+        this.cargandoIA.set(false);
+      }
+    });
+  }
+
+  generarActaCompromiso() {
+    const idAlumno = this.alumnoSeleccionado()?.idAlumno;
+    if (idAlumno) {
+      window.open(`http://localhost:8080/api/portal/docente/predicciones/${idAlumno}/generar-acta`, '_blank');
+    }
   }
 
   copiarMensajePadres() {
@@ -107,6 +188,11 @@ export class PrediccionesDashboard implements OnInit {
     this.consejoIA.set(null);
     this.planIA.set(null);
     this.planIAError.set(null);
+    this.checksState.set('0,0,0');
+    this.feedback1.set('');
+    this.feedback2.set('');
+    this.feedback3.set('');
+    this.abrirPopoverFeedback.set(null);
     this.alumnoSeleccionado.set(null);
   }
 

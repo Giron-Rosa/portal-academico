@@ -82,6 +82,11 @@ export class PortalAdmin implements OnInit {
   cargandoAnalisis = signal(false);
   analisisResultado = signal<string | null>(null);
 
+  // Advanced features signals
+  alertasEfectividad = signal<any[]>([]);
+  tutorScores = signal<any[]>([]);
+  scoreAnalisisIA = signal<string | null>(null);
+
   generarAnalisisIA() {
     this.cargandoAnalisis.set(true);
     this.analisisResultado.set(null);
@@ -97,6 +102,24 @@ export class PortalAdmin implements OnInit {
       error: () => {
         this.analisisResultado.set('Error: No se pudo generar el reporte ejecutivo escolar con IA. Por favor, verifica tu conexión o los límites de la API Key.');
         this.cargandoAnalisis.set(false);
+      }
+    });
+  }
+
+  cargarAlertasYScores() {
+    const token = this.auth.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http.get<any[]>('http://localhost:8080/api/admin/bi/ia-alertas-efectividad', { headers }).subscribe({
+      next: (data) => {
+        this.alertasEfectividad.set(data);
+      }
+    });
+
+    this.http.get<any>('http://localhost:8080/api/admin/bi/ia-tutor-scores', { headers }).subscribe({
+      next: (res) => {
+        this.tutorScores.set(res.scores);
+        this.scoreAnalisisIA.set(res.analisis);
       }
     });
   }
@@ -150,7 +173,11 @@ export class PortalAdmin implements OnInit {
 
     if (this.seccionActiva() === 'dashboard') {
       this.http.get<Kpis>(`${this.API_BASE}/dashboard/kpis`, { headers }).subscribe({
-        next: (data) => { this.kpis.set(data); this.cargando.set(false); },
+        next: (data) => { 
+          this.kpis.set(data); 
+          this.cargarAlertasYScores();
+          this.cargando.set(false); 
+        },
         error: () => { this.errorCarga.set('Error al cargar KPIs.'); this.cargando.set(false); }
       });
     } else if (this.seccionActiva() === 'estudiantes') {

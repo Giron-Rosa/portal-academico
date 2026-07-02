@@ -246,11 +246,33 @@
                    <h4 style="margin: 0 0 10px 0; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
                      👨‍🏫 Plan de Acción del Docente
                    </h4>
+
+                   <!-- Popover/Card Flotante de Feedback -->
+                   @if (abrirPopoverFeedback()) {
+                     <div style="background: #fffbeb; border: 1.5px solid #d97706; border-radius: 12px; padding: 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); margin-bottom: 12px; font-family: inherit;">
+                       <h5 style="margin: 0 0 6px 0; font-size: 12px; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 0.3px;">📝 Registrar Bitácora de Interacción</h5>
+                       <p style="margin: 0 0 12px 0; font-size: 12px; color: #78350f; line-height: 1.4;"><strong>Acción:</strong> "{{ abrirPopoverFeedback()?.accion }}"</p>
+                       
+                       <div style="margin-bottom: 12px;">
+                         <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">¿Cómo reaccionó el alumno o qué acordaron brevemente?</label>
+                         <textarea #txtFeedback placeholder="Ej: Ramiro dice que llega tarde porque cuida a su hermano menor..." rows="2" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; font-size: 12px; font-family: inherit; outline: none; box-sizing: border-box; resize: vertical;"></textarea>
+                       </div>
+                       
+                       <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                         <button (click)="cancelarFeedback()" style="background: #e2e8f0; color: #475569; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.15s;">Cancelar</button>
+                         <button (click)="guardarFeedback(abrirPopoverFeedback()?.index, txtFeedback.value)" style="background: #d97706; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.15s;">Guardar y Marcar Check</button>
+                       </div>
+                     </div>
+                   }
+
                    <div style="display: flex; flex-direction: column; gap: 8px;">
                      @for (accion of planIA().checklist_profesor; track accion; let idx = $index) {
                        <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: #334155; cursor: pointer; padding: 10px 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; transition: background 0.15s; user-select: none;">
-                         <input type="checkbox" style="margin-top: 3px; cursor: pointer; width: 16px; height: 16px; border-radius: 4px; border: 1px solid #cbd5e1; accent-color: #312e81;" />
-                         <span style="line-height: 1.4;">{{ accion }}</span>
+                         <input type="checkbox" 
+                                [checked]="isCheckActive(idx)"
+                                (change)="onCheckToggle(idx, $event)"
+                                style="margin-top: 3px; cursor: pointer; width: 16px; height: 16px; border-radius: 4px; border: 1px solid #cbd5e1; accent-color: #312e81;" />
+                         <span style="line-height: 1.4;" [style.text-decoration]="isCheckActive(idx) ? 'line-through' : 'none'" [style.color]="isCheckActive(idx) ? '#94a3b8' : '#334155'">{{ accion }}</span>
                        </label>
                      }
                    </div>
@@ -283,6 +305,17 @@
                      <div style="background: #fafafa; border: 1px dashed #cbd5e1; padding: 12px 14px; border-radius: 6px; white-space: pre-wrap; font-style: italic; color: #475569; line-height: 1.5;">{{ planIA().sugerencia_mensaje_padres.cuerpo }}</div>
                    </div>
                  </div>
+
+                 <!-- Golden Button para Generar Acta (desbloqueado con checks completos) -->
+                 @if (esPlanCompletado()) {
+                   <div style="text-align: center; margin-top: 15px; padding: 10px; background: #fffdf5; border: 1px solid #fde047; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 4px 6px -1px rgba(253, 224, 71, 0.1);">
+                     <span style="font-size: 12px; font-weight: 700; color: #a16207; text-transform: uppercase; letter-spacing: 0.5px;">✨ ¡Plan Completado con Éxito!</span>
+                     <button (click)="generarActaCompromiso()" 
+                             style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(217, 119, 6, 0.25); transition: transform 0.2s; border: 1px solid #d97706; text-transform: uppercase; letter-spacing: 0.3px;">
+                       📄 Descargar Acta de Compromiso Pedagógico
+                     </button>
+                   </div>
+                 }
                </div>
              } @else if (planIAError()) {
                <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 16px; border-radius: 10px; font-size: 13px; line-height: 1.5; font-weight: 600; display: flex; align-items: center; gap: 8px; justify-content: center; text-align: center; width: 100%;">
