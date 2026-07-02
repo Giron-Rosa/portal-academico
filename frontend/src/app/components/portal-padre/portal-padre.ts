@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -90,6 +90,10 @@ export interface RespuestaResumen {
   fecha: string;
   autor: string;
   esMaestro: boolean;
+  isPlaying?: boolean;
+  audioProgress?: number;
+  currentTime?: number;
+  duration?: number;
 }
 
 export interface MensajeDetalle {
@@ -107,6 +111,10 @@ export interface MensajeDetalle {
   cuerpo: string;
   respuestas: RespuestaResumen[];
   iniciadoPorDocente: boolean;
+  isPlaying?: boolean;
+  audioProgress?: number;
+  currentTime?: number;
+  duration?: number;
 }
 
 export interface DocenteDisponible {
@@ -201,6 +209,14 @@ export class PortalPadre implements OnDestroy {
   private router = inject(Router);
   private http   = inject(HttpClient);
   readonly ws    = inject(WebSocketService);
+  private zone   = inject(NgZone);
+
+  // Variables para notas de voz (audio)
+  grabando = signal(false);
+  duracionGrabacion = signal(0);
+  mediaRecorder: any = null;
+  audioChunks: Blob[] = [];
+  recordingInterval: any = null;
 
   seccionActiva  = signal<Seccion>('inicio');
   vista          = signal<Vista>('dashboard');
@@ -636,7 +652,14 @@ export class PortalPadre implements OnDestroy {
         this.cargarPaginaRespuestas(id, 0, true);
         // Suscribir al chat room de WebSocket
         this.ws.subscribeToChat(id, (resp: RespuestaResumen) => {
-          this.respuestasActivas.update(rs => [...rs, resp]);
+          this.zone.run(() => {
+            this.respuestasActivas.update(rs => {
+              if (rs.some(r => r.id === resp.id)) return rs;
+              const filtrado = rs.filter(r => r.id > 0 && r.cuerpo !== resp.cuerpo);
+              return [...filtrado, resp];
+            });
+            this.scrollToBottom();
+          });
         });
         // Marcar como leído en la lista local
         this.mensajes.update(ms =>
@@ -688,10 +711,200 @@ export class PortalPadre implements OnDestroy {
     this.replyText.set('');
   }
 
+  scrollToBottom() {
+    setTimeout(() => {
+      const container = document.getElementById('chat-scroll');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 50);
+  }
+
+  // Audio Playback Helpers
+  playingAudio: any = null;
+  activeAudioRespuesta: any = null;
+
+  toggleAudioPlay(r: any) {
+    const audioUrl = 'http://localhost:8080' + r.cuerpo.replace('[AUDIO]', '').trim();
+    
+    if (this.playingAudio && this.activeAudioRespuesta === r) {
+      if (r.isPlaying) {
+        this.playingAudio.pause();
+        r.isPlaying = false;
+      } else {
+        this.playingAudio.play();
+        r.isPlaying = true;
+      }
+      return;
+    }
+
+    if (this.playingAudio) {
+      this.playingAudio.pause();
+      if (this.activeAudioRespuesta) {
+        this.activeAudioRespuesta.isPlaying = false;
+      }
+    }
+
+    const audio = new Audio(audioUrl);
+    this.playingAudio = audio;
+    this.activeAudioRespuesta = r;
+    r.isPlaying = true;
+    r.currentTime = 0;
+    r.audioProgress = 0;
+
+    audio.addEventListener('timeupdate', () => {
+      this.zone.run(() => {
+        r.currentTime = audio.currentTime;
+        r.duration = audio.duration || 0;
+        r.audioProgress = (audio.currentTime / (audio.duration || 1)) * 100;
+      });
+    });
+
+    audio.addEventListener('ended', () => {
+      this.zone.run(() => {
+        r.isPlaying = false;
+        r.audioProgress = 0;
+        r.currentTime = 0;
+        this.playingAudio = null;
+        this.activeAudioRespuesta = null;
+      });
+    });
+
+    audio.play();
+  }
+
+  seekAudio(event: MouseEvent, r: any) {
+    if (!this.playingAudio || this.activeAudioRespuesta !== r) return;
+    const bar = event.currentTarget as HTMLElement;
+    const rect = bar.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    const duration = this.playingAudio.duration || 0;
+    this.playingAudio.currentTime = percentage * duration;
+  }
+
+  formatAudioTime(seconds: number): string {
+    if (isNaN(seconds) || seconds === Infinity) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+  // Audio Recording Methods
+  iniciarGrabacion() {
+    if (this.grabando()) return;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      this.audioChunks = [];
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      this.mediaRecorder = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        this.enviarAudio(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      this.grabando.set(true);
+      this.duracionGrabacion.set(0);
+      mediaRecorder.start();
+
+      this.recordingInterval = setInterval(() => {
+        this.duracionGrabacion.update(d => d + 1);
+      }, 1000);
+    }).catch(err => {
+      console.error('No se pudo acceder al micrófono:', err);
+      alert('Por favor, concede permisos de micrófono para grabar audios.');
+    });
+  }
+
+  detenerGrabacion() {
+    if (!this.grabando() || !this.mediaRecorder) return;
+    this.mediaRecorder.stop();
+    this.grabando.set(false);
+    if (this.recordingInterval) {
+      clearInterval(this.recordingInterval);
+      this.recordingInterval = null;
+    }
+  }
+
+  cancelarGrabacion() {
+    if (!this.grabando() || !this.mediaRecorder) return;
+    this.mediaRecorder.onstop = () => {
+      this.mediaRecorder = null;
+      this.audioChunks = [];
+    };
+    this.mediaRecorder.stop();
+    this.grabando.set(false);
+    if (this.recordingInterval) {
+      clearInterval(this.recordingInterval);
+      this.recordingInterval = null;
+    }
+  }
+
+  enviarAudio(audioBlob: Blob) {
+    const activo = this.mensajeActivo();
+    if (!activo) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+
+    // Agregar mensaje optimista temporal
+    const tempId = -Date.now();
+    const tempResp: any = {
+      id: tempId,
+      cuerpo: '[AUDIO] /uploads/audios/temp.webm',
+      fecha: 'Enviando...',
+      autor: 'Yo',
+      esMaestro: false,
+      isPlaying: false,
+      audioProgress: 0,
+      currentTime: 0
+    };
+
+    this.respuestasActivas.update(rs => [...rs, tempResp]);
+    this.scrollToBottom();
+
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'audio.webm');
+
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.post(`http://localhost:8080/api/portal/padre/mensajes/${activo.id}/responder-audio`,
+      formData, { headers })
+      .subscribe({
+        next: () => {
+          // El WebSocket se encargará de remover el temporal y poner el real.
+        },
+        error: () => {
+          // Remover el temporal si falla
+          this.respuestasActivas.update(rs => rs.filter(r => r.id !== tempId));
+          alert('Error al enviar nota de voz.');
+        }
+      });
+  }
+
   enviarRespuesta(): void {
     const activo = this.mensajeActivo();
     const texto  = this.replyText().trim();
     if (!activo || !texto || this.enviandoReply()) return;
+
+    // Agregar de forma optimista localmente de inmediato
+    const tempId = -Date.now();
+    const tempResp: RespuestaResumen = {
+      id: tempId,
+      cuerpo: texto,
+      fecha: new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) + ' 🕒',
+      autor: 'Yo',
+      esMaestro: false
+    };
+
+    this.respuestasActivas.update(rs => [...rs, tempResp]);
+    this.scrollToBottom();
+    this.replyText.set('');
 
     this.enviandoReply.set(true);
     this.http.post<void>(
@@ -700,11 +913,13 @@ export class PortalPadre implements OnDestroy {
       { headers: this.headers() }
     ).subscribe({
       next: () => {
-        this.replyText.set('');
         this.enviandoReply.set(false);
-        // El WS room traerá la respuesta automáticamente vía subscribeToChat
       },
-      error: () => { this.enviandoReply.set(false); },
+      error: () => {
+        this.enviandoReply.set(false);
+        this.respuestasActivas.update(rs => rs.filter(r => r.id !== tempId));
+        alert('No se pudo enviar el mensaje.');
+      },
     });
   }
 

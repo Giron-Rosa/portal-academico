@@ -298,8 +298,9 @@ public class MensajeService {
         }
         java.io.File dest = new java.io.File(audiosDir, filename);
         try {
-            file.transferTo(dest);
+            java.nio.file.Files.write(dest.getAbsoluteFile().toPath(), file.getBytes());
         } catch (java.io.IOException e) {
+            e.printStackTrace();
             throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, "Error al guardar audio");
         }
 
@@ -555,6 +556,26 @@ public class MensajeService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Docente no encontrado");
         }
         long idMaestro = ((Number) maeRows.get(0)).longValue();
+
+        /* Comprobar si ya existe un chat para este docente, apoderado, alumno y curso */
+        @SuppressWarnings("unchecked")
+        List<Object> existingRows = em.createNativeQuery("""
+                SELECT id_mensaje FROM mensajes
+                WHERE id_padre = :idPadre 
+                  AND id_maestro = :idMaestro 
+                  AND id_alumno = :idAlumno 
+                  AND id_aula_curso = :idAulaCurso
+                LIMIT 1
+                """)
+                .setParameter("idPadre", req.getIdPadre())
+                .setParameter("idMaestro", idMaestro)
+                .setParameter("idAlumno", req.getIdAlumno())
+                .setParameter("idAulaCurso", req.getIdAulaCurso())
+                .getResultList();
+
+        if (!existingRows.isEmpty()) {
+            return ((Number) existingRows.get(0)).longValue();
+        }
 
         /* Insertar el mensaje y retornar su id */
         @SuppressWarnings("unchecked")
@@ -951,6 +972,26 @@ public class MensajeService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No hay docente asignado para este curso");
         }
         long idMaestro = ((Number) maeRows.get(0)).longValue();
+
+        /* Comprobar si ya existe un chat para este docente, apoderado, alumno y curso */
+        @SuppressWarnings("unchecked")
+        List<Object> existingRows = em.createNativeQuery("""
+                SELECT id_mensaje FROM mensajes
+                WHERE id_padre = :idPadre 
+                  AND id_maestro = :idMaestro 
+                  AND id_alumno = :idAlumno 
+                  AND id_aula_curso = :idAulaCurso
+                LIMIT 1
+                """)
+                .setParameter("idPadre", idPadre)
+                .setParameter("idMaestro", idMaestro)
+                .setParameter("idAlumno", req.getIdAlumno())
+                .setParameter("idAulaCurso", req.getIdAulaCurso())
+                .getResultList();
+
+        if (!existingRows.isEmpty()) {
+            return ((Number) existingRows.get(0)).longValue();
+        }
 
         /* Insertar el mensaje y retornar su id */
         @SuppressWarnings("unchecked")
