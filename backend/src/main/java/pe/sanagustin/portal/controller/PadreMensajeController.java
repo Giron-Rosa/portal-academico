@@ -99,4 +99,17 @@ public class PadreMensajeController {
         long id = mensajeService.iniciarChatPadre(request, userDetails.getUsername());
         return ResponseEntity.ok(Map.of("id", id));
     }
+
+    /**
+     * POST /api/portal/padre/mensajes/{id}/responder-audio
+     * Permite subir un archivo de audio grabado por el apoderado y enviarlo como respuesta.
+     */
+    @PostMapping("/{id}/responder-audio")
+    public ResponseEntity<Void> responderAudio(
+            @PathVariable long id,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        mensajeService.responderConAudio(id, file, userDetails.getUsername(), false);
+        return ResponseEntity.ok().build();
+    }
 }

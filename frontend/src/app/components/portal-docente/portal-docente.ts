@@ -464,6 +464,13 @@ export class PortalDocente implements OnDestroy {
   readonly ws    = inject(WebSocketService);
   private zone   = inject(NgZone);
 
+  // Variables para notas de voz (audio)
+  grabando = signal(false);
+  duracionGrabacion = signal(0);
+  mediaRecorder: any = null;
+  audioChunks: Blob[] = [];
+  recordingInterval: any = null;
+
   // Exponemos constantes usadas en el template
   calPxPorHora = CAL_PX_POR_HORA;
   today = new Date().toISOString().substring(0, 10);
@@ -1361,13 +1368,15 @@ export class PortalDocente implements OnDestroy {
             this.zone.run(() => {
               this.mensajeActivo.update(curr => {
                 if (!curr) return null;
-                // Evitar duplicados
                 if (curr.respuestas.some(r => r.id === resp.id)) return curr;
+                // Filtrar temporales por ID negativo o si coincide el cuerpo
+                const filtrado = curr.respuestas.filter(r => r.id > 0 && r.cuerpo !== resp.cuerpo);
                 return {
                   ...curr,
-                  respuestas: [...curr.respuestas, resp]
+                  respuestas: [...filtrado, resp]
                 };
               });
+              this.scrollToBottom();
             });
           });
         },
@@ -1476,9 +1485,196 @@ export class PortalDocente implements OnDestroy {
     return Math.round((ctx.clasesPresente / ctx.totalClases) * 100);
   }
 
+  scrollToBottom() {
+    setTimeout(() => {
+      const container = document.querySelector('.msg-chat-thread');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 50);
+  }
+
+  // Audio Playback Helpers
+  playingAudio: any = null;
+  activeAudioRespuesta: any = null;
+
+  toggleAudioPlay(r: any) {
+    const audioUrl = 'http://localhost:8080' + r.cuerpo.replace('[AUDIO]', '').trim();
+    
+    if (this.playingAudio && this.activeAudioRespuesta === r) {
+      if (r.isPlaying) {
+        this.playingAudio.pause();
+        r.isPlaying = false;
+      } else {
+        this.playingAudio.play();
+        r.isPlaying = true;
+      }
+      return;
+    }
+
+    if (this.playingAudio) {
+      this.playingAudio.pause();
+      if (this.activeAudioRespuesta) {
+        this.activeAudioRespuesta.isPlaying = false;
+      }
+    }
+
+    const audio = new Audio(audioUrl);
+    this.playingAudio = audio;
+    this.activeAudioRespuesta = r;
+    r.isPlaying = true;
+    r.currentTime = 0;
+    r.audioProgress = 0;
+
+    audio.addEventListener('timeupdate', () => {
+      this.zone.run(() => {
+        r.currentTime = audio.currentTime;
+        r.duration = audio.duration || 0;
+        r.audioProgress = (audio.currentTime / (audio.duration || 1)) * 100;
+      });
+    });
+
+    audio.addEventListener('ended', () => {
+      this.zone.run(() => {
+        r.isPlaying = false;
+        r.audioProgress = 0;
+        r.currentTime = 0;
+        this.playingAudio = null;
+        this.activeAudioRespuesta = null;
+      });
+    });
+
+    audio.play();
+  }
+
+  seekAudio(event: MouseEvent, r: any) {
+    if (!this.playingAudio || this.activeAudioRespuesta !== r) return;
+    const bar = event.currentTarget as HTMLElement;
+    const rect = bar.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    const duration = this.playingAudio.duration || 0;
+    this.playingAudio.currentTime = percentage * duration;
+  }
+
+  formatAudioTime(seconds: number): string {
+    if (isNaN(seconds) || seconds === Infinity) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+  // Audio Recording Methods
+  iniciarGrabacion() {
+    if (this.grabando()) return;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      this.audioChunks = [];
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      this.mediaRecorder = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        this.enviarAudio(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      this.grabando.set(true);
+      this.duracionGrabacion.set(0);
+      mediaRecorder.start();
+
+      this.recordingInterval = setInterval(() => {
+        this.duracionGrabacion.update(d => d + 1);
+      }, 1000);
+    }).catch(err => {
+      console.error('No se pudo acceder al micrófono:', err);
+      alert('Por favor, concede permisos de micrófono para grabar audios.');
+    });
+  }
+
+  detenerGrabacion() {
+    if (!this.grabando() || !this.mediaRecorder) return;
+    this.mediaRecorder.stop();
+    this.grabando.set(false);
+    if (this.recordingInterval) {
+      clearInterval(this.recordingInterval);
+      this.recordingInterval = null;
+    }
+  }
+
+  cancelarGrabacion() {
+    if (!this.grabando() || !this.mediaRecorder) return;
+    this.mediaRecorder.onstop = () => {
+      this.mediaRecorder = null;
+      this.audioChunks = [];
+    };
+    this.mediaRecorder.stop();
+    this.grabando.set(false);
+    if (this.recordingInterval) {
+      clearInterval(this.recordingInterval);
+      this.recordingInterval = null;
+    }
+  }
+
+  enviarAudio(audioBlob: Blob) {
+    const activo = this.mensajeActivo();
+    if (!activo) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+
+    // Agregar mensaje optimista temporal
+    const tempId = -Date.now();
+    const tempResp: any = {
+      id: tempId,
+      cuerpo: '[AUDIO] /uploads/audios/temp.webm',
+      fecha: 'Enviando...',
+      nombreAutor: 'Yo',
+      esMaestro: true,
+      isPlaying: false,
+      audioProgress: 0,
+      currentTime: 0
+    };
+
+    this.mensajeActivo.update(curr => {
+      if (!curr) return null;
+      return {
+        ...curr,
+        respuestas: [...curr.respuestas, tempResp]
+      };
+    });
+    this.scrollToBottom();
+
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'audio.webm');
+
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.post(`http://localhost:8080/api/portal/docente/mensajes/${activo.id}/responder-audio`,
+      formData, { headers })
+      .subscribe({
+        next: () => {
+          // El WebSocket se encargará de remover el temporal y poner el real.
+        },
+        error: () => {
+          // Remover el temporal si falla
+          this.mensajeActivo.update(curr => {
+            if (!curr) return null;
+            return {
+              ...curr,
+              respuestas: curr.respuestas.filter(r => r.id !== tempId)
+            };
+          });
+          alert('Error al enviar nota de voz.');
+        }
+      });
+  }
+
   /**
-   * Envía la respuesta del docente al hilo activo.
-   * Tras el éxito, recarga el detalle para mostrar la nueva respuesta.
+   * Envía la respuesta del docente al hilo activo de forma optimista.
    */
   enviarRespuesta() {
     const activo = this.mensajeActivo();
@@ -1486,18 +1682,48 @@ export class PortalDocente implements OnDestroy {
     if (!activo || !texto) return;
     const token = this.auth.getToken();
     if (!token) return;
+
+    // Agregar de forma optimista localmente de inmediato
+    const tempId = -Date.now();
+    const tempResp: RespuestaResumen = {
+      id: tempId,
+      cuerpo: texto,
+      fecha: new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) + ' 🕒',
+      nombreAutor: 'Yo',
+      esMaestro: true
+    };
+
+    this.mensajeActivo.update(curr => {
+      if (!curr) return null;
+      return {
+        ...curr,
+        respuestas: [...curr.respuestas, tempResp]
+      };
+    });
+    this.scrollToBottom();
+    this.replyText.set('');
+
     this.enviandoReply.set(true);
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     this.http.post(`http://localhost:8080/api/portal/docente/mensajes/${activo.id}/responder`,
       { cuerpo: texto }, { headers })
       .subscribe({
         next: () => {
-          this.replyText.set('');
           this.enviandoReply.set(false);
-          /* Recargar el detalle para mostrar la nueva respuesta en el hilo */
-          this.abrirMensaje(activo.id);
+          // Dejar que el websocket inserte el mensaje final y remueva el optimista
         },
-        error: () => { this.enviandoReply.set(false); },
+        error: () => {
+          this.enviandoReply.set(false);
+          // Remover el mensaje optimista en caso de fallo
+          this.mensajeActivo.update(curr => {
+            if (!curr) return null;
+            return {
+              ...curr,
+              respuestas: curr.respuestas.filter(r => r.id !== tempId)
+            };
+          });
+          alert('No se pudo enviar el mensaje.');
+        },
       });
   }
 

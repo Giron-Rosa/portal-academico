@@ -58,6 +58,9 @@ public class SecurityConfig {
                         // Descarga de acta imprimible libre (para permitir apertura directa con window.open en pestaña)
                         .requestMatchers("/api/portal/docente/predicciones/*/generar-acta").permitAll()
 
+                        // Carpeta de audios públicos subidos
+                        .requestMatchers("/uploads/audios/**").permitAll()
+
                         .requestMatchers("/api/portal/docente/**").hasAnyAuthority("ROLE_MAESTRO", "MAESTRO", "ROLE_DOCENTE", "DOCENTE", "ROLE_PROFESOR", "PROFESOR")
                         .requestMatchers("/api/portal/alumno/**").hasRole("ALUMNO")
                         .requestMatchers("/api/portal/padre/**").hasAnyAuthority("ROLE_PADRE", "PADRE")

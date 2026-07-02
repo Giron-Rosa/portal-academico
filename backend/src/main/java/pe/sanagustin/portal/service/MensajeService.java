@@ -254,6 +254,143 @@ public class MensajeService {
     }
 
     /* ─────────────────────────────────────────────────────────
+       responderConAudio: guarda el archivo de audio y agrega
+       la respuesta de audio al hilo.
+    ───────────────────────────────────────────────────────── */
+    @Transactional
+    public void responderConAudio(long idMensaje, org.springframework.web.multipart.MultipartFile file, String codigoUsuario, boolean esDocente) {
+        // 1. Validar autorización
+        if (esDocente) {
+            @SuppressWarnings("unchecked")
+            List<?> check = em.createNativeQuery("""
+                    SELECT 1 FROM mensajes m
+                    JOIN maestros mae ON mae.id_maestro = m.id_maestro
+                    JOIN usuarios u   ON u.id_usuario   = mae.id_usuario
+                    WHERE m.id_mensaje = :id AND u.codigo = :codigo
+                    """)
+                    .setParameter("id",     idMensaje)
+                    .setParameter("codigo", codigoUsuario)
+                    .getResultList();
+            if (check.isEmpty()) {
+                throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "No autorizado");
+            }
+        } else {
+            @SuppressWarnings("unchecked")
+            List<?> check = em.createNativeQuery("""
+                    SELECT 1 FROM mensajes m
+                    JOIN padres pa   ON pa.id_padre   = m.id_padre
+                    JOIN usuarios u  ON u.id_usuario  = pa.id_usuario
+                    WHERE m.id_mensaje = :id AND u.codigo = :codigo
+                    """)
+                    .setParameter("id",     idMensaje)
+                    .setParameter("codigo", codigoUsuario)
+                    .getResultList();
+            if (check.isEmpty()) {
+                throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "No autorizado");
+            }
+        }
+
+        // 2. Guardar el archivo físico
+        String filename = "audio-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 10000) + ".webm";
+        java.io.File audiosDir = new java.io.File("uploads/audios");
+        if (!audiosDir.exists()) {
+            audiosDir.mkdirs();
+        }
+        java.io.File dest = new java.io.File(audiosDir, filename);
+        try {
+            file.transferTo(dest);
+        } catch (java.io.IOException e) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, "Error al guardar audio");
+        }
+
+        String audioPath = "[AUDIO] /uploads/audios/" + filename;
+
+        // 3. Insertar respuesta
+        @SuppressWarnings("unchecked")
+        List<Object> respIdRows = em.createNativeQuery("""
+                INSERT INTO mensajes_respuestas (id_mensaje, id_usuario, cuerpo)
+                VALUES (:idMsg,
+                        (SELECT id_usuario FROM usuarios WHERE codigo = :codigo),
+                        :cuerpo)
+                RETURNING id_respuesta
+                """)
+                .setParameter("idMsg",   idMensaje)
+                .setParameter("codigo",  codigoUsuario)
+                .setParameter("cuerpo",  audioPath)
+                .getResultList();
+
+        long idRespuesta = ((Number) respIdRows.get(0)).longValue();
+
+        // 4. Actualizar leídos
+        if (esDocente) {
+            em.createNativeQuery("UPDATE mensajes SET leido_padre = FALSE WHERE id_mensaje = :id")
+                    .setParameter("id", idMensaje)
+                    .executeUpdate();
+        } else {
+            em.createNativeQuery("UPDATE mensajes SET leido_docente = FALSE WHERE id_mensaje = :id")
+                    .setParameter("id", idMensaje)
+                    .executeUpdate();
+        }
+
+        // 5. Emitir WebSocket
+        Object[] respRow = (Object[]) em.createNativeQuery("""
+                SELECT mr.id_respuesta,
+                       mr.cuerpo,
+                       TO_CHAR(mr.fecha, 'DD/MM/YYYY HH24:MI') AS fecha,
+                       COALESCE(mae.nombre || ' ' || mae.apellido,
+                                pa.nombre  || ' ' || pa.apellido)  AS autor,
+                       (mae.id_maestro IS NOT NULL)                AS es_maestro
+                FROM mensajes_respuestas mr
+                JOIN usuarios u   ON u.id_usuario   = mr.id_usuario
+                LEFT JOIN maestros mae ON mae.id_usuario = u.id_usuario
+                LEFT JOIN padres   pa  ON pa.id_usuario  = u.id_usuario
+                WHERE mr.id_respuesta = :id
+                """)
+                .setParameter("id", idRespuesta)
+                .getSingleResult();
+
+        pe.sanagustin.portal.dto.RespuestaResumenDto respDto = new pe.sanagustin.portal.dto.RespuestaResumenDto(
+                ((Number) respRow[0]).longValue(),
+                (String)  respRow[1],
+                (String)  respRow[2],
+                (String)  respRow[3],
+                (Boolean) respRow[4]
+        );
+
+        ws.convertAndSend("/topic/chat/" + idMensaje, respDto);
+
+        // 6. Enviar notificaciones de badges
+        Object[] msgInfo = (Object[]) em.createNativeQuery("""
+                SELECT m.asunto,
+                       mae.nombre || ' ' || mae.apellido AS nombre_mae,
+                       u_p.codigo AS codigo_padre,
+                       u_m.codigo AS codigo_docente
+                FROM mensajes m
+                JOIN maestros mae ON mae.id_maestro = m.id_maestro
+                JOIN usuarios u_m ON u_m.id_usuario = mae.id_usuario
+                JOIN padres   pa  ON pa.id_padre    = m.id_padre
+                JOIN usuarios u_p ON u_p.id_usuario = pa.id_usuario
+                WHERE m.id_mensaje = :id
+                """)
+                .setParameter("id", idMensaje)
+                .getSingleResult();
+
+        String asunto        = (String) msgInfo[0];
+        String nombreDocente = (String) msgInfo[1];
+        String codigoPadre   = (String) msgInfo[2];
+        String codigoDocente = (String) msgInfo[3];
+        String prevCuerpo    = "🎤 Nota de voz";
+
+        pe.sanagustin.portal.dto.NotificacionWsDto notifPadre = new pe.sanagustin.portal.dto.NotificacionWsDto(
+                "NUEVA_RESPUESTA", idMensaje, asunto, nombreDocente, prevCuerpo, codigoPadre);
+        pe.sanagustin.portal.dto.NotificacionWsDto notifDocente = new pe.sanagustin.portal.dto.NotificacionWsDto(
+                "NUEVA_RESPUESTA", idMensaje, asunto, nombreDocente, prevCuerpo, codigoDocente);
+
+        ws.convertAndSend("/topic/mensajes/" + codigoPadre,  notifPadre);
+        ws.convertAndSend("/topic/mensajes/" + codigoDocente, notifDocente);
+    }
+
+    /* ─────────────────────────────────────────────────────────
        getContextoAlumno: resumen del alumno para el panel lateral.
        Devuelve asistencia (%), tareas pendientes y promedio de notas.
     ───────────────────────────────────────────────────────── */
