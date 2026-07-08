@@ -265,7 +265,8 @@ CREATE TABLE materiales_curso (
     titulo         VARCHAR(200) NOT NULL,
     tipo           VARCHAR(20)  NOT NULL DEFAULT 'pdf',  -- pdf | word | video | url | youtube
     url            TEXT,        -- enlace externo (url/youtube) o nombre del archivo subido
-    fecha_creacion TIMESTAMP    NOT NULL DEFAULT NOW()
+    fecha_creacion TIMESTAMP    NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_materiales_curso UNIQUE (id_aula_curso, semana, clase, titulo)
 );
 
 -- ============================================================
@@ -802,7 +803,8 @@ CREATE TABLE IF NOT EXISTS tareas_curso (
     nota_maxima     INTEGER       NOT NULL DEFAULT 20,
     intentos        INTEGER       NOT NULL DEFAULT 1,
     url             TEXT,
-    fecha_creacion  TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+    fecha_creacion  TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_tarea_curso UNIQUE (id_aula_curso, semana, clase, titulo)
 );
 
 -- TABLA: notas_tarea  (Calificaciones individuales por tarea)
@@ -831,7 +833,8 @@ CREATE TABLE IF NOT EXISTS examenes_curso (
     duracion_minutos INTEGER,
     nota_maxima     INTEGER      NOT NULL DEFAULT 20,
     url             TEXT,
-    fecha_creacion  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    fecha_creacion  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_examen_curso UNIQUE (id_aula_curso, semana, clase, titulo)
 );
 
 -- TABLA: notas_examen  (Calificaciones individuales de exámenes)

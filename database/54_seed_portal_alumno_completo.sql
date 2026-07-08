@@ -4,8 +4,8 @@
 -- ============================================================
 
 -- 1. Limpiar tareas, exámenes y notas previas de estos cursos para evitar conflictos de claves únicas
-DELETE FROM notas_tarea WHERE id_alumno = 1 AND id_tarea IN (SELECT id_tarea FROM tareas_curso WHERE id_aula_curso BETWEEN 1 AND 8);
-DELETE FROM notas_examen WHERE id_alumno = 1 AND id_examen IN (SELECT id_examen FROM examenes_curso WHERE id_aula_curso BETWEEN 1 AND 8);
+DELETE FROM tareas_curso WHERE id_aula_curso BETWEEN 1 AND 8;
+DELETE FROM examenes_curso WHERE id_aula_curso BETWEEN 1 AND 8;
 DELETE FROM asistencia_alumno WHERE id_alumno = 1 AND id_aula_curso BETWEEN 1 AND 8;
 
 -- 2. Poblar tareas en todos los bimestres para los 8 cursos
