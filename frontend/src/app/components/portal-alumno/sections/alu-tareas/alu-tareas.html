@@ -1,0 +1,137 @@
+<div class="pa-kanban-view animate-fade-in">
+  <div class="pa-view-header">
+    <div class="pa-header-info">
+      <h2 class="pa-view-title">Tablero de Actividades (Kanban)</h2>
+      <p class="pa-view-subtitle">Seguimiento de tu progreso académico</p>
+    </div>
+  </div>
+
+  <div class="pa-kanban-board">
+    
+    <!-- Columna: Pendiente -->
+    <div class="pa-kanban-col col-pendiente"
+         [class.drag-over]="activeDragOverCol() === 'pendiente'"
+         (dragover)="onDragOver($event, 'pendiente')"
+         (dragleave)="onDragLeave($event, 'pendiente')"
+         (drop)="onDrop($event, 'pendiente')">
+      <div class="pa-kanban-col-header">
+        <span class="pa-col-title">Pendientes</span>
+        <span class="pa-col-count">{{ tareasPendientes.length }}</span>
+      </div>
+      <div class="pa-kanban-col-cards">
+        @if (tareasPendientes.length === 0) {
+          <div class="pa-kanban-empty">Sin tareas pendientes</div>
+        }
+        @for (t of tareasPendientes; track t.idTarea) {
+          <div class="pa-kanban-card"
+               draggable="true"
+               (dragstart)="onDragStart($event, t)"
+               (dragend)="onDragEnd($event)">
+            <div class="pa-kcard-header">
+              <span class="pa-kcard-curso">{{ t.cursoNombre }}</span>
+              <span class="pa-kcard-badge badge-pendiente">Pendiente</span>
+            </div>
+            <h4 class="pa-kcard-title">{{ t.titulo }}</h4>
+            <p class="pa-kcard-desc" *ngIf="t.descripcion">{{ t.descripcion }}</p>
+            <div class="pa-kcard-footer">
+              <span class="pa-kcard-due text-red">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                   <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Vence: {{ t.fechaEntrega }}
+              </span>
+              <button 
+                style="margin-top:10px;width:100%;padding:8px 12px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity 0.2s;"
+                (click)="entregarTarea.emit(t)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Entregar tarea
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Columna: Enviado (Por calificar) -->
+    <div class="pa-kanban-col col-enviado"
+         [class.drag-over]="activeDragOverCol() === 'entregado'"
+         (dragover)="onDragOver($event, 'entregado')"
+         (dragleave)="onDragLeave($event, 'entregado')"
+         (drop)="onDrop($event, 'entregado')">
+      <div class="pa-kanban-col-header">
+        <span class="pa-col-title">Entregados</span>
+        <span class="pa-col-count">{{ tareasEntregadas.length }}</span>
+      </div>
+      <div class="pa-kanban-col-cards">
+        @if (tareasEntregadas.length === 0) {
+          <div class="pa-kanban-empty">Sin entregas por calificar</div>
+        }
+        @for (t of tareasEntregadas; track t.idTarea) {
+          <div class="pa-kanban-card"
+               draggable="true"
+               (dragstart)="onDragStart($event, t)"
+               (dragend)="onDragEnd($event)">
+            <div class="pa-kcard-header">
+              <span class="pa-kcard-curso">{{ t.cursoNombre }}</span>
+              <span class="pa-kcard-badge badge-enviado">Enviado</span>
+            </div>
+            <h4 class="pa-kcard-title">{{ t.titulo }}</h4>
+            <div class="pa-kcard-footer" style="display: flex; flex-direction: column; gap: 8px;">
+              <span class="pa-kcard-status text-blue" style="display: flex; align-items: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Esperando calificación
+              </span>
+              <button 
+                style="width:100%;padding:8px 12px;background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity 0.2s;"
+                (click)="anularEntrega.emit(t)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Anular entrega
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Columna: Calificado -->
+    <div class="pa-kanban-col col-calificado"
+         [class.drag-over]="activeDragOverCol() === 'calificado'"
+         (dragover)="onDragOver($event, 'calificado')"
+         (dragleave)="onDragLeave($event, 'calificado')"
+         (drop)="onDrop($event, 'calificado')">
+      <div class="pa-kanban-col-header">
+        <span class="pa-col-title">Calificados</span>
+        <span class="pa-col-count">{{ tareasCalificadas.length }}</span>
+      </div>
+      <div class="pa-kanban-col-cards">
+        @if (tareasCalificadas.length === 0) {
+          <div class="pa-kanban-empty">Sin tareas calificadas</div>
+        }
+        @for (t of tareasCalificadas; track t.idTarea) {
+          <div class="pa-kanban-card"
+               draggable="true"
+               (dragstart)="onDragStart($event, t)"
+               (dragend)="onDragEnd($event)">
+            <div class="pa-kcard-header">
+              <span class="pa-kcard-curso">{{ t.cursoNombre }}</span>
+              <span class="pa-kcard-badge badge-calificado">Calificado</span>
+            </div>
+            <h4 class="pa-kcard-title">{{ t.titulo }}</h4>
+            <div class="pa-kcard-footer">
+              <span class="pa-kcard-score">
+                Nota: <strong class="pa-score" [class.nota-aprobada]="t.nota! >= 11" [class.nota-desaprobada]="t.nota! < 11">{{ t.nota }}</strong>/{{ t.notaMaxima }}
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+  </div>
+</div>

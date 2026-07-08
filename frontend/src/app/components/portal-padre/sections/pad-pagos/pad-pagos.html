@@ -1,0 +1,110 @@
+<div class="pagos-layout">
+  <!-- Selector de hijo -->
+  @if (hijos.length > 1) {
+    <div class="hijo-tabs">
+      @for (h of hijos; track h.codigo; let i = $index) {
+        <button class="hijo-tab" [class.hijo-tab--active]="hijoIdx === i" (click)="cambiarHijo.emit(i)">
+          <span class="hijo-tab-avatar">{{ h.nombre[0] }}</span>
+          <span>{{ h.nombre }}</span>
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Estado de carga / error -->
+  @if (cargandoPagos) {
+    <div class="cursos-loading">
+      <div class="curso-spinner"></div>
+      <span>Cargando estado de cuenta...</span>
+    </div>
+  } @else if (errorPagos) {
+    <div class="cursos-error">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="1.8">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <p>{{ errorPagos }}</p>
+      <button class="btn-retry" (click)="retryCargarPagos.emit(hijoActual?.codigo ?? '')">Reintentar</button>
+    </div>
+  } @else {
+    <!-- Alerta de morosidad si hay algún pago VENCIDO -->
+    @if (pagosHijo.some(p => p.estado === 'VENCIDO')) {
+      <div class="pago-alerta-morosidad">
+        <div class="pam-icon">⚠️</div>
+        <div class="pam-body">
+          <h4>Aviso de Pago Pendiente</h4>
+          <p>Estimado apoderado, registramos pensiones vencidas para este estudiante. Agradeceremos regularizar el pago a la brevedad para evitar inconvenientes administrativos.</p>
+        </div>
+      </div>
+    }
+
+    <!-- KPIs de Pagos -->
+    <div class="pagos-kpis">
+      <div class="pago-kpi-card">
+        <span class="pkpi-val">S/. {{ pagosHijo.reduce((sum, p) => p.estado === 'PAGADO' ? sum + p.monto : sum, 0) | number:'1.2-2' }}</span>
+        <span class="pkpi-lbl">Total Pagado</span>
+      </div>
+      <div class="pago-kpi-card pago-kpi-card--pending">
+        <span class="pkpi-val">S/. {{ pagosHijo.reduce((sum, p) => p.estado !== 'PAGADO' ? sum + p.monto : sum, 0) | number:'1.2-2' }}</span>
+        <span class="pkpi-lbl">Total Pendiente</span>
+      </div>
+      <div class="pago-kpi-card pago-kpi-card--overdue">
+        <span class="pkpi-val">
+          {{ pagosHijo.filter(p => p.estado === 'VENCIDO').length }}
+        </span>
+        <span class="pkpi-lbl">Pensiones Vencidas</span>
+      </div>
+    </div>
+
+    <!-- Tabla de cuotas/pensiones -->
+    <div class="pagos-tabla-wrap">
+      <h3 class="pagos-title">Estado de Pensiones y Cuotas</h3>
+      <table class="notas-tabla">
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th>Monto</th>
+            <th>Vencimiento</th>
+            <th>Estado</th>
+            <th>Fecha de Pago</th>
+            <th>Comprobante</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of pagosHijo; track p.concepto) {
+            <tr>
+              <td class="nt-titulo">{{ p.concepto }}</td>
+              <td class="nt-nota">S/. {{ p.monto | number:'1.2-2' }}</td>
+              <td class="nt-fecha">{{ p.fechaVencimiento }}</td>
+              <td>
+                <span class="pago-badge"
+                      [class.pago-badge--pagado]="p.estado === 'PAGADO'"
+                      [class.pago-badge--pendiente]="p.estado === 'PENDIENTE'"
+                      [class.pago-badge--vencido]="p.estado === 'VENCIDO'">
+                  {{ p.estado }}
+                </span>
+              </td>
+              <td class="nt-fecha">{{ p.fechaPago ?? '—' }}</td>
+              <td class="pago-doc">{{ p.documento ?? '—' }}</td>
+              <td>
+                @if (p.estado !== 'PAGADO') {
+                  <button class="btn-pagar-inline"
+                          [disabled]="pagandoConcepto === p.concepto"
+                          (click)="simularPago.emit(p)">
+                    @if (pagandoConcepto === p.concepto) {
+                      Procesando...
+                    } @else {
+                      Pagar en línea
+                    }
+                  </button>
+                } @else {
+                  <span class="pago-completo-check">✓ Completado</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

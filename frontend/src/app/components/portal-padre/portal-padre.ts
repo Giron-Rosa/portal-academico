@@ -1,213 +1,51 @@
 import { Component, inject, signal, computed, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { WebSocketService } from '../../services/websocket.service';
+import { PadreService } from '../../services/padre.service';
+import { PadInicio } from './sections/pad-inicio/pad-inicio';
+import { PadCursos } from './sections/pad-cursos/pad-cursos';
+import { PadAsistencia } from './sections/pad-asistencia/pad-asistencia';
+import { PadMensajes } from './sections/pad-mensajes/pad-mensajes';
+import { PadEventos } from './sections/pad-eventos/pad-eventos';
+import { PadPagos } from './sections/pad-pagos/pad-pagos';
+import { PadGamificacion } from './sections/pad-gamificacion/pad-gamificacion';
 
-type Seccion = 'inicio' | 'cursos' | 'asistencia' | 'mensajes' | 'eventos' | 'pagos';
-type Vista   = 'dashboard' | 'detalle';
-type Estado  = 'bueno' | 'observacion' | 'riesgo';
 
-interface CursoDetalle {
-  nombre: string;
-  progreso: number;
-  tareasEntregadas: number;
-  totalTareas: number;
-  puntualidad: number;
-  docente?: string;
-  promedioCurso: number;
-}
+import type {
+  SeccionPadre as Seccion,
+  VistaPadre as Vista,
+  EstadoAlumno as Estado,
+  CursoDetalle,
+  Hijo,
+  CursoDetalleHijoApi as CursoDetalleApi,
+  HijoApi,
+  MensajeResumenPadre as MensajeResumen,
+  RespuestaPadre as RespuestaResumen,
+  MensajeDetallePadre as MensajeDetalle,
+  DocenteDisponible,
+  TareaHijo,
+  ExamenHijo,
+  CursoDetalleCompleto,
+  AsistenciaRegistroPadre as AsistenciaRegistro,
+  AsistenciaDetalleCompleto,
+  EventoHijo,
+  PagoHijo
+} from '../../shared/models/padre.models';
 
-interface Hijo {
-  id: number;
-  nombre: string;
-  grado: string;
-  codigo: string;
-  estado: Estado;
-  promedio: number;
-  asistencia: number;
-  cursosRiesgo: number;
-  entregaTareas: number;
-  cuotasPendientes: number;
-  descripcion: string;
-  cursosMonitor: { nombre: string; progreso: number }[];
-  cursos: CursoDetalle[];
-  eventos: string[];
-  parentesco?: string;
-}
-
-interface CursoDetalleApi {
-  nombre: string;
-  area: string;
-  horasSemana: number;
-  docente: string;
-  progreso: number;
-  tareasEntregadas: number;
-  totalTareas: number;
-  promedioCurso: number;
-  asistenciaCurso: number;
-}
-
-interface HijoApi {
-  nombre: string;
-  apellido: string;
-  codigo: string;
-  grado: string;
-  seccion: string;
-  turno: string;
-  periodo: string;
-  parentesco: string;
-  promedio: number;
-  asistencia: number;
-  cursosRiesgo: number;
-  entregaTareas: number;
-  estado: Estado;
-  cuotasPendientes: number;
-  cursos: CursoDetalleApi[];
-}
-
-export interface MensajeResumen {
-  id: number;
-  asunto: string;
-  tipo: string;
-  leido: boolean;
-  fechaEnvio: string;
-  nombrePadre: string; // docente en el portal de padres
-  nombreAlumno: string;
-  idAlumno: number;
-  grado: string;
-  seccion: string;
-  curso: string;
-  cantRespuestas: number;
-  ultimaRespuesta: string;
-}
-
-export interface RespuestaResumen {
-  id: number;
-  cuerpo: string;
-  fecha: string;
-  autor: string;
-  esMaestro: boolean;
-  isPlaying?: boolean;
-  audioProgress?: number;
-  currentTime?: number;
-  duration?: number;
-}
-
-export interface MensajeDetalle {
-  id: number;
-  asunto: string;
-  tipo: string;
-  leido: boolean;
-  fechaEnvio: string;
-  nombrePadre: string; // docente en el portal de padres
-  nombreAlumno: string;
-  idAlumno: number;
-  grado: string;
-  seccion: string;
-  curso: string;
-  cuerpo: string;
-  respuestas: RespuestaResumen[];
-  iniciadoPorDocente: boolean;
-  isPlaying?: boolean;
-  audioProgress?: number;
-  currentTime?: number;
-  duration?: number;
-}
-
-export interface DocenteDisponible {
-  idMaestro: number;
-  nombreMaestro: string;
-  curso: string;
-  nombreAlumno: string;
-  idAlumno: number;
-  idAulaCurso: number;
-}
-
-/* ── Fase 2: Cursos ── */
-export interface TareaHijo {
-  idTarea: number;
-  titulo: string;
-  fechaEntrega: string;
-  entregado: boolean;
-  nota: number | null;
-  notaMaxima: number;
-}
-
-export interface ExamenHijo {
-  idExamen: number;
-  titulo: string;
-  tipo: string;
-  fechaExamen: string;
-  asistio: boolean;
-  nota: number | null;
-  notaMaxima: number;
-}
-
-export interface CursoDetalleCompleto {
-  nombre: string;
-  area: string;
-  docente: string;
-  progreso: number;
-  tareasEntregadas: number;
-  totalTareas: number;
-  promedioCurso: number;
-  asistenciaCurso: number;
-  tareas: TareaHijo[];
-  examenes: ExamenHijo[];
-}
-
-/* ── Fase 3: Asistencia ── */
-export interface AsistenciaRegistro {
-  fecha: string;
-  estado: string;
-  curso: string;
-  justificante: string;
-}
-
-export interface AsistenciaDetalleCompleto {
-  historial: AsistenciaRegistro[];
-  total: number;
-  presente: number;
-  tardanza: number;
-  falta: number;
-  justificado: number;
-  porcentaje: number;
-}
-
-/* ── Fase 4: Eventos y Pagos ── */
-export interface EventoHijo {
-  id: number;
-  titulo: string;
-  descripcion: string;
-  tipo: string;
-  fechaEvento: string;
-  horaEvento: string;
-  fechaCreacion: string;
-  docente: string;
-}
-
-export interface PagoHijo {
-  concepto: string;
-  monto: number;
-  fechaVencimiento: string;
-  estado: string; // 'PAGADO', 'PENDIENTE', 'VENCIDO'
-  fechaPago: string | null;
-  documento: string | null;
-}
 
 @Component({
   selector: 'app-portal-padre',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PadInicio, PadCursos, PadAsistencia, PadMensajes, PadEventos, PadPagos, PadGamificacion],
   templateUrl: './portal-padre.html',
   styleUrl: './portal-padre.scss',
 })
 export class PortalPadre implements OnDestroy {
   private auth   = inject(AuthService);
   private router = inject(Router);
-  private http   = inject(HttpClient);
+  private padreService = inject(PadreService);
   readonly ws    = inject(WebSocketService);
   private zone   = inject(NgZone);
 
@@ -217,6 +55,10 @@ export class PortalPadre implements OnDestroy {
   mediaRecorder: any = null;
   audioChunks: Blob[] = [];
   recordingInterval: any = null;
+
+  // Plus Ultra: dictado por voz nativo
+  dictando = signal(false);
+  recognition: any = null;
 
   seccionActiva  = signal<Seccion>('inicio');
   vista          = signal<Vista>('dashboard');
@@ -291,6 +133,7 @@ export class PortalPadre implements OnDestroy {
     { id: 'mensajes',   label: 'Mensajes',   icon: 'message' },
     { id: 'eventos',    label: 'Eventos',    icon: 'calendar'},
     { id: 'pagos',      label: 'Pagos',      icon: 'card'    },
+    { id: 'metas',      label: 'Mi Meta Académica', icon: 'award'   },
   ];
 
   hijos = signal<Hijo[]>([]);
@@ -298,6 +141,19 @@ export class PortalPadre implements OnDestroy {
   hijosEnRiesgo = computed(() => this.hijos().filter(h => h.estado === 'riesgo').length);
 
   hijoActual = computed(() => this.hijos()[this.hijoIdx()]);
+
+  misionesSemanalesSignal = signal<any[]>([]);
+  insigniasObtenidasSignal = signal<any[]>([]);
+
+  misionesSemanales = computed(() => this.misionesSemanalesSignal());
+  insigniasObtenidas = computed(() => this.insigniasObtenidasSignal());
+
+  progresoMisionesGeneral = computed(() => {
+    const mis = this.misionesSemanales();
+    if (!mis.length) return 0;
+    const comp = mis.filter(m => m.completado).length;
+    return Math.round((comp / mis.length) * 100);
+  });
 
   constructor() {
     this.cargarResumen();
@@ -310,23 +166,35 @@ export class PortalPadre implements OnDestroy {
   }
 
   private cargarResumen() {
-    const token = this.auth.getToken();
-    if (!token) return;
-
     this.cargando.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
-    this.http.get<HijoApi[]>('http://localhost:8080/api/portal/padre/resumen', { headers })
+    this.padreService.getResumenHijos()
       .subscribe({
         next: (data) => {
           this.hijos.set(data.map((h, i) => this.mapHijo(h, i)));
           this.cargando.set(false);
+          // Si el usuario ya está en una sección que necesita datos, cargarlos ahora que hijos están disponibles
+          this.cargarDatosSeccionActual();
         },
         error: () => {
           this.errorCarga.set('No se pudo cargar la información de los estudiantes.');
           this.cargando.set(false);
         },
       });
+  }
+
+  /** Carga los datos de la sección activa para el hijo actual (se llama al cambiar sección o cuando hijos terminan de cargar) */
+  private cargarDatosSeccionActual(): void {
+    const s    = this.seccionActiva();
+    const hijo = this.hijoActual();
+    if (!hijo) return;
+
+    if (s === 'cursos')     this.cargarCursos(hijo.codigo);
+    else if (s === 'asistencia') this.cargarAsistencia(hijo.codigo);
+    else if (s === 'eventos')    this.cargarEventos(hijo.codigo);
+    else if (s === 'pagos')      this.cargarPagos(hijo.codigo);
+    else if (s === 'metas')      this.cargarGamificacion(hijo.codigo);
+    else if (s === 'mensajes')   this.cargarMensajes();
   }
 
   private mapHijo(h: HijoApi, idx: number): Hijo {
@@ -361,29 +229,15 @@ export class PortalPadre implements OnDestroy {
 
   setSeccion(s: Seccion) {
     this.seccionActiva.set(s);
-    if (s !== 'inicio') this.vista.set('dashboard');
+    // Siempre resetear la vista a dashboard (incluyendo 'inicio', para que al volver de un detalle no quede en blanco)
+    this.vista.set('dashboard');
     if (s === 'mensajes') {
-      this.cargarMensajes();
       this.ws.marcarLeidas();
     } else {
       this.ws.unsubscribeFromChat();
     }
-    if (s === 'cursos') {
-      const hijo = this.hijoActual();
-      if (hijo) this.cargarCursos(hijo.codigo);
-    }
-    if (s === 'asistencia') {
-      const hijo = this.hijoActual();
-      if (hijo) this.cargarAsistencia(hijo.codigo);
-    }
-    if (s === 'eventos') {
-      const hijo = this.hijoActual();
-      if (hijo) this.cargarEventos(hijo.codigo);
-    }
-    if (s === 'pagos') {
-      const hijo = this.hijoActual();
-      if (hijo) this.cargarPagos(hijo.codigo);
-    }
+    // Intentar cargar datos; si hijos aún no han cargado, cargarDatosSeccionActual() lo volverá a hacer al terminar cargarResumen()
+    this.cargarDatosSeccionActual();
   }
 
   verDetalle(idx: number) {
@@ -392,6 +246,7 @@ export class PortalPadre implements OnDestroy {
     if (hijo) {
       this.cargarEventos(hijo.codigo);
       this.cargarHorarioHijo(hijo.codigo);
+      this.cargarGamificacion(hijo.codigo);
     }
     this.vista.set('detalle');
   }
@@ -399,10 +254,7 @@ export class PortalPadre implements OnDestroy {
   cargarHorarioHijo(codigoAlumno: string): void {
     this.cargandoHorario.set(true);
     this.errorHorario.set('');
-    this.http.get<any[]>(
-      `http://localhost:8080/api/portal/padre/horario/${codigoAlumno}`,
-      { headers: this.headers() }
-    ).subscribe({
+    this.padreService.getHorarioHijo(codigoAlumno).subscribe({
       next: (data) => {
         this.horarioHijo.set(data);
         this.cargandoHorario.set(false);
@@ -426,10 +278,7 @@ export class PortalPadre implements OnDestroy {
     this.cargandoCursos.set(true);
     this.errorCursos.set('');
     this.cursoExpandido.set(-1);
-    this.http.get<CursoDetalleCompleto[]>(
-      `http://localhost:8080/api/portal/padre/cursos/${codigoAlumno}`,
-      { headers: this.headers() }
-    ).subscribe({
+    this.padreService.getCursosHijo(codigoAlumno).subscribe({
       next: (data) => {
         this.cursosHijo.set(data);
         this.cargandoCursos.set(false);
@@ -459,10 +308,7 @@ export class PortalPadre implements OnDestroy {
   cargarAsistencia(codigoAlumno: string): void {
     this.cargandoAsistencia.set(true);
     this.errorAsistencia.set('');
-    this.http.get<AsistenciaDetalleCompleto>(
-      `http://localhost:8080/api/portal/padre/asistencia/${codigoAlumno}`,
-      { headers: this.headers() }
-    ).subscribe({
+    this.padreService.getAsistenciaHijo(codigoAlumno).subscribe({
       next: (data) => {
         this.asistenciaHijo.set(data);
         this.cargandoAsistencia.set(false);
@@ -496,10 +342,7 @@ export class PortalPadre implements OnDestroy {
   cargarEventos(codigoAlumno: string): void {
     this.cargandoEventos.set(true);
     this.errorEventos.set('');
-    this.http.get<EventoHijo[]>(
-      `http://localhost:8080/api/portal/padre/eventos/${codigoAlumno}`,
-      { headers: this.headers() }
-    ).subscribe({
+    this.padreService.getEventosHijo(codigoAlumno).subscribe({
       next: (data) => {
         this.eventosHijo.set(data);
         this.cargandoEventos.set(false);
@@ -520,10 +363,7 @@ export class PortalPadre implements OnDestroy {
   cargarPagos(codigoAlumno: string): void {
     this.cargandoPagos.set(true);
     this.errorPagos.set('');
-    this.http.get<PagoHijo[]>(
-      `http://localhost:8080/api/portal/padre/pagos/${codigoAlumno}`,
-      { headers: this.headers() }
-    ).subscribe({
+    this.padreService.getPagosHijo(codigoAlumno).subscribe({
       next: (data) => {
         this.pagosHijo.set(data);
         this.cargandoPagos.set(false);
@@ -544,7 +384,36 @@ export class PortalPadre implements OnDestroy {
   pagandoConcepto = signal<string | null>(null);
 
   simularPago(pago: PagoHijo): void {
-    this.abrirModalProximamentePago();
+    const hijo = this.hijoActual();
+    if (!hijo) return;
+
+    this.pagandoConcepto.set(pago.concepto);
+
+    this.padreService.procesarPago({ codigoAlumno: hijo.codigo, concepto: pago.concepto }).subscribe({
+      next: () => {
+        this.pagandoConcepto.set(null);
+        this.cargarPagos(hijo.codigo);
+        this.cargarResumen();
+        alert('¡Pago de cuota simulado con éxito! Se ha registrado en la base de datos.');
+      },
+      error: (err) => {
+        this.pagandoConcepto.set(null);
+        console.error('Error al procesar pago', err);
+        alert('Hubo un error al procesar el pago. Por favor, inténtelo nuevamente.');
+      }
+    });
+  }
+
+  cargarGamificacion(codigoAlumno: string): void {
+    this.padreService.getGamificacionHijo(codigoAlumno).subscribe({
+      next: (data) => {
+        this.misionesSemanalesSignal.set(data.misiones);
+        this.insigniasObtenidasSignal.set(data.insignias);
+      },
+      error: (err) => {
+        console.error('Error al cargar gamificación', err);
+      }
+    });
   }
 
   abrirModalProximamentePago(): void {
@@ -616,17 +485,10 @@ export class PortalPadre implements OnDestroy {
      MENSAJES — Sección completa del portal del padre
   ════════════════════════════════════════════════ */
 
-  private headers(): HttpHeaders {
-    return new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken() ?? ''}` });
-  }
-
   cargarMensajes(): void {
     this.cargandoMensajes.set(true);
     this.errorMensajes.set('');
-    this.http.get<MensajeResumen[]>(
-      'http://localhost:8080/api/portal/padre/mensajes',
-      { headers: this.headers() }
-    ).subscribe({
+    this.padreService.getMensajes().subscribe({
       next: (data) => { this.mensajes.set(data); this.cargandoMensajes.set(false); },
       error: () => { this.errorMensajes.set('No se pudieron cargar los mensajes.'); this.cargandoMensajes.set(false); },
     });
@@ -642,10 +504,7 @@ export class PortalPadre implements OnDestroy {
     this.hasMorePages.set(true);
     this.cargandoDetalleChat.set(true);
 
-    this.http.get<MensajeDetalle>(
-      `http://localhost:8080/api/portal/padre/mensajes/${id}`,
-      { headers: this.headers() }
-    ).subscribe({
+    this.padreService.getMensajeDetalle(id).subscribe({
       next: (data) => {
         this.mensajeActivo.set(data);
         // Cargar las respuestas de la primera página (10 más recientes)
@@ -675,10 +534,7 @@ export class PortalPadre implements OnDestroy {
     if (reset) { this.cargandoDetalleChat.set(true); }
     else        { this.cargandoMasRespuestas.set(true); }
 
-    this.http.get<RespuestaResumen[]>(
-      `http://localhost:8080/api/portal/padre/mensajes/${idMensaje}/respuestas-paginadas`,
-      { headers: this.headers(), params: { page: page.toString(), size: '10' } }
-    ).subscribe({
+    this.padreService.getRespuestasMensaje(idMensaje, page, 10).subscribe({
       next: (data) => {
         if (reset) {
           this.respuestasActivas.set(data);
@@ -850,8 +706,6 @@ export class PortalPadre implements OnDestroy {
   enviarAudio(audioBlob: Blob) {
     const activo = this.mensajeActivo();
     if (!activo) return;
-    const token = this.auth.getToken();
-    if (!token) return;
 
     // Agregar mensaje optimista temporal
     const tempId = -Date.now();
@@ -872,9 +726,7 @@ export class PortalPadre implements OnDestroy {
     const formData = new FormData();
     formData.append('file', audioBlob, 'audio.webm');
 
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.post(`http://localhost:8080/api/portal/padre/mensajes/${activo.id}/responder-audio`,
-      formData, { headers })
+    this.padreService.responderMensajeAudio(activo.id, formData)
       .subscribe({
         next: () => {
           // El WebSocket se encargará de remover el temporal y poner el real.
@@ -887,6 +739,63 @@ export class PortalPadre implements OnDestroy {
       });
   }
 
+  toggleDictado() {
+    if (this.dictando()) {
+      if (this.recognition) {
+        this.recognition.stop();
+      }
+      this.dictando.set(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Tu navegador no soporta el reconocimiento de voz (dictado). Pruebe en Chrome, Edge o Safari.');
+      return;
+    }
+
+    const rec = new SpeechRecognition();
+    rec.lang = 'es-PE';
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    rec.onstart = () => {
+      this.zone.run(() => {
+        this.dictando.set(true);
+      });
+    };
+
+    rec.onresult = (event: any) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
+      }
+      if (finalTranscript) {
+        this.zone.run(() => {
+          const current = this.replyText();
+          this.replyText.set(current ? (current + ' ' + finalTranscript).trim() : finalTranscript.trim());
+        });
+      }
+    };
+
+    rec.onerror = (err: any) => {
+      console.error('Error en dictado de voz:', err);
+      this.zone.run(() => {
+        this.dictando.set(false);
+      });
+    };
+
+    rec.onend = () => {
+      this.zone.run(() => {
+        this.dictando.set(false);
+      });
+    };
+
+    this.recognition = rec;
+    rec.start();
+  }
   enviarRespuesta(): void {
     const activo = this.mensajeActivo();
     const texto  = this.replyText().trim();
@@ -907,11 +816,7 @@ export class PortalPadre implements OnDestroy {
     this.replyText.set('');
 
     this.enviandoReply.set(true);
-    this.http.post<void>(
-      `http://localhost:8080/api/portal/padre/mensajes/${activo.id}/responder`,
-      { cuerpo: texto },
-      { headers: this.headers() }
-    ).subscribe({
+    this.padreService.responderMensaje(activo.id, { cuerpo: texto }).subscribe({
       next: () => {
         this.enviandoReply.set(false);
       },
@@ -928,12 +833,6 @@ export class PortalPadre implements OnDestroy {
     if (!texto || this.refinandoConIA()) return;
 
     this.refinandoConIA.set(true);
-    const token = this.auth.getToken();
-    if (!token) {
-      this.refinandoConIA.set(false);
-      return;
-    }
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
     let nombreAlumno = 'mi hijo(a)';
     let nombreDestinatario = 'Profesor(a)';
@@ -959,16 +858,12 @@ export class PortalPadre implements OnDestroy {
       }
     }
 
-    this.http.post<{ resultado: string }>(
-      'http://localhost:8080/api/portal/padre/mensajes/ia-redactar',
-      { 
-        texto,
-        nombreAlumno,
-        nombreDestinatario,
-        relacion
-      },
-      { headers }
-    ).subscribe({
+    this.padreService.refinarRespuestaIA({ 
+      texto,
+      nombreAlumno,
+      nombreDestinatario,
+      relacion
+    }).subscribe({
       next: (res) => {
         if (tipo === 'respuesta') {
           this.replyText.set(res.resultado);
@@ -979,17 +874,14 @@ export class PortalPadre implements OnDestroy {
       },
       error: () => {
         this.refinandoConIA.set(false);
-        alert('No se pudo refinar el mensaje con IA. Por favor, inténtalo más tarde.');
+        alert('No se pudo refinar el mensaje con IA. Por favor, inténtelo más tarde.');
       }
     });
   }
 
 
   abrirNuevoChat(): void {
-    this.http.get<DocenteDisponible[]>(
-      'http://localhost:8080/api/portal/padre/mensajes/docentes-disponibles',
-      { headers: this.headers() }
-    ).subscribe({
+    this.padreService.getDocentesDisponibles().subscribe({
       next: (data) => {
         this.docentesDisponibles.set(data);
         this.nuevoChatAsunto.set('');
@@ -1009,17 +901,13 @@ export class PortalPadre implements OnDestroy {
     if (!docente || !asunto || !cuerpo || this.enviandoNuevoChat()) return;
 
     this.enviandoNuevoChat.set(true);
-    this.http.post<{ id: number }>(
-      'http://localhost:8080/api/portal/padre/mensajes/iniciar',
-      {
-        idAlumno:    docente.idAlumno,
-        idPadre:     0, // el backend lo infiere del token
-        idAulaCurso: docente.idAulaCurso,
-        asunto,
-        cuerpo,
-      },
-      { headers: this.headers() }
-    ).subscribe({
+    this.padreService.crearNuevoMensaje({
+      idAlumno:    docente.idAlumno,
+      idPadre:     0, // el backend lo infiere del token
+      idAulaCurso: docente.idAulaCurso,
+      asunto,
+      cuerpo,
+    }).subscribe({
       next: (resp) => {
         this.enviandoNuevoChat.set(false);
         this.modalNuevoChat.set(false);
@@ -1030,4 +918,17 @@ export class PortalPadre implements OnDestroy {
       error: () => { this.enviandoNuevoChat.set(false); },
     });
   }
+
+  enviarNuevoChatDeComponent(event: { docente: any, asunto: string, cuerpo: string }) {
+    this.nuevoChatDocenteSel.set(event.docente);
+    this.nuevoChatAsunto.set(event.asunto);
+    this.nuevoChatMensaje.set(event.cuerpo);
+    this.enviarNuevoChat();
+  }
+
+  enviarRespuestaDeComponent(texto: string) {
+    this.replyText.set(texto);
+    this.enviarRespuesta();
+  }
 }
+

@@ -17,6 +17,7 @@ import java.util.List;
 public class MaterialService {
 
     private final EntityManager em;
+    private final NotificacionWsService notificacionWsService;
 
     // ────────────────────────────────────────────────────────
     // Listar materiales de un aula_curso
@@ -85,8 +86,25 @@ public class MaterialService {
                 .setParameter("url",    req.getUrl())
                 .getSingleResult();
 
+        long id = newId.longValue();
+
+        try {
+            String cNombre = (String) em.createNativeQuery("SELECT c.nombre FROM aula_cursos ac JOIN cursos c ON c.id_curso = ac.id_curso WHERE ac.id_aula_curso = :iac")
+                    .setParameter("iac", idAulaCurso)
+                    .getSingleResult();
+            notificacionWsService.notificarAulaCurso(
+                    idAulaCurso,
+                    "NUEVO_MATERIAL",
+                    req.getTitulo().trim(),
+                    "Se ha subido un nuevo material de clase: " + req.getTitulo().trim(),
+                    cNombre
+            );
+        } catch (Exception e) {
+            // Ignore
+        }
+
         return getMateriales(idAulaCurso, codigoDocente).stream()
-                .filter(m -> m.id() == newId.longValue())
+                .filter(m -> m.id() == id)
                 .findFirst()
                 .orElseThrow();
     }

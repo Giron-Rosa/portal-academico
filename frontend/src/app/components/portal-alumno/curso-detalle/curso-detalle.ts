@@ -2,90 +2,21 @@ import {
   Component, Input, Output, EventEmitter,
   inject, signal, computed, OnInit
 } from '@angular/core';
-import { CommonModule, DecimalPipe, DatePipe, PercentPipe } from '@angular/common';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { CommonModule, DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
-import type { Curso } from '../portal-alumno';
+import { AlumnoService } from '../../../services/alumno.service';
+import type { CursoAlumno as Curso } from '../../../shared/models/alumno.models';
+import type {
+  MaterialAlumno, TareaAlumno, ActividadAlumno,
+  AsistenciaRegistroCurso as AsistenciaRegistro, AsistenciaCurso,
+  ReporteAlumno, UnidadAlumno as Unidad
+} from '../../../shared/models/alumno.models';
 
 // ──────────────────────────────────────────────────────────────────────
-// Tipos que llegan del backend
+// Tipos internos
 // ──────────────────────────────────────────────────────────────────────
-
-export interface AsistenciaRegistro {
-  fecha: string;       // 'YYYY-MM-DD'
-  estado: string;      // presente | falta | tardanza | justificado
-  justificante: string | null;
-}
-
-export interface AsistenciaCurso {
-  historial:           AsistenciaRegistro[];
-  totalClases:         number;
-  presente:            number;
-  tardanza:            number;
-  falta:               number;
-  justificado:         number;
-  porcentajeAsistencia: number;
-}
-
-export interface MaterialAlumno {
-  idMaterial:    number;
-  semana:        number;
-  clase:         number;
-  titulo:        string;
-  tipo:          string;   // pdf | word | url | video | youtube
-  url:           string | null;
-  fechaCreacion: string;
-}
-
-export interface TareaAlumno {
-  idTarea:        number;
-  numeroTarea:    number;
-  semana:         number;
-  clase:          number;
-  titulo:         string;
-  descripcion:    string | null;
-  tipoEntregable: string | null;
-  fechaEntrega:   string | null;
-  notaMaxima:     number;
-  nota:           number | null;
-  entregado:      boolean;
-}
-
-export interface ActividadAlumno {
-  idExamen:        number;
-  numeroExamen:    number;
-  semana:          number;
-  titulo:          string;
-  descripcion:     string | null;
-  tipo:            string;  // escrito | oral | online | practico
-  fechaExamen:     string | null;
-  duracionMinutos: number | null;
-  notaMaxima:      number;
-  nota:            number | null;
-  asistio:         boolean;
-}
-
-export interface ReporteAlumno {
-  idReporte:   number;
-  tipo:        string;   // anotacion | felicitacion | llamada_atencion | otro
-  titulo:      string;
-  descripcion: string | null;
-  fecha:       string;
-}
-
-export interface Unidad {
-  idUnidad: number;
-  idAulaCurso: number;
-  numero: number;
-  titulo: string;
-  bimestre: string;
-  semanas: string;
-  objetivos: string[];
-  indicadores: string[];
-  contenidos: string[];
-  estado: 'pendiente' | 'en_curso' | 'concluido';
-  fechaConclusion?: string;
-}
 
 // Tipos de tabs
 type Tab = 'temario' | 'asistencia' | 'contenido' | 'tareas' | 'actividades' | 'reportes';
@@ -99,7 +30,7 @@ interface SemanaNodo { semana: number; clases: ClaseNodo[]; }
 @Component({
   selector: 'app-curso-detalle',
   standalone: true,
-  imports: [CommonModule, DecimalPipe],
+  imports: [CommonModule, DecimalPipe, FormsModule],
   templateUrl: './curso-detalle.html',
   styleUrl: './curso-detalle.scss',
 })
@@ -107,10 +38,8 @@ export class CursoDetalle implements OnInit {
   @Input({ required: true }) curso!: Curso;
   @Output() volver = new EventEmitter<void>();
 
-  private http = inject(HttpClient);
+  private alumnoService = inject(AlumnoService);
   private auth = inject(AuthService);
-
-  private readonly BASE = 'http://localhost:8080/api/portal/alumno/cursos';
 
   // ── Estado de UI ──────────────────────────────────────────────────
   tabActiva = signal<Tab>('temario');
@@ -217,25 +146,38 @@ export class CursoDetalle implements OnInit {
     if (tab === 'reportes'    && !this.reportes().length)    this.cargarTab(tab);
   }
 
-  private headers(): HttpHeaders {
-    return new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` });
-  }
+
 
   private cargarTab(tab: Tab) {
     this.cargando.set(true);
     const id = this.curso.idAulaCurso;
-    const h  = this.headers();
 
-    const urls: Record<Tab, string> = {
-      temario:     `http://localhost:8080/api/portal/alumno/cursos/${id}/temario`,
-      asistencia:  `${this.BASE}/${id}/asistencia`,
-      contenido:   `${this.BASE}/${id}/contenido`,
-      tareas:      `${this.BASE}/${id}/tareas`,
-      actividades: `${this.BASE}/${id}/actividades`,
-      reportes:    `${this.BASE}/${id}/reportes`,
-    };
+    let obs: Observable<any>;
+    switch (tab) {
+      case 'temario':
+        obs = this.alumnoService.getTemario(id);
+        break;
+      case 'asistencia':
+        obs = this.alumnoService.getAsistenciaCurso(id);
+        break;
+      case 'contenido':
+        obs = this.alumnoService.getMateriales(id);
+        break;
+      case 'tareas':
+        obs = this.alumnoService.getTareas(id);
+        break;
+      case 'actividades':
+        obs = this.alumnoService.getActividades(id);
+        break;
+      case 'reportes':
+        obs = this.alumnoService.getReportes(id);
+        break;
+      default:
+        this.cargando.set(false);
+        return;
+    }
 
-    this.http.get<any>(urls[tab], { headers: h }).subscribe({
+    obs.subscribe({
       next: (data) => {
         if (tab === 'temario')     this.unidades.set(data as Unidad[]);
         if (tab === 'asistencia')  this.asistencia.set(data as AsistenciaCurso);
@@ -323,5 +265,55 @@ export class CursoDetalle implements OnInit {
   asistenciaOffset(pct: number): number {
     const circumference = 2 * Math.PI * 44;   // radio = 44
     return circumference - (pct / 100) * circumference;
+  }
+
+  // ── Chat de IA ────────────────────────────────────────────────────
+  /** Material seleccionado para chatear con la IA */
+  materialIaSeleccionado = signal<MaterialAlumno | null>(null);
+  chatMensajes = signal<{ rol: 'usuario' | 'ia'; texto: string }[]>([]);
+  chatInput = '';
+  chatCargando = signal(false);
+
+  abrirChatIa(mat: MaterialAlumno) {
+    this.materialIaSeleccionado.set(mat);
+    this.chatMensajes.set([
+      { rol: 'ia', texto: `¡Hola! 👋 Soy tu Asistente IA para el material **"${mat.titulo}"**. Puedo ayudarte a: hacer un resumen de la clase, crear un quiz de repaso, o responder tus dudas sobre este tema. ¿Qué necesitas?` }
+    ]);
+  }
+
+  cerrarChatIa() {
+    this.materialIaSeleccionado.set(null);
+    this.chatMensajes.set([]);
+    this.chatInput = '';
+  }
+
+  enviarMensajeIa() {
+    const texto = this.chatInput.trim();
+    const mat = this.materialIaSeleccionado();
+    if (!texto || !mat || this.chatCargando()) return;
+
+    this.chatMensajes.update(msgs => [...msgs, { rol: 'usuario', texto }]);
+    this.chatInput = '';
+    this.chatCargando.set(true);
+
+    this.alumnoService.enviarMensajeIaChat(
+      { idMaterial: String(mat.idMaterial), mensaje: texto }
+    ).subscribe({
+      next: (res) => {
+        this.chatMensajes.update(msgs => [...msgs, { rol: 'ia', texto: res.respuesta }]);
+        this.chatCargando.set(false);
+      },
+      error: () => {
+        this.chatMensajes.update(msgs => [...msgs, { rol: 'ia', texto: '❌ Error al conectar con el asistente. Intenta de nuevo.' }]);
+        this.chatCargando.set(false);
+      }
+    });
+  }
+
+  onChatKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.enviarMensajeIa();
+    }
   }
 }

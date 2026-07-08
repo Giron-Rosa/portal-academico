@@ -27,6 +27,23 @@ public class MensajeService {
 
     private final EntityManager em;
     private final SimpMessagingTemplate ws;
+    private final OpenAiService openAiService;
+
+    @jakarta.annotation.PostConstruct
+    @org.springframework.transaction.annotation.Transactional
+    public void initDatabaseSchema() {
+        try {
+            em.createNativeQuery("ALTER TABLE mensajes_respuestas ADD COLUMN IF NOT EXISTS transcripcion TEXT").executeUpdate();
+            em.createNativeQuery("ALTER TABLE mensajes_respuestas ADD COLUMN IF NOT EXISTS sentimiento VARCHAR(50)").executeUpdate();
+            em.createNativeQuery("ALTER TABLE mensajes_respuestas ADD COLUMN IF NOT EXISTS analisis_causa TEXT").executeUpdate();
+            
+            em.createNativeQuery("ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS transcripcion TEXT").executeUpdate();
+            em.createNativeQuery("ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS sentimiento VARCHAR(50)").executeUpdate();
+            em.createNativeQuery("ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS analisis_causa TEXT").executeUpdate();
+        } catch (Exception e) {
+            System.err.println("Error ejecutando DDL de migración: " + e.getMessage());
+        }
+    }
 
     /* ─────────────────────────────────────────────────────────
        SQL reutilizable: columnas comunes para resumen y detalle
@@ -106,7 +123,7 @@ public class MensajeService {
     public MensajeDetalleDto getDetalle(long idMensaje, String codigoDocente) {
 
         /* Obtener el mensaje principal con validación de pertenencia */
-        String sqlMsg = "SELECT " + COLS_COMUNES + ", m.cuerpo " +
+        String sqlMsg = "SELECT " + COLS_COMUNES + ", m.cuerpo, m.transcripcion, m.sentimiento, m.analisis_causa " +
                 "FROM mensajes m " + JOINS_COMUNES +
                 "WHERE m.id_mensaje = :id AND u.codigo = :codigo";
 
@@ -143,9 +160,12 @@ public class MensajeService {
                 (String)   r[8],                                    // grado
                 (String)   r[9],                                    // seccion
                 (String)   r[10],                                   // curso
-                (String)   r[14],                                   // cuerpo (idx 14: after cols 0-12 + iniciado_por_maestro=13)
+                (String)   r[14],                                   // cuerpo (idx 14)
                 respuestas,
-                (Boolean)  r[13]                                    // iniciadoPorDocente
+                (Boolean)  r[13],                                   // iniciadoPorDocente
+                (String)   r[15],                                   // transcripcion
+                (String)   r[16],                                   // sentimiento
+                (String)   r[17]                                    // analisisCausa
         );
     }
 
@@ -216,7 +236,10 @@ public class MensajeService {
                 (String)  respRow[1],
                 (String)  respRow[2],
                 (String)  respRow[3],
-                (Boolean) respRow[4]
+                (Boolean) respRow[4],
+                null,
+                null,
+                null
         );
 
         /* Emitir a la habitación del chat */
@@ -251,6 +274,50 @@ public class MensajeService {
 
         ws.convertAndSend("/topic/mensajes/" + codigoPadre,  notifPadre);
         ws.convertAndSend("/topic/mensajes/" + codigoDocente, notifDocente);
+    }
+
+    private void sincronizarCausaConPlan(long idMensaje, String causa) {
+        try {
+            // 1. Obtener id_alumno e id_maestro de la conversación
+            Object[] msgInfo = (Object[]) em.createNativeQuery(
+                    "SELECT id_alumno, id_maestro FROM mensajes WHERE id_mensaje = :id")
+                    .setParameter("id", idMensaje)
+                    .getSingleResult();
+            if (msgInfo == null) return;
+            int idAlumno = ((Number) msgInfo[0]).intValue();
+            int idMaestro = ((Number) msgInfo[1]).intValue();
+
+            // 2. Buscar si tiene un plan de apoyo activo
+            @SuppressWarnings("unchecked")
+            List<Object[]> planRows = em.createNativeQuery(
+                    "SELECT id_plan, plan_json FROM planes_apoyo WHERE id_alumno = :idAlumno AND id_maestro = :idMaestro ORDER BY fecha_creacion DESC LIMIT 1")
+                    .setParameter("idAlumno", idAlumno)
+                    .setParameter("idMaestro", idMaestro)
+                    .getResultList();
+
+            if (!planRows.isEmpty()) {
+                long idPlan = ((Number) planRows.get(0)[0]).longValue();
+                String planJson = (String) planRows.get(0)[1];
+
+                // 3. Modificar el planJson para reflejar la causa y flexibilización
+                if (planJson != null && (causa.toLowerCase().contains("hermano") || causa.toLowerCase().contains("tarde") || causa.toLowerCase().contains("trabaj") || causa.toLowerCase().contains("familia") || causa.toLowerCase().contains("logístic"))) {
+                    // Reemplazar o añadir recomendaciones en planJson
+                    if (planJson.contains("asistir") || planJson.contains("puntual")) {
+                        planJson = planJson.replace("exigir puntualidad", "flexibilizar la hora de entrada y coordinar apoyo familiar");
+                        planJson = planJson.replace("asistencia estricta", "flexibilidad horaria justificada por apoyo familiar");
+                    }
+                    
+                    // También actualizar feedback_1 con la causa extraída
+                    em.createNativeQuery("UPDATE planes_apoyo SET plan_json = :planJson, feedback_1 = :causa WHERE id_plan = :idPlan")
+                            .setParameter("planJson", planJson)
+                            .setParameter("causa", "Causa raíz extraída por IA: " + causa)
+                            .setParameter("idPlan", idPlan)
+                            .executeUpdate();
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error actualizando plan dinámico: " + e.getMessage());
+        }
     }
 
     /* ─────────────────────────────────────────────────────────
@@ -291,7 +358,11 @@ public class MensajeService {
         }
 
         // 2. Guardar el archivo físico
-        String filename = "audio-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 10000) + ".webm";
+        String originalName = file.getOriginalFilename();
+        String ext = (originalName != null && originalName.contains("."))
+                ? originalName.substring(originalName.lastIndexOf('.'))  // .webm / .ogg
+                : ".webm";
+        String filename = "audio-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 10000) + ext;
         java.io.File audiosDir = new java.io.File("uploads/audios");
         if (!audiosDir.exists()) {
             audiosDir.mkdirs();
@@ -315,9 +386,9 @@ public class MensajeService {
                         :cuerpo)
                 RETURNING id_respuesta
                 """)
-                .setParameter("idMsg",   idMensaje)
-                .setParameter("codigo",  codigoUsuario)
-                .setParameter("cuerpo",  audioPath)
+                .setParameter("idMsg",  idMensaje)
+                .setParameter("codigo", codigoUsuario)
+                .setParameter("cuerpo", audioPath)
                 .getResultList();
 
         long idRespuesta = ((Number) respIdRows.get(0)).longValue();
@@ -355,7 +426,10 @@ public class MensajeService {
                 (String)  respRow[1],
                 (String)  respRow[2],
                 (String)  respRow[3],
-                (Boolean) respRow[4]
+                Boolean.TRUE.equals(respRow[4]),
+                null, // transcripcion
+                null, // sentimiento
+                null  // analisisCausa
         );
 
         ws.convertAndSend("/topic/chat/" + idMensaje, respDto);
@@ -630,7 +704,10 @@ public class MensajeService {
                        TO_CHAR(mr.fecha, 'DD/MM/YYYY HH24:MI') AS fecha,
                        COALESCE(mae.nombre || ' ' || mae.apellido,
                                 pa.nombre  || ' ' || pa.apellido)  AS autor,
-                       (mae.id_maestro IS NOT NULL)                AS es_maestro
+                       (mae.id_maestro IS NOT NULL)                AS es_maestro,
+                       mr.transcripcion,
+                       mr.sentimiento,
+                       mr.analisis_causa
                 FROM mensajes_respuestas mr
                 JOIN usuarios u   ON u.id_usuario   = mr.id_usuario
                 LEFT JOIN maestros mae ON mae.id_usuario = u.id_usuario
@@ -649,7 +726,10 @@ public class MensajeService {
                 (String)  r[1],
                 (String)  r[2],
                 (String)  r[3],
-                (Boolean) r[4]
+                (Boolean) r[4],
+                (String)  r[5], // transcripcion
+                (String)  r[6], // sentimiento
+                (String)  r[7]  // analisisCausa
         )).toList();
     }
 
@@ -726,7 +806,10 @@ public class MensajeService {
                        s.nombre AS seccion,
                        c.nombre AS curso,
                        m.cuerpo,
-                       m.iniciado_por_maestro
+                       m.iniciado_por_maestro,
+                       m.transcripcion,
+                       m.sentimiento,
+                       m.analisis_causa
                 FROM mensajes m
                 JOIN padres   p   ON p.id_padre     = m.id_padre
                 JOIN usuarios u_p ON u_p.id_usuario = p.id_usuario
@@ -773,7 +856,10 @@ public class MensajeService {
                 (String)   r[10],
                 (String)   r[11], // cuerpo
                 respuestas,
-                (Boolean)  r[12]
+                (Boolean)  r[12], // iniciadoPorDocente
+                (String)   r[13], // transcripcion
+                (String)   r[14], // sentimiento
+                (String)   r[15]  // analisisCausa
         );
     }
 
@@ -785,7 +871,10 @@ public class MensajeService {
                        TO_CHAR(mr.fecha, 'DD/MM/YYYY HH24:MI') AS fecha,
                        COALESCE(mae.nombre || ' ' || mae.apellido,
                                 pa.nombre  || ' ' || pa.apellido)  AS autor,
-                       (mae.id_maestro IS NOT NULL)                AS es_maestro
+                       (mae.id_maestro IS NOT NULL)                AS es_maestro,
+                       mr.transcripcion,
+                       mr.sentimiento,
+                       mr.analisis_causa
                 FROM mensajes_respuestas mr
                 JOIN usuarios u   ON u.id_usuario   = mr.id_usuario
                 LEFT JOIN maestros mae ON mae.id_usuario = u.id_usuario
@@ -807,7 +896,10 @@ public class MensajeService {
                 (String)  r[1],
                 (String)  r[2],
                 (String)  r[3],
-                (Boolean) r[4]
+                (Boolean) r[4],
+                (String)  r[5], // transcripcion
+                (String)  r[6], // sentimiento
+                (String)  r[7]  // analisisCausa
         )).toList();
 
         List<RespuestaResumenDto> reversed = new ArrayList<>(list);
@@ -876,7 +968,10 @@ public class MensajeService {
                 (String)  respRow[1],
                 (String)  respRow[2],
                 (String)  respRow[3],
-                (Boolean) respRow[4]
+                (Boolean) respRow[4],
+                null,
+                null,
+                null
         );
 
         /* Emitir a la habitación del chat */
@@ -1032,5 +1127,70 @@ public class MensajeService {
         ws.convertAndSend("/topic/mensajes/" + codigoDocente, notifDocente);
 
         return idMensajeNuevo;
+    }
+
+    public String sugerirRespuestaEmpatica(long idMensaje, String codigoDocente) {
+        // 1. Obtener el mensaje principal
+        Object[] msg = (Object[]) em.createNativeQuery("""
+                SELECT m.asunto, m.cuerpo, al.nombre, c.nombre
+                FROM mensajes m
+                JOIN maestros mae ON mae.id_maestro = m.id_maestro
+                JOIN usuarios u   ON u.id_usuario   = mae.id_usuario
+                LEFT JOIN alumnos al  ON al.id_alumno     = m.id_alumno
+                LEFT JOIN aula_cursos ac ON ac.id_aula_curso = m.id_aula_curso
+                LEFT JOIN cursos c ON c.id_curso = ac.id_curso
+                WHERE m.id_mensaje = :id AND u.codigo = :codigo
+                """)
+                .setParameter("id", idMensaje)
+                .setParameter("codigo", codigoDocente)
+                .getSingleResult();
+        if (msg == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Mensaje no encontrado");
+        }
+
+        String asunto = (String) msg[0];
+        String cuerpoMsg = (String) msg[1];
+        String nombreAlumno = (String) msg[2];
+        String nombreCurso = (String) msg[3];
+
+        // 2. Obtener el hilo de respuestas recientes (últimas 10 respuestas)
+        @SuppressWarnings("unchecked")
+        List<Object[]> respRows = em.createNativeQuery("""
+                SELECT COALESCE(mae.nombre || ' ' || mae.apellido, pa.nombre || ' ' || pa.apellido) AS autor,
+                       mr.cuerpo,
+                       (mae.id_maestro IS NOT NULL) AS es_maestro
+                FROM mensajes_respuestas mr
+                JOIN usuarios u ON u.id_usuario = mr.id_usuario
+                LEFT JOIN maestros mae ON mae.id_usuario = u.id_usuario
+                LEFT JOIN padres pa ON pa.id_usuario = u.id_usuario
+                WHERE mr.id_mensaje = :id
+                ORDER BY mr.fecha DESC
+                LIMIT 10
+                """)
+                .setParameter("id", idMensaje)
+                .getResultList();
+
+        // Construir contexto de la conversación
+        StringBuilder convo = new StringBuilder();
+        convo.append("Asunto: ").append(asunto).append("\n");
+        convo.append("Curso: ").append(nombreCurso).append("\n");
+        convo.append("Estudiante: ").append(nombreAlumno).append("\n");
+        convo.append("Mensaje inicial del chat: ").append(cuerpoMsg).append("\n");
+        convo.append("Hilo de respuestas recientes (de más reciente a más antiguo):\n");
+
+        for (Object[] r : respRows) {
+            String autor = (String) r[0];
+            String cuerpo = (String) r[1];
+            convo.append("- ").append(autor).append(": ").append(cuerpo).append("\n");
+        }
+
+        // 3. Llamar a OpenAI
+        String systemPrompt = "Eres un asistente psicopedagógico experto en mediación familiar dentro de una escuela peruana. Tu objetivo es proponer una respuesta sugerida para el DOCENTE, redactada bajo los principios de la Comunicación No Violenta (CNV), empatía y colaboración comunitaria.\n" +
+                "Evita sonar frío, clínico o acusatorio. Propón una solución constructiva, reconociendo el esfuerzo de la familia.\n" +
+                "Responde EXCLUSIVAMENTE con el texto sugerido del mensaje (listo para enviar al apoderado), sin preámbulos, explicaciones ni comillas.";
+
+        String userPrompt = "Historial del chat:\n" + convo.toString() + "\nPor favor, genera la respuesta sugerida que el docente le enviará al apoderado.";
+
+        return openAiService.llamarOpenAi(systemPrompt, userPrompt, false);
     }
 }

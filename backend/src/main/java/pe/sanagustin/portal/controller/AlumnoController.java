@@ -95,5 +95,10 @@ public class AlumnoController {
     public ResponseEntity<List<AsistenciaGlobalDto>> getAsistenciasGlobales(Principal principal) {
         return ResponseEntity.ok(alumnoService.getAsistenciasGlobales(principal.getName()));
     }
+
+    @GetMapping("/horario")
+    public ResponseEntity<List<HorarioAlumnoDto>> getHorario(Principal principal) {
+        return ResponseEntity.ok(alumnoService.getHorario(principal.getName()));
+    }
 }
 

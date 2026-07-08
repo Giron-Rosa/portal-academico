@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../services/auth.service';
+import { DocenteService } from '../../../services/docente.service';
 import { PortalDocente } from '../portal-docente';
 
 /** Datos crudos que devuelve el endpoint /predicciones */
@@ -34,11 +34,9 @@ export interface AlumnoRiesgo extends AlumnoRaw {
   styleUrl: './predicciones-dashboard.scss',
 })
 export class PrediccionesDashboard implements OnInit {
-  private http = inject(HttpClient);
+  private docenteService = inject(DocenteService);
   private auth = inject(AuthService);
   private parent = inject(PortalDocente, { optional: true });
-
-  private readonly API = 'http://localhost:8080/api/portal/docente/predicciones';
 
   cargando   = signal(true);
   errorMsg   = signal('');
@@ -73,15 +71,13 @@ export class PrediccionesDashboard implements OnInit {
     this.feedback3.set('');
     this.abrirPopoverFeedback.set(null);
 
-    const token = this.auth.getToken();
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    const params = {
+      asistencia: alumno.porcentajeAsistencia.toString(),
+      promedio: alumno.promedio.toString(),
+      causas: alumno.causas.join(', ')
+    };
 
-    const url = `http://localhost:8080/api/portal/docente/predicciones/${alumno.idAlumno}/ia-advisory` +
-                `?asistencia=${alumno.porcentajeAsistencia}` +
-                `&promedio=${alumno.promedio}` +
-                `&causas=${encodeURIComponent(alumno.causas.join(', '))}`;
-
-    this.http.get<{ resultado: string, checksState: string, feedback_1?: string, feedback_2?: string, feedback_3?: string }>(url, { headers }).subscribe({
+    this.docenteService.getIaAdvisory(alumno.idAlumno, params).subscribe({
       next: res => {
         this.checksState.set(res.checksState || '0,0,0');
         this.feedback1.set(res.feedback_1 || '');
@@ -138,14 +134,11 @@ export class PrediccionesDashboard implements OnInit {
     this.cargandoIA.set(true);
     this.abrirPopoverFeedback.set(null);
 
-    const token = this.auth.getToken();
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-
-    this.http.post<any>('http://localhost:8080/api/portal/docente/predicciones/feedback-plan', {
+    this.docenteService.postFeedbackPlan({
       idAlumno: this.alumnoSeleccionado()?.idAlumno,
       checkIndex: index,
       feedback: comment
-    }, { headers }).subscribe({
+    }).subscribe({
       next: (res) => {
         this.checksState.set(res.checksState);
         this.feedback1.set(res.feedback_1 || '');
@@ -215,6 +208,9 @@ export class PrediccionesDashboard implements OnInit {
     // 1. Cambiar la sección activa a 'mensajes'
     parent.activeSection.set('mensajes');
 
+    const disponible = parent.alumnosDisponibles().find(a => a.idAlumno === alumno.idAlumno);
+    const idPadreReal = disponible ? disponible.idPadre : null;
+
     // 2. Buscar conversación existente
     const thread = parent.mensajes().find(m => m.idAlumno === alumno.idAlumno);
     if (thread) {
@@ -222,16 +218,13 @@ export class PrediccionesDashboard implements OnInit {
       parent.replyText.set(suggestedMessage);
     } else {
       // Si no existe, crear la conversación en background
-      const token = this.auth.getToken();
-      const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
-
-      this.http.post<any>('http://localhost:8080/api/portal/docente/mensajes/iniciar', {
+      this.docenteService.crearNuevoMensaje({
         idAlumno: alumno.idAlumno,
-        idPadre: Number(plan.comunicacion_apoderado.id_apoderado_estudiante),
+        idPadre: idPadreReal || Number(plan.comunicacion_apoderado.id_apoderado_estudiante),
         idAulaCurso: alumno.idAulaCurso,
         asunto: plan.comunicacion_apoderado.asunto,
         cuerpo: suggestedMessage
-      }, { headers }).subscribe({
+      }).subscribe({
         next: (res) => {
           parent.cargarMensajes();
           setTimeout(() => parent.abrirMensaje(res.id), 400);
@@ -277,8 +270,8 @@ export class PrediccionesDashboard implements OnInit {
   ngOnInit() {
     const token = this.auth.getToken();
     if (!token) { this.errorMsg.set('No autenticado.'); this.cargando.set(false); return; }
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<AlumnoRaw[]>(this.API, { headers }).subscribe({
+
+    this.docenteService.getPrediccionesGlobales().subscribe({
       next: data => {
         this.alumnos.set(data.map(a => this.calcularRiesgo(a)));
         this.cargando.set(false);

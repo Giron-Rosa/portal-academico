@@ -1,0 +1,112 @@
+<div class="pa-calendar-view animate-fade-in" style="padding: 24px;">
+  <div class="pa-view-header" style="margin-bottom: 24px;">
+    <div class="pa-header-info">
+      <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Asistencia Consolidada</h2>
+      <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Historial global de asistencias y faltas por materia</p>
+    </div>
+  </div>
+
+  <!-- Tarjetas KPI Asistencia -->
+  <div class="pa-kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 24px;">
+    <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+      <div style="background: #f1f5f9; color: #475569; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">📊</div>
+      <div>
+        <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Clases Totales</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #1e293b;">{{ totalClasesAsistencia }}</div>
+      </div>
+    </div>
+
+    <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+      <div style="background: #e6f4ea; color: #137333; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">✔️</div>
+      <div>
+        <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Asistencias</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #137333;">{{ totalPresenteAsistencia }}</div>
+      </div>
+    </div>
+
+    <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+      <div style="background: #fffbeb; color: #d97706; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">⏳</div>
+      <div>
+        <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Tardanzas</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #d97706;">{{ totalTardanzaAsistencia }}</div>
+      </div>
+    </div>
+
+    <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+      <div style="background: #fce8e6; color: #c5221f; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">❌</div>
+      <div>
+        <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Faltas</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #c5221f;">
+          {{ totalFaltaAsistencia }} 
+          <span style="font-size: 0.7rem; font-weight: 500; color: #64748b;">(Just: {{ totalJustificadoAsistencia }})</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+      <div 
+        [style.background]="porcentajeGlobalAsistencia >= 90 ? '#e6f4ea' : porcentajeGlobalAsistencia >= 80 ? '#fffbeb' : '#fce8e6'"
+        [style.color]="porcentajeGlobalAsistencia >= 90 ? '#137333' : porcentajeGlobalAsistencia >= 80 ? '#d97706' : '#c5221f'"
+        style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">🎯</div>
+      <div>
+        <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">% Asistencia</div>
+        <div style="font-size: 1.25rem; font-weight: 800;" [style.color]="porcentajeGlobalAsistencia >= 90 ? '#137333' : porcentajeGlobalAsistencia >= 80 ? '#d97706' : '#c5221f'">{{ porcentajeGlobalAsistencia | number:'1.1-1' }}%</div>
+      </div>
+    </div>
+  </div>
+
+  @if (cargandoAsistencias) {
+    <div class="pa-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px;">
+      <div class="pa-spinner"></div>
+      <span style="margin-top: 12px; color: #6b7280;">Cargando consolidado de asistencias...</span>
+    </div>
+  }
+
+  @if (!cargandoAsistencias && asistenciasGlobales.length > 0) {
+    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+        <thead>
+          <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+            <th style="padding: 16px; font-weight: 600; color: #374151;">Asignatura</th>
+            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Total Clases</th>
+            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Presentes</th>
+            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Tardanzas</th>
+            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Faltas Justificadas</th>
+            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Faltas Injustificadas</th>
+            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Porcentaje Asistencia</th>
+            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Estado Alerta</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of asistenciasGlobales; track a.idAulaCurso) {
+            <tr style="border-bottom: 1px solid #f3f4f6; transition: background 0.2s; cursor: default;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
+              <td style="padding: 16px; font-weight: 600; color: #111827;">{{ a.curso }}</td>
+              <td style="padding: 16px; text-align: center; color: #374151;">{{ a.total }}</td>
+              <td style="padding: 16px; text-align: center; color: #137333; font-weight: 500;">{{ a.presente }}</td>
+              <td style="padding: 16px; text-align: center; color: #b06000; font-weight: 500;">{{ a.tardanza }}</td>
+              <td style="padding: 16px; text-align: center; color: #1a73e8; font-weight: 500;">{{ a.justificado }}</td>
+              <td style="padding: 16px; text-align: center; color: #c5221f; font-weight: 500;">{{ a.falta }}</td>
+              <td style="padding: 16px; text-align: center; font-weight: 700;"
+                  [style.color]="a.porcentaje >= 80 ? '#137333' : a.porcentaje >= 70 ? '#b06000' : '#c5221f'">
+                {{ a.total > 0 ? (a.porcentaje | number:'1.1-1') + '%' : '—' }}
+              </td>
+              <td style="padding: 16px; text-align: center;">
+                @if (a.total > 0) {
+                  <span style="font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase;"
+                        [style.background]="a.porcentaje >= 80 ? '#e6f4ea' : a.porcentaje >= 70 ? '#fef7e0' : '#fce8e6'"
+                        [style.color]="a.porcentaje >= 80 ? '#137333' : a.porcentaje >= 70 ? '#b06000' : '#c5221f'">
+                    {{ a.porcentaje >= 80 ? 'Normal' : a.porcentaje >= 70 ? 'Alerta' : 'Riesgo' }}
+                  </span>
+                } @else {
+                  <span style="font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; background: #f1f3f4; color: #5f6368;">
+                    Sin datos
+                  </span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

@@ -1,0 +1,68 @@
+$azul:      #0d1b2a;
+$azul-med:  #1b3a5c;
+$rojo:      #c1121f;
+$blanco:    #ffffff;
+$fondo:     #e8f0fb;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pa-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.pa-view-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: $azul;
+}
+
+.pa-view-subtitle {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+.pa-calendar-view {
+  background: $blanco;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  border: 1px solid rgba(27,58,92,0.08);
+}
+
+.pa-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem 0;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.pa-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #e2e8f0;
+  border-top-color: $azul;
+  border-radius: 50%;
+  animation: paSpin 0.7s linear infinite;
+}
+
+@keyframes paSpin { to { transform: rotate(360deg); } }

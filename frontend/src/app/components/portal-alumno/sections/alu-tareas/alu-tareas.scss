@@ -1,0 +1,217 @@
+$azul:      #0d1b2a;
+$azul-med:  #1b3a5c;
+$rojo:      #c1121f;
+$blanco:    #ffffff;
+$fondo:     #e8f0fb;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pa-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.pa-view-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: $azul;
+}
+
+.pa-view-subtitle {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+.pa-kanban-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  height: calc(100vh - 160px);
+  overflow-y: hidden;
+}
+
+.pa-kanban-col {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  border: 1px solid rgba(27,58,92,0.06);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.01);
+  max-height: 100%;
+  transition: background 0.2s, border-color 0.2s;
+
+  &.col-pendiente {
+    .pa-kanban-col-header { border-bottom-color: #ef4444; }
+  }
+  &.col-enviado {
+    .pa-kanban-col-header { border-bottom-color: #3b82f6; }
+  }
+  &.col-calificado {
+    .pa-kanban-col-header { border-bottom-color: #22c55e; }
+  }
+
+  &.drag-over {
+    background: rgba(27, 58, 92, 0.12) !important;
+    border: 1px dashed rgba(27, 58, 92, 0.3) !important;
+  }
+}
+
+.pa-kanban-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid #cbd5e1;
+  margin-bottom: 1rem;
+}
+
+.pa-col-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: $azul;
+}
+
+.pa-col-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(0,0,0,0.06);
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.pa-kanban-col-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 2px;
+}
+
+.pa-kanban-card {
+  background: $blanco;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+  }
+
+  &.dragging {
+    opacity: 0.5;
+  }
+}
+
+.pa-kcard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pa-kcard-curso {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.pa-kcard-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+
+  &.badge-pendiente { background: #fee2e2; color: #991b1b; }
+  &.badge-enviado { background: #dbeafe; color: #1e40af; }
+  &.badge-calificado { background: #dcfce7; color: #166534; }
+}
+
+.pa-kcard-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: $azul;
+  line-height: 1.3;
+}
+
+.pa-kcard-desc {
+  font-size: 0.75rem;
+  color: #64748b;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pa-kcard-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-top: 1px dashed rgba(0,0,0,0.05);
+  padding-top: 0.5rem;
+}
+
+.pa-kcard-due {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  &.text-red { color: #dc2626; }
+}
+
+.pa-kcard-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  &.text-blue { color: #2563eb; }
+}
+
+.pa-kcard-score {
+  color: #475569;
+}
+
+.pa-score {
+  font-size: 0.9rem;
+  &.nota-aprobada { color: #166534; }
+  &.nota-desaprobada { color: #991b1b; }
+}
+
+.pa-kanban-empty {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  padding: 2rem 0;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+}

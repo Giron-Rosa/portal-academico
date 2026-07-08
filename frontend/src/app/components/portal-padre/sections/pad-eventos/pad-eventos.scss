@@ -1,0 +1,224 @@
+// =====================================================
+// PadEventos — Estilos de la sección Eventos
+// =====================================================
+
+:host { display: block; }
+
+$rojo:       #c1121f;
+$azul:       #0d1b2a;
+$azul-med:   #003566;
+$blanco:     #ffffff;
+$gris-fondo: #f0f2f5;
+$gris-borde: #e2e8f0;
+$gris-texto: #64748b;
+$verde:      #22c55e;
+$amarillo:   #eab308;
+
+// ─── Shared: hijo-tabs ───────────────────────────────
+.hijo-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.hijo-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.9rem;
+  border: 1.5px solid $gris-borde;
+  border-radius: 20px;
+  background: $blanco;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: $gris-texto;
+  cursor: pointer;
+  transition: all .2s;
+
+  &:hover { background: #f1f5f9; border-color: $azul-med; color: $azul-med; }
+
+  &--active {
+    background: $azul-med;
+    border-color: $azul-med;
+    color: $blanco;
+    font-weight: 600;
+  }
+}
+
+.hijo-tab-avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+// ─── Loading / Error / Empty ──────────────────────────
+.cursos-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  color: $gris-texto;
+  font-size: 0.9rem;
+}
+
+.curso-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid $gris-borde;
+  border-top-color: $azul-med;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.cursos-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  text-align: center;
+  color: $rojo;
+  font-size: 0.9rem;
+}
+
+.cursos-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  color: $gris-texto;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.btn-retry {
+  padding: 0.4rem 1.2rem;
+  background: $rojo;
+  color: $blanco;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: opacity .2s;
+  &:hover { opacity: 0.85; }
+}
+
+// ─── Layout ───────────────────────────────────────────
+.eventos-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+// ─── Timeline de eventos ──────────────────────────────
+.eventos-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.evento-card {
+  display: flex;
+  gap: 1rem;
+  background: $blanco;
+  border-radius: 12px;
+  border: 1.5px solid $gris-borde;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  transition: box-shadow .2s, border-color .2s;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    border-color: $azul-med;
+  }
+
+  // Variantes por tipo
+  &--examen       { border-left: 4px solid #6366f1; }
+  &--actividad    { border-left: 4px solid $verde; }
+  &--reunion_padres { border-left: 4px solid $azul-med; }
+  &--paseo        { border-left: 4px solid $amarillo; }
+  &--dia_festivo  { border-left: 4px solid $rojo; }
+  &--comunicado, &--general { border-left: 4px solid $gris-borde; }
+}
+
+.evento-icon-wrap {
+  flex-shrink: 0;
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: $gris-fondo;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.evento-emoji { font-size: 1.4rem; }
+
+.evento-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.evento-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.evento-tipo-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+// Badge colors por tipo
+.et-badge--examen        { background: #ede9fe; color: #6366f1; }
+.et-badge--actividad     { background: #dcfce7; color: #15803d; }
+.et-badge--reunion_padres{ background: #dbeafe; color: $azul-med; }
+.et-badge--paseo         { background: #fef9c3; color: #854d0e; }
+.et-badge--dia_festivo   { background: #fee2e2; color: $rojo; }
+.et-badge--comunicado,
+.et-badge--general       { background: #f1f5f9; color: $gris-texto; }
+
+.evento-fecha-val {
+  font-size: 0.8rem;
+  color: $gris-texto;
+}
+
+.evento-docente-val {
+  font-size: 0.78rem;
+  color: $gris-texto;
+  margin-left: auto;
+}
+
+.evento-titulo-h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: $azul;
+  margin: 0;
+}
+
+.evento-descripcion-p {
+  font-size: 0.85rem;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.evento-creacion-val {
+  font-size: 0.74rem;
+  color: #94a3b8;
+}

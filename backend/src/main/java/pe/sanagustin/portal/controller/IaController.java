@@ -718,4 +718,56 @@ public class IaController {
             "analisis", reporteIa
         ));
     }
+
+    @PostMapping("/api/portal/alumno/ia-chat")
+    public ResponseEntity<Map<String, String>> chatMaterial(
+            @RequestBody Map<String, String> body) {
+        
+        String idMaterialStr = body.get("idMaterial");
+        String mensaje = body.get("mensaje");
+
+        if (idMaterialStr == null || mensaje == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Faltan parámetros"));
+        }
+
+        long idMaterial = Long.parseLong(idMaterialStr);
+
+        String titulo = "";
+        String contenido = "";
+        try {
+            Object[] row = (Object[]) em.createNativeQuery(
+                    "SELECT titulo, COALESCE(contenido_texto, '') FROM materiales_curso WHERE id_material = :id")
+                    .setParameter("id", idMaterial)
+                    .getSingleResult();
+            titulo = (String) row[0];
+            contenido = (String) row[1];
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Material no encontrado"));
+        }
+
+        if (contenido.isEmpty()) {
+            contenido = "Este material de clase trata sobre: " + titulo;
+        }
+
+        String systemPrompt = """
+                Eres un asistente de estudio virtual de Inteligencia Artificial para niños de colegio en el curso de matemáticas/ciencias.
+                Tu tarea es responder preguntas del estudiante basándote ÚNICAMENTE en el material de clase provisto a continuación.
+                
+                MATERIAL DE CLASE PROPORCIONADO:
+                Título del Material: %s
+                Contenido del Material: %s
+                
+                REGLAS CRÍTICAS DE RESPUESTA:
+                1. Responde de forma muy amigable, comprensible y didáctica para un niño.
+                2. Si el estudiante te pide que le hagas un resumen de la clase, haz un resumen claro, ameno y divertido basado estrictamente en el material provisto.
+                3. Si el estudiante te pide que crees un quiz o cuestionario con preguntas para repasar, créalo usando exclusivamente los temas del material provisto.
+                4. Si el estudiante te pregunta algo que NO se encuentra o no se puede deducir del material provisto, debes responder EXACTAMENTE con el siguiente mensaje: "Disculpa, esta información no se encuentra en el material de clase proporcionado."
+                   No intentes responder con tus conocimientos generales. No des ninguna otra explicación ni agregues nada más si el tema no está cubierto por el material.
+                5. Sé conciso y usa viñetas divertidas cuando sea necesario.
+                """.formatted(titulo, contenido);
+
+        String respuesta = openAiService.llamarOpenAi(systemPrompt, mensaje, false);
+
+        return ResponseEntity.ok(Map.of("respuesta", respuesta));
+    }
 }

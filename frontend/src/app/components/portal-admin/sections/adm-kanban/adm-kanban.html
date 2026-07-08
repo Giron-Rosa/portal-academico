@@ -1,0 +1,96 @@
+<div class="seccion-kanban">
+  <div class="crud-header">
+    <div>
+      <h1 class="page-title">Tareas y Notas Administrativas</h1>
+      <p class="page-subtitle">Organiza las prioridades operativas de la secretaría y dirección del campus</p>
+    </div>
+    <button class="btn-primary" (click)="abrirNuevo.emit()">+ Crear Nota</button>
+  </div>
+
+  <div class="kanban-board mt-md">
+    <!-- Columna: Pendiente -->
+    <div class="kanban-column">
+      <div class="column-header label-pendiente">Pendientes ({{ notasPendientes.length }})</div>
+      <div class="card-list">
+        @for (nota of notasPendientes; track nota.idNota) {
+          <div class="kanban-card" [class]="'prio-' + nota.prioridad">
+            <div class="card-prio-badge">{{ nota.prioridad }}</div>
+            <h4>{{ nota.titulo }}</h4>
+            <p>{{ nota.descripcion }}</p>
+            <div class="card-tags">
+              @for (tag of nota.etiquetas.split(','); track tag) {
+                <span class="tag-chip">{{ tag }}</span>
+              }
+            </div>
+            <div class="card-meta">
+              <span class="lbl-resp">Resp: {{ nota.responsable }}</span>
+              <span class="lbl-venc text-red">Límite: {{ nota.fechaLimite }}</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn-move" (click)="cambiarEstadoNota.emit({ nota, nuevoEstado: 'en_progreso' })">En Progreso ➔</button>
+              <button class="btn-n-edit" (click)="abrirEditar.emit(nota)">✎</button>
+              <button class="btn-n-del" (click)="eliminar.emit(nota.idNota!)">🗑</button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Columna: En Progreso -->
+    <div class="kanban-column">
+      <div class="column-header label-progreso">En Progreso ({{ notasEnProgreso.length }})</div>
+      <div class="card-list">
+        @for (nota of notasEnProgreso; track nota.idNota) {
+          <div class="kanban-card" [class]="'prio-' + nota.prioridad">
+            <div class="card-prio-badge">{{ nota.prioridad }}</div>
+            <h4>{{ nota.titulo }}</h4>
+            <p>{{ nota.descripcion }}</p>
+            <div class="card-tags">
+              @for (tag of nota.etiquetas.split(','); track tag) {
+                <span class="tag-chip">{{ tag }}</span>
+              }
+            </div>
+            <div class="card-meta">
+              <span class="lbl-resp">Resp: {{ nota.responsable }}</span>
+              <span class="lbl-venc">Límite: {{ nota.fechaLimite }}</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn-move back" (click)="cambiarEstadoNota.emit({ nota, nuevoEstado: 'pendiente' })">⬅ Pendiente</button>
+              <button class="btn-move" (click)="cambiarEstadoNota.emit({ nota, nuevoEstado: 'completada' })">Completar ➔</button>
+              <button class="btn-n-edit" (click)="abrirEditar.emit(nota)">✎</button>
+              <button class="btn-n-del" (click)="eliminar.emit(nota.idNota!)">🗑</button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Columna: Completada -->
+    <div class="kanban-column">
+      <div class="column-header label-completada">Completadas ({{ notasCompletadas.length }})</div>
+      <div class="card-list">
+        @for (nota of notasCompletadas; track nota.idNota) {
+          <div class="kanban-card completada" [class]="'prio-' + nota.prioridad">
+            <div class="card-prio-badge">{{ nota.prioridad }}</div>
+            <h4>{{ nota.titulo }}</h4>
+            <p>{{ nota.descripcion }}</p>
+            <div class="card-tags">
+              @for (tag of nota.etiquetas.split(','); track tag) {
+                <span class="tag-chip">{{ tag }}</span>
+              }
+            </div>
+            <div class="card-meta">
+              <span class="lbl-resp">Resp: {{ nota.responsable }}</span>
+              <span class="lbl-venc">Completado</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn-move back" (click)="cambiarEstadoNota.emit({ nota, nuevoEstado: 'en_progreso' })">⬅ En Progreso</button>
+              <button class="btn-n-edit" (click)="abrirEditar.emit(nota)">✎</button>
+              <button class="btn-n-del" (click)="eliminar.emit(nota.idNota!)">🗑</button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

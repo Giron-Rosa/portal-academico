@@ -1,0 +1,145 @@
+@if (modalAbierto) {
+  <div class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>{{ modoEdicion ? 'Editar ' : 'Nuevo ' }}{{ modalAbierto }}</h2>
+        <button class="btn-close" (click)="cerrarModal.emit()">×</button>
+      </div>
+      <form (ngSubmit)="onSubmit($event)" class="modal-form">
+
+        <!-- Form: Estudiante -->
+        @if (modalAbierto === 'estudiante') {
+          <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" [ngModel]="formEstudiante.nombre" (ngModelChange)="formEstudiante.nombre = $event; formEstudianteChange.emit(formEstudiante)" name="estNombre" required />
+          </div>
+          <div class="form-group">
+            <label>Apellido</label>
+            <input type="text" [ngModel]="formEstudiante.apellido" (ngModelChange)="formEstudiante.apellido = $event; formEstudianteChange.emit(formEstudiante)" name="estApellido" required />
+          </div>
+          <div class="form-group">
+            <label>Email Institucional</label>
+            <input type="email" [ngModel]="formEstudiante.email" (ngModelChange)="formEstudiante.email = $event; formEstudianteChange.emit(formEstudiante)" name="estEmail" required />
+          </div>
+          <div class="form-group-row">
+            <div class="form-group">
+              <label>Grado</label>
+              <select [ngModel]="formEstudiante.grado" (ngModelChange)="formEstudiante.grado = $event; formEstudianteChange.emit(formEstudiante)" name="estGrado">
+                <option>1ro Primaria</option>
+                <option>2do Primaria</option>
+                <option>3ro Primaria</option>
+                <option>1ro Secundaria</option>
+                <option>3ro Secundaria</option>
+                <option>5to Secundaria</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Sección</label>
+              <select [ngModel]="formEstudiante.seccion" (ngModelChange)="formEstudiante.seccion = $event; formEstudianteChange.emit(formEstudiante)" name="estSeccion">
+                <option>A</option>
+                <option>B</option>
+                <option>C</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Fecha de Nacimiento</label>
+            <input type="date" [ngModel]="formEstudiante.fechaNacimiento" (ngModelChange)="formEstudiante.fechaNacimiento = $event; formEstudianteChange.emit(formEstudiante)" name="estFechaNac" required />
+          </div>
+        }
+
+        <!-- Form: Docente -->
+        @if (modalAbierto === 'docente') {
+          <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" [ngModel]="formDocente.nombre" (ngModelChange)="formDocente.nombre = $event; formDocenteChange.emit(formDocente)" name="docNombre" required />
+          </div>
+          <div class="form-group">
+            <label>Apellido</label>
+            <input type="text" [ngModel]="formDocente.apellido" (ngModelChange)="formDocente.apellido = $event; formDocenteChange.emit(formDocente)" name="docApellido" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" [ngModel]="formDocente.email" (ngModelChange)="formDocente.email = $event; formDocenteChange.emit(formDocente)" name="docEmail" required />
+          </div>
+          <div class="form-group">
+            <label>Especialidad</label>
+            <input type="text" [ngModel]="formDocente.especialidad" (ngModelChange)="formDocente.especialidad = $event; formDocenteChange.emit(formDocente)" name="docEspecialidad" required />
+          </div>
+          <div class="form-group">
+            <label>Departamento</label>
+            <select [ngModel]="formDocente.departamento" (ngModelChange)="formDocente.departamento = $event; formDocenteChange.emit(formDocente)" name="docDep">
+              <option>Académico</option>
+              <option>Ciencias</option>
+              <option>Humanidades</option>
+              <option>Educación Física</option>
+            </select>
+          </div>
+        }
+
+        <!-- Form: Padre -->
+        @if (modalAbierto === 'padre') {
+          <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" [ngModel]="formPadre.nombre" (ngModelChange)="formPadre.nombre = $event; formPadreChange.emit(formPadre)" name="padNombre" required />
+          </div>
+          <div class="form-group">
+            <label>Apellido</label>
+            <input type="text" [ngModel]="formPadre.apellido" (ngModelChange)="formPadre.apellido = $event; formPadreChange.emit(formPadre)" name="padApellido" required />
+          </div>
+          <div class="form-group">
+            <label>DNI</label>
+            <input type="text" [ngModel]="formPadre.dni" (ngModelChange)="formPadre.dni = $event; formPadreChange.emit(formPadre)" name="padDni" required />
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="text" [ngModel]="formPadre.telefono" (ngModelChange)="formPadre.telefono = $event; formPadreChange.emit(formPadre)" name="padTelf" required />
+          </div>
+          <div class="form-group">
+            <label>Email de Contacto</label>
+            <input type="email" [ngModel]="formPadre.email" (ngModelChange)="formPadre.email = $event; formPadreChange.emit(formPadre)" name="padEmail" required />
+          </div>
+        }
+
+        <!-- Form: Nota Kanban -->
+        @if (modalAbierto === 'nota') {
+          <div class="form-group">
+            <label>Título</label>
+            <input type="text" [ngModel]="formNota.titulo" (ngModelChange)="formNota.titulo = $event; formNotaChange.emit(formNota)" name="notaTitulo" required />
+          </div>
+          <div class="form-group">
+            <label>Descripción</label>
+            <textarea [ngModel]="formNota.descripcion" (ngModelChange)="formNota.descripcion = $event; formNotaChange.emit(formNota)" name="notaDesc" rows="3" required></textarea>
+          </div>
+          <div class="form-group-row">
+            <div class="form-group">
+              <label>Prioridad</label>
+              <select [ngModel]="formNota.prioridad" (ngModelChange)="formNota.prioridad = $event; formNotaChange.emit(formNota)" name="notaPrio">
+                <option value="alta">Alta</option>
+                <option value="media">Media</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Responsable</label>
+              <input type="text" [ngModel]="formNota.responsable" (ngModelChange)="formNota.responsable = $event; formNotaChange.emit(formNota)" name="notaResp" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Fecha Límite</label>
+            <input type="date" [ngModel]="formNota.fechaLimite" (ngModelChange)="formNota.fechaLimite = $event; formNotaChange.emit(formNota)" name="notaFecha" [min]="today" required />
+          </div>
+          <div class="form-group">
+            <label>Etiquetas (Separadas por coma)</label>
+            <input type="text" [ngModel]="formNota.etiquetas" (ngModelChange)="formNota.etiquetas = $event; formNotaChange.emit(formNota)" name="notaTags" placeholder="e.g. Finanzas,Caja" required />
+          </div>
+        }
+
+        <div class="modal-footer mt-md">
+          <button type="button" class="btn-cancel" (click)="cerrarModal.emit()">Cancelar</button>
+          <button type="submit" class="btn-save">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

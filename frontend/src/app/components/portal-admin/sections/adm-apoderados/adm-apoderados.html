@@ -1,0 +1,43 @@
+<div class="seccion-crud">
+  <div class="crud-header">
+    <div>
+      <h1 class="page-title">Gestión de Padres y Apoderados</h1>
+      <p class="page-subtitle">Vincula padres con estudiantes matriculados para accesos de comunicación</p>
+    </div>
+    <button class="btn-primary" (click)="abrirNuevo.emit()">+ Nuevo Apoderado</button>
+  </div>
+
+  <div class="table-container mt-md">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Apoderado</th>
+          <th>DNI</th>
+          <th>Teléfono</th>
+          <th>Email de contacto</th>
+          <th>Hijos Vinculados</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (pad of padres; track pad.idPadre) {
+          <tr>
+            <td><strong>{{ pad.codigo }}</strong></td>
+            <td>{{ pad.apellido }}, {{ pad.nombre }}</td>
+            <td>{{ pad.dni }}</td>
+            <td>{{ pad.telefono }}</td>
+            <td>{{ pad.email }}</td>
+            <td><span class="hijo-chip">{{ pad.hijosVinculados || 'Ninguno' }}</span></td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-edit" (click)="abrirEditar.emit(pad)">Editar</button>
+                <button class="btn-delete" (click)="eliminar.emit(pad.idPadre)">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

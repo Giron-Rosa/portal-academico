@@ -1,0 +1,752 @@
+// =====================================================
+// PadMensajes — Estilos de la sección Mensajes (Chat)
+// =====================================================
+
+:host { display: block; height: 100%; }
+
+$rojo:       #c1121f;
+$azul:       #0d1b2a;
+$azul-med:   #003566;
+$blanco:     #ffffff;
+$gris-fondo: #f0f2f5;
+$gris-borde: #e2e8f0;
+$gris-texto: #64748b;
+$verde-wa:   #00a884;
+
+// ─── Layout dos columnas ─────────────────────────────
+.msg-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: calc(100vh - 60px - 3.5rem); // viewport - navbar - content padding
+  background: $blanco;
+  border-radius: 12px;
+  border: 1.5px solid $gris-borde;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+}
+
+// ─── Sidebar de mensajes ──────────────────────────────
+.msg-sidebar {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid $gris-borde;
+  overflow: hidden;
+}
+
+.msg-sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid $gris-borde;
+  flex-shrink: 0;
+  background: $blanco;
+}
+
+.msg-sidebar-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: $azul;
+  flex: 1;
+  margin: 0;
+}
+
+.msg-badge {
+  background: $rojo;
+  color: $blanco;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 0.1rem 0.45rem;
+  min-width: 18px;
+  text-align: center;
+}
+
+.btn-nuevo-msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.75rem;
+  background: $azul-med;
+  color: $blanco;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity .2s;
+
+  &:hover { opacity: 0.85; }
+}
+
+// ─── Loading / Error / Empty ──────────────────────────
+.msg-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+
+  &--full { flex: 1; }
+}
+
+.msg-spinner {
+  width: 28px; height: 28px;
+  border: 3px solid $gris-borde;
+  border-top-color: $azul-med;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+
+  &--sm { width: 18px; height: 18px; border-width: 2px; }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { to { transform: scale(1.5); opacity: 0.5; } }
+@keyframes ping  { 75%, 100% { transform: scale(2); opacity: 0; } }
+
+.msg-error {
+  padding: 1rem;
+  color: $rojo;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.msg-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex: 1;
+  padding: 2rem;
+  color: $gris-texto;
+  text-align: center;
+
+  p { font-size: 0.85rem; margin: 0; line-height: 1.5; }
+}
+
+// ─── Lista de conversaciones ──────────────────────────
+.msg-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.msg-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid $gris-borde;
+  cursor: pointer;
+  transition: background .15s;
+  position: relative;
+
+  &:hover { background: #f8fafc; }
+
+  &--active { background: #e8eef7; }
+
+  &--unread {
+    background: #f0f7ff;
+    .msg-item-asunto { font-weight: 700; color: $azul; }
+  }
+}
+
+.msg-item-avatar {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: $azul-med;
+  color: $blanco;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.msg-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.msg-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.msg-item-docente {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: $azul;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-item-time {
+  font-size: 0.7rem;
+  color: $gris-texto;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.msg-item-asunto {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-item-alumno {
+  font-size: 0.75rem;
+  color: $azul-med;
+}
+
+.msg-item-preview {
+  font-size: 0.78rem;
+  color: $gris-texto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.msg-item-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: $azul-med;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+// ─── Chat panel ───────────────────────────────────────
+.msg-chat {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &--empty {
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+// ─── Estado vacío del chat ────────────────────────────
+.msg-chat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  padding: 3rem;
+  text-align: center;
+  color: $gris-texto;
+
+  h3 { font-size: 1rem; font-weight: 600; color: $azul; margin: 0; }
+  p  { font-size: 0.85rem; margin: 0; }
+}
+
+.btn-nuevo-msg-center {
+  padding: 0.5rem 1.25rem;
+  background: $azul-med;
+  color: $blanco;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: opacity .2s;
+
+  &:hover { opacity: 0.85; }
+}
+
+// ─── Cabecera del chat ────────────────────────────────
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid $gris-borde;
+  background: $blanco;
+  flex-shrink: 0;
+}
+
+.chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.chat-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: $azul-med;
+  color: $blanco;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.chat-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: $azul;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-meta {
+  font-size: 0.75rem;
+  color: $gris-texto;
+}
+
+.chat-close {
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  color: $gris-texto;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: background .15s;
+  flex-shrink: 0;
+
+  &:hover { background: $gris-fondo; color: $azul; }
+}
+
+// ─── "Cargar más" ─────────────────────────────────────
+.chat-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.btn-load-more {
+  padding: 0.3rem 1rem;
+  background: #e8eef7;
+  color: $azul-med;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+
+  &:hover { background: #d1dff5; }
+}
+
+// ─── Área de mensajes ────────────────────────────────
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  // Fondo estilo WhatsApp (inline en HTML)
+}
+
+// ─── Burbujas ────────────────────────────────────────
+.bubble {
+  max-width: 65%;
+  padding: 0.55rem 0.8rem 0.4rem;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  position: relative;
+  box-shadow: 0 1px 1px rgba(0,0,0,.06);
+  display: flex;
+  flex-direction: column;
+
+  &--padre {
+    align-self: flex-end;
+    background: #d9fdd3;
+    border-bottom-right-radius: 3px;
+  }
+
+  &--docente {
+    align-self: flex-start;
+    background: $blanco;
+    border-bottom-left-radius: 3px;
+  }
+}
+
+// ─── Botón de icono de respuesta ─────────────────────
+.msg-reply-icon-btn {
+  padding: 8px;
+  color: #54656f;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 50%;
+  transition: background .15s;
+
+  &:hover { background: rgba(0,0,0,.05); }
+}
+
+.msg-reply-send {
+  background: none;
+  border: none;
+  padding: 8px;
+  color: $verde-wa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+// ─── Input de chat ─────────────────────────────────
+.chat-reply-input {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: $blanco;
+  font-family: inherit;
+  font-size: 14px;
+  min-height: 20px;
+  max-height: 120px;
+  resize: none;
+  color: #111b21;
+}
+
+// ─── Grabador y Dictador WhatsApp-style ────────────
+.audio-recording-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.pulsing-mic-icon {
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: pulse-mic-pad 1s infinite alternate;
+}
+
+@keyframes pulse-mic-pad {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(1.5); opacity: 1; }
+}
+
+.pulsing-mic-icon--blue {
+  width: 8px;
+  height: 8px;
+  background: #3b82f6;
+  border-radius: 50%;
+  animation: pulse-mic-pad 1s infinite alternate;
+}
+
+.audio-recording-wave.dictating {
+  color: #1d4ed8;
+}
+
+.dictado-interim-preview {
+  flex: 1;
+  font-size: 0.82rem;
+  color: #64748b;
+  font-style: italic;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px dashed #93c5fd;
+  border-radius: 6px;
+  padding: 4px 10px;
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: fadeInPad 0.2s ease;
+}
+
+@keyframes fadeInPad {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.wa-mic-btn-trash {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #ea4335;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #fde8e8;
+    color: #c53030;
+  }
+}
+
+.wa-mic-timer-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 0 8px;
+}
+
+.wa-mic-red-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #ef4444;
+  animation: wa-pulse-dot-pad 1s infinite alternate;
+}
+
+@keyframes wa-pulse-dot-pad {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(1.3); opacity: 1; }
+}
+
+.wa-mic-timer {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #54656f;
+  font-variant-numeric: tabular-nums;
+}
+
+.wa-mic-wave-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 40px;
+  padding: 0 16px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.wa-mic-wave-bar {
+  width: 3px;
+  background-color: #8696a0;
+  border-radius: 1.5px;
+  min-height: 4px;
+  transition: height 0.08s ease;
+}
+
+.wa-mic-btn-send {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background-color: #00a884;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, transform 0.1s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  flex-shrink: 0;
+
+  &:hover {
+    background-color: #008f72;
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// ─── Modal Nuevo Chat ────────────────────────────────
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-nuevo-chat {
+  background: $blanco;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid $gris-borde;
+  flex-shrink: 0;
+
+  h3 { font-size: 1rem; font-weight: 700; color: $azul; margin: 0; }
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  color: $gris-texto;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  transition: background .15s;
+
+  &:hover { background: $gris-fondo; }
+}
+
+.modal-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: $azul;
+  margin-bottom: 0.4rem;
+}
+
+.modal-input,
+.modal-textarea {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid $gris-borde;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: $azul;
+  outline: none;
+  font-family: inherit;
+  transition: border-color .2s;
+
+  &:focus { border-color: $azul-med; }
+}
+
+.modal-textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+// ─── Lista de docentes ─────────────────────────────
+.docente-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.docente-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid $gris-borde;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .2s;
+
+  &:hover { border-color: $azul-med; background: #f0f7ff; }
+
+  &--sel {
+    border-color: $azul-med;
+    background: #e8eef7;
+  }
+}
+
+.docente-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: $azul-med;
+  color: $blanco;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.docente-name {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: $azul;
+}
+
+.docente-sub {
+  display: block;
+  font-size: 0.75rem;
+  color: $gris-texto;
+}
+
+// ─── Modal footer ────────────────────────────────────
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid $gris-borde;
+  flex-shrink: 0;
+}
+
+.btn-modal-cancel {
+  padding: 0.5rem 1.25rem;
+  background: transparent;
+  border: 1.5px solid $gris-borde;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: $gris-texto;
+  cursor: pointer;
+  transition: all .2s;
+
+  &:hover { border-color: $azul-med; color: $azul; }
+}
+
+.btn-modal-send {
+  padding: 0.5rem 1.25rem;
+  background: $azul-med;
+  color: $blanco;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .2s;
+
+  &:hover { opacity: 0.85; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}

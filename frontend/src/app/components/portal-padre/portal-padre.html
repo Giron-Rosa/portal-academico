@@ -110,6 +110,12 @@
               <line x1="1" y1="10" x2="23" y2="10"/>
             </svg>
           }
+          @if (item.icon === 'award') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="8" r="7"/>
+              <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+            </svg>
+          }
 
           <span class="sidebar-label">{{ item.label }}</span>
         </button>
@@ -121,1230 +127,129 @@
 
       <!-- ========== SECCIÓN: INICIO ========== -->
       @if (seccionActiva() === 'inicio') {
-
-        <!-- Vista: DASHBOARD -->
-        @if (vista() === 'dashboard') {
-          <div class="seccion-inicio">
-            <h1 class="page-title">Progreso de tus hijos</h1>
-            <p class="page-subtitle">Visualiza el desempeño académico de cada uno de tus hijos en tiempo real</p>
-
-            @if (cargando()) {
-              <div class="pp-loading">
-                <div class="pp-spinner"></div>
-                <span>Cargando información académica...</span>
-              </div>
-            }
-
-            @if (errorCarga()) {
-              <div class="pp-error">{{ errorCarga() }}</div>
-            }
-
-            @if (hijosEnRiesgo() > 0) {
-              <div class="alerta-riesgo">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                <div>
-                  <strong>Acción requerida</strong>
-                  <p>{{ hijosEnRiesgo() }} hijo(s) requiere(n) atención inmediata</p>
-                </div>
-              </div>
-            }
-
-            <div class="hijos-grid">
-              @for (hijo of hijos(); track hijo.id; let i = $index) {
-                <div class="hijo-card" [class]="'estado-' + hijo.estado">
-                  <div class="hijo-card-header">
-                    <div class="hijo-avatar">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="#0d1b2a" stroke="none">
-                        <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                      </svg>
-                    </div>
-                    <div class="hijo-info">
-                      <span class="hijo-nombre">{{ hijo.nombre }}</span>
-                      <span class="hijo-grado">{{ hijo.grado }}</span>
-                    </div>
-                    <span class="estado-badge badge-{{ hijo.estado }}">
-                      @if (hijo.estado === 'riesgo') {
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-                          <line x1="12" y1="16" x2="12.01" y2="16"/>
-                        </svg>
-                      }
-                      @if (hijo.estado === 'observacion') {
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                        </svg>
-                      }
-                      @if (hijo.estado === 'bueno') {
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      }
-                      {{ getEstadoLabel(hijo.estado) }}
-                    </span>
-                  </div>
-
-                  <div class="hijo-metricas">
-                    <div class="metrica">
-                      <span class="metrica-val">{{ hijo.promedio }}</span>
-                      <span class="metrica-lbl">Promedio</span>
-                    </div>
-                    <div class="metrica">
-                      <span class="metrica-val">{{ hijo.asistencia }}%</span>
-                      <span class="metrica-lbl">Asistencia</span>
-                    </div>
-                    <div class="metrica">
-                      <span class="metrica-val" [class.val-riesgo]="hijo.cursosRiesgo > 0">{{ hijo.cursosRiesgo }}</span>
-                      <span class="metrica-lbl">En Riesgo</span>
-                    </div>
-                    <div class="metrica" (click)="setSeccion('pagos'); hijoIdx.set(i); $event.stopPropagation()" style="cursor: pointer;">
-                      <span class="metrica-val" [class.val-riesgo]="hijo.cuotasPendientes > 0">{{ hijo.cuotasPendientes }}</span>
-                      <span class="metrica-lbl">Pagos Pend.</span>
-                    </div>
-                  </div>
-
-                  <div class="cursos-monitor">
-                    <span class="cursos-monitor-title">CURSOS A MONITOREAR</span>
-                    @for (curso of hijo.cursosMonitor; track curso.nombre) {
-                      <div class="curso-bar-row">
-                        <span class="curso-bar-nombre">{{ curso.nombre }}</span>
-                        <div class="curso-bar-track">
-                          <div class="curso-bar-fill"
-                               [style.width.%]="curso.progreso"
-                               [style.background]="getBarColor(curso.progreso)">
-                          </div>
-                        </div>
-                        <span class="curso-bar-pct">{{ curso.progreso }}%</span>
-                      </div>
-                    }
-                  </div>
-
-                  <button class="btn-detalles" (click)="verDetalle(i)">
-                    Ver detalles completos
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </button>
-                </div>
-              }
-            </div>
-
-            <div class="leyenda">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                <polyline points="17 6 23 6 23 12"/>
-              </svg>
-              <strong>Cómo interpretar los datos</strong>
-              <div class="leyenda-items">
-                <span><span class="dot dot-verde"></span>Verde: Desempeño excelente (80%+)</span>
-                <span><span class="dot dot-amarillo"></span>Amarillo: Necesita mejorar (60-79%)</span>
-                <span><span class="dot dot-rojo"></span>Rojo: Requiere atención (menos de 60%)</span>
-              </div>
-            </div>
-          </div>
-        }
-
-        <!-- Vista: DETALLE HIJO -->
-        @if (vista() === 'detalle') {
-          <div class="seccion-detalle">
-            <button class="btn-volver" (click)="volverDashboard()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="15 18 9 12 15 6"/>
-              </svg>
-              Volver al dashboard
-            </button>
-
-            <div class="detalle-header">
-              <div class="detalle-avatar">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="#0d1b2a" stroke="none">
-                  <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                </svg>
-              </div>
-              <div class="detalle-info">
-                <h2 class="detalle-nombre">{{ hijoActual().nombre }}</h2>
-                <span class="detalle-meta">{{ hijoActual().grado }} · Código: {{ hijoActual().codigo }}</span>
-              </div>
-              <span class="estado-badge badge-{{ hijoActual().estado }} badge-lg">
-                Estado: {{ getEstadoLabel(hijoActual().estado) }}
-              </span>
-            </div>
-
-            <div class="detalle-metricas-bar">
-              <div class="dmetrica">
-                <span class="dmetrica-val">{{ hijoActual().promedio }}</span>
-                <span class="dmetrica-lbl">Promedio General</span>
-                <span class="dmetrica-sub">{{ hijoActual().promedio >= 17 ? 'Excelente' : hijoActual().promedio >= 13 ? 'Aceptable' : 'Por mejorar' }}</span>
-              </div>
-              <div class="dmetrica">
-                <span class="dmetrica-val">{{ hijoActual().asistencia }}%</span>
-                <span class="dmetrica-lbl">Asistencia</span>
-                <span class="dmetrica-sub">{{ hijoActual().asistencia >= 90 ? 'Muy buena' : 'Regular' }}</span>
-              </div>
-              <div class="dmetrica">
-                <span class="dmetrica-val" [class.val-riesgo]="hijoActual().cursosRiesgo > 0">{{ hijoActual().cursosRiesgo }}</span>
-                <span class="dmetrica-lbl">Cursos en Riesgo</span>
-                <span class="dmetrica-sub">{{ hijoActual().cursosRiesgo === 0 ? 'Ninguno' : 'Requieren atención' }}</span>
-              </div>
-              <div class="dmetrica">
-                <span class="dmetrica-val">{{ hijoActual().entregaTareas }}%</span>
-                <span class="dmetrica-lbl">Entrega de Tareas</span>
-                <span class="dmetrica-sub">Puntualidad</span>
-              </div>
-            </div>
-
-            <div class="detalle-descripcion">
-              <p>{{ hijoActual().descripcion }}</p>
-            </div>
-
-            <div class="detalle-grid">
-              <!-- Próximos eventos -->
-              <div class="detalle-eventos">
-                <h3 class="detalle-section-title">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                  Próximos Eventos del Aula
-                </h3>
-                <ul class="eventos-list" style="list-style: none; padding-left: 0; margin-top: 12px;">
-                  @for (ev of eventosHijo(); track ev.id) {
-                    <li style="margin-bottom: 12px; font-size: 0.85rem; color: #334155; line-height: 1.4;">
-                      <span class="evento-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #003566; margin-right: 8px;"></span>
-                      <strong>{{ ev.fechaEvento }} {{ ev.horaEvento ? '- ' + ev.horaEvento.substring(0, 5) : '' }}</strong>: 
-                      <span>{{ ev.titulo }} ({{ ev.descripcion }})</span>
-                    </li>
-                  }
-                  @if (eventosHijo().length === 0) {
-                    <li style="color: #64748b; font-style: italic; font-size: 0.85rem;">No hay eventos programados.</li>
-                  }
-                </ul>
-              </div>
-            </div>
-
-            <!-- Progreso por cursos -->
-            <h3 class="detalle-section-title mt-lg">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="2">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-              </svg>
-              Progreso por Cursos
-            </h3>
-            <div class="cursos-detalle-grid">
-              @for (curso of hijoActual().cursos; track curso.nombre) {
-                <div class="curso-detalle-card">
-                  <div class="cdc-header">
-                    <span class="cdc-nombre">{{ curso.nombre }}</span>
-                    <span class="cdc-pct">{{ curso.progreso }}%</span>
-                  </div>
-                  <span class="cdc-label" [class]="'cdc-label-' + (curso.progreso >= 80 ? 'excelente' : curso.progreso >= 60 ? 'regular' : 'riesgo')">
-                    @if (curso.progreso >= 80) {
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                    }
-                    {{ getDesempeno(curso.progreso) }}
-                  </span>
-                  <div class="cdc-bar-track">
-                    <div class="cdc-bar-fill"
-                         [style.width.%]="curso.progreso"
-                         [style.background]="getBarColor(curso.progreso)">
-                    </div>
-                  </div>
-                  <div class="cdc-footer">
-                    <div class="cdc-stat">
-                      <span class="cdc-stat-lbl">Tareas</span>
-                      <span class="cdc-stat-val">{{ curso.tareasEntregadas }}/{{ curso.totalTareas }}</span>
-                    </div>
-                    <div class="cdc-stat">
-                      <span class="cdc-stat-lbl">Asistencia</span>
-                      <span class="cdc-stat-val" [class.val-verde]="curso.puntualidad >= 80">{{ curso.puntualidad }}%</span>
-                    </div>
-                    <div class="cdc-stat">
-                      <span class="cdc-stat-lbl">Promedio</span>
-                      <span class="cdc-stat-val" [class.val-verde]="curso.promedioCurso >= 11">{{ curso.promedioCurso }}</span>
-                    </div>
-                  </div>
-                </div>
-              }
-            </div>
-
-            <!-- Horario escolar semanal -->
-            <h3 class="detalle-section-title mt-lg" style="margin-top: 2rem;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-              Horario Escolar Semanal
-            </h3>
-
-            <div class="horario-container" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-top: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 2rem;">
-              @if (cargandoHorario()) {
-                <div style="text-align: center; padding: 20px; color: #64748b; font-size: 0.9rem;">
-                  Cargando horario escolar...
-                </div>
-              } @else if (errorHorario()) {
-                <div style="text-align: center; padding: 20px; color: #ef4444; font-size: 0.9rem;">
-                  {{ errorHorario() }}
-                </div>
-              } @else if (horarioHijo().length === 0) {
-                <div style="text-align: center; padding: 20px; color: #64748b; font-size: 0.9rem; font-style: italic;">
-                  No hay clases registradas para este alumno.
-                </div>
-              } @else {
-                <div style="overflow-x: auto;">
-                  <table style="width: 100%; border-collapse: collapse; min-width: 600px; text-align: center; font-size: 0.85rem;">
-                    <thead>
-                      <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                        <th style="padding: 10px; font-weight: 600; color: #475569; border-right: 1px solid #e2e8f0; width: 120px;">Hora</th>
-                        <th style="padding: 10px; font-weight: 600; color: #475569; border-right: 1px solid #e2e8f0;">Lunes</th>
-                        <th style="padding: 10px; font-weight: 600; color: #475569; border-right: 1px solid #e2e8f0;">Martes</th>
-                        <th style="padding: 10px; font-weight: 600; color: #475569; border-right: 1px solid #e2e8f0;">Miércoles</th>
-                        <th style="padding: 10px; font-weight: 600; color: #475569; border-right: 1px solid #e2e8f0;">Jueves</th>
-                        <th style="padding: 10px; font-weight: 600; color: #475569;">Viernes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <!-- 07:30 - 09:00 -->
-                      <tr style="border-bottom: 1px solid #edf2f7;">
-                        <td style="padding: 12px; font-weight: 600; color: #64748b; background: #f8fafc; border-right: 1px solid #e2e8f0;">07:30 - 09:00</td>
-                        @for (dia of [1, 2, 3, 4, 5]; track dia) {
-                          <td style="padding: 8px; border-right: 1px solid #edf2f7; vertical-align: middle;">
-                            @if (getClase(dia, '07:30'); as clase) {
-                              <div style="background: #e0f2fe; color: #0369a1; border-left: 3px solid #0284c7; padding: 6px 8px; border-radius: 6px; text-align: left;">
-                                <strong style="display: block; font-size: 0.8rem;">{{ clase.curso }}</strong>
-                                <span style="font-size: 0.72rem; color: #0284c7;">Aulacurso: #{{ clase.idAulaCurso }}</span>
-                              </div>
-                            } @else {
-                              <span style="color: #cbd5e1;">-</span>
-                            }
-                          </td>
-                        }
-                      </tr>
-                      <!-- 09:00 - 10:30 -->
-                      <tr style="border-bottom: 1px solid #edf2f7;">
-                        <td style="padding: 12px; font-weight: 600; color: #64748b; background: #f8fafc; border-right: 1px solid #e2e8f0;">09:00 - 10:30</td>
-                        @for (dia of [1, 2, 3, 4, 5]; track dia) {
-                          <td style="padding: 8px; border-right: 1px solid #edf2f7; vertical-align: middle;">
-                            @if (getClase(dia, '09:00'); as clase) {
-                              <div style="background: #e0f2fe; color: #0369a1; border-left: 3px solid #0284c7; padding: 6px 8px; border-radius: 6px; text-align: left;">
-                                <strong style="display: block; font-size: 0.8rem;">{{ clase.curso }}</strong>
-                                <span style="font-size: 0.72rem; color: #0284c7;">Aulacurso: #{{ clase.idAulaCurso }}</span>
-                              </div>
-                            } @else {
-                              <span style="color: #cbd5e1;">-</span>
-                            }
-                          </td>
-                        }
-                      </tr>
-                      <!-- Recreo -->
-                      <tr style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 8px; font-weight: 600; color: #64748b; border-right: 1px solid #e2e8f0;">10:30 - 11:00</td>
-                        <td colspan="5" style="padding: 8px; font-weight: 600; color: #475569; letter-spacing: 1px; text-align: center;">RECREO</td>
-                      </tr>
-                      <!-- 11:00 - 12:30 -->
-                      <tr style="border-bottom: 1px solid #edf2f7;">
-                        <td style="padding: 12px; font-weight: 600; color: #64748b; background: #f8fafc; border-right: 1px solid #e2e8f0;">11:00 - 12:30</td>
-                        @for (dia of [1, 2, 3, 4, 5]; track dia) {
-                          <td style="padding: 8px; border-right: 1px solid #edf2f7; vertical-align: middle;">
-                            @if (getClase(dia, '11:00'); as clase) {
-                              <div style="background: #e0f2fe; color: #0369a1; border-left: 3px solid #0284c7; padding: 6px 8px; border-radius: 6px; text-align: left;">
-                                <strong style="display: block; font-size: 0.8rem;">{{ clase.curso }}</strong>
-                                <span style="font-size: 0.72rem; color: #0284c7;">Aulacurso: #{{ clase.idAulaCurso }}</span>
-                              </div>
-                            } @else {
-                              <span style="color: #cbd5e1;">-</span>
-                            }
-                          </td>
-                        }
-                      </tr>
-                      <!-- 12:30 - 14:00 -->
-                      <tr style="border-bottom: 1px solid #edf2f7;">
-                        <td style="padding: 12px; font-weight: 600; color: #64748b; background: #f8fafc; border-right: 1px solid #e2e8f0;">12:30 - 14:00</td>
-                        @for (dia of [1, 2, 3, 4, 5]; track dia) {
-                          <td style="padding: 8px; border-right: 1px solid #edf2f7; vertical-align: middle;">
-                            @if (getClase(dia, '12:30'); as clase) {
-                              <div style="background: #e0f2fe; color: #0369a1; border-left: 3px solid #0284c7; padding: 6px 8px; border-radius: 6px; text-align: left;">
-                                <strong style="display: block; font-size: 0.8rem;">{{ clase.curso }}</strong>
-                                <span style="font-size: 0.72rem; color: #0284c7;">Aulacurso: #{{ clase.idAulaCurso }}</span>
-                              </div>
-                            } @else {
-                              <span style="color: #cbd5e1;">-</span>
-                            }
-                          </td>
-                        }
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              }
-            </div>
-
-            <!-- CTA mensajes -->
-            <div class="cta-mensaje">
-              <div class="cta-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#003566" stroke-width="2">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-              </div>
-              <div class="cta-text">
-                <strong>¿Necesitas hablar con los profesores?</strong>
-                <p>Envía un mensaje directo a los docentes para discutir el progreso académico de tu hijo.</p>
-              </div>
-              <button class="btn-enviar-mensaje" (click)="setSeccion('mensajes')">
-                Enviar mensaje
-              </button>
-            </div>
-
-          </div>
-        }
+        <app-pad-inicio
+          [vista]="vista()"
+          [cargando]="cargando()"
+          [errorCarga]="errorCarga()"
+          [hijosEnRiesgo]="hijosEnRiesgo()"
+          [hijos]="hijos()"
+          [hijoIdx]="hijoIdx()"
+          [cargandoHorario]="cargandoHorario()"
+          [errorHorario]="errorHorario()"
+          [horarioHijo]="horarioHijo()"
+          [eventosHijo]="eventosHijo()"
+          (verDetalle)="verDetalle($event)"
+          (volverDashboard)="volverDashboard()"
+          (setSeccion)="setSeccion($event)"
+          (setHijoIdx)="hijoIdx.set($event)">
+        </app-pad-inicio>
       }
 
       <!-- ========== SECCIÓN: CURSOS ========== -->
       @if (seccionActiva() === 'cursos') {
-        <div class="cursos-layout">
-
-          <!-- Selector de hijo (si hay más de uno) -->
-          @if (hijos().length > 1) {
-            <div class="hijo-tabs">
-              @for (h of hijos(); track h.codigo; let i = $index) {
-                <button class="hijo-tab" [class.hijo-tab--active]="hijoIdx() === i" (click)="cambiarHijoCursos(i)">
-                  <span class="hijo-tab-avatar">{{ h.nombre[0] }}</span>
-                  <span>{{ h.nombre }}</span>
-                </button>
-              }
-            </div>
-          }
-
-          <!-- Estado de carga / error -->
-          @if (cargandoCursos()) {
-            <div class="cursos-loading">
-              <div class="curso-spinner"></div>
-              <span>Cargando cursos...</span>
-            </div>
-          } @else if (errorCursos()) {
-            <div class="cursos-error">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="1.8">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <p>{{ errorCursos() }}</p>
-              <button class="btn-retry" (click)="cargarCursos(hijoActual()?.codigo ?? '')">Reintentar</button>
-            </div>
-          } @else if (cursosHijo().length === 0) {
-            <div class="cursos-empty">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-              </svg>
-              <p>No hay cursos registrados para este alumno.</p>
-            </div>
-          } @else {
-
-            <!-- Resumen general del alumno en esta sección -->
-            <div class="cursos-resumen-bar">
-              <div class="crb-item">
-                <span class="crb-val">{{ cursosHijo().length }}</span>
-                <span class="crb-lbl">Cursos</span>
-              </div>
-              <div class="crb-item">
-                <span class="crb-val">
-                  {{ cursosHijo().length > 0 ? (cursosHijo().reduce((sum, c) => sum + c.promedioCurso, 0) / cursosHijo().length | number:'1.1-1') : '–' }}
-                </span>
-                <span class="crb-lbl">Prom. general</span>
-              </div>
-              <div class="crb-item">
-                <span class="crb-val">
-                  {{ cursosHijo().reduce((sum, c) => sum + c.tareasEntregadas, 0) }}/{{ cursosHijo().reduce((sum, c) => sum + c.totalTareas, 0) }}
-                </span>
-                <span class="crb-lbl">Tareas entregadas</span>
-              </div>
-              <div class="crb-item">
-                <span class="crb-val">{{ hijoActual()?.asistencia ?? 0 }}%</span>
-                <span class="crb-lbl">Asistencia global</span>
-              </div>
-            </div>
-
-            <!-- Lista de cursos acordeón -->
-            <div class="curso-list">
-              @for (c of cursosHijo(); track c.nombre; let ci = $index) {
-                <div class="curso-card" [class.curso-card--open]="cursoExpandido() === ci">
-                  <!-- Cabecera del curso (click expande) -->
-                  <div class="curso-card-header" (click)="toggleCursoExpandido(ci)">
-                    <div class="curso-card-left">
-                      <div class="curso-area-badge">{{ c.area }}</div>
-                      <div>
-                        <h4 class="curso-nombre">{{ c.nombre }}</h4>
-                        <span class="curso-docente">{{ c.docente }}</span>
-                      </div>
-                    </div>
-                    <div class="curso-card-stats">
-                      <!-- Promedio -->
-                      <div class="curso-stat">
-                        <span class="cstat-val" [style.color]="getNotaColor(c.promedioCurso, 20)">
-                          {{ c.promedioCurso | number:'1.1-1' }}
-                        </span>
-                        <span class="cstat-lbl">Promedio</span>
-                      </div>
-                      <!-- Tareas -->
-                      <div class="curso-stat">
-                        <span class="cstat-val">{{ c.tareasEntregadas }}/{{ c.totalTareas }}</span>
-                        <span class="cstat-lbl">Tareas</span>
-                      </div>
-                      <!-- Asistencia -->
-                      <div class="curso-stat">
-                        <span class="cstat-val" [style.color]="getBarColor(c.asistenciaCurso)">{{ c.asistenciaCurso }}%</span>
-                        <span class="cstat-lbl">Asistencia</span>
-                      </div>
-                      <!-- Barra de progreso -->
-                      <div class="curso-progress-wrap">
-                        <div class="curso-progress-bar">
-                          <div class="curso-progress-fill"
-                               [style.width.%]="c.progreso"
-                               [style.background]="getBarColor(c.progreso)">
-                          </div>
-                        </div>
-                        <span class="curso-progress-pct">{{ c.progreso }}%</span>
-                      </div>
-                      <!-- Chevron -->
-                      <svg class="curso-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6 9 12 15 18 9"/>
-                      </svg>
-                    </div>
-                  </div>
-
-                  <!-- Detalle expandido del curso -->
-                  @if (cursoExpandido() === ci) {
-                    <div class="curso-card-body">
-                      <!-- Tabs: Tareas / Exámenes -->
-                      <div class="curso-tabs">
-                        <button class="curso-tab" [class.curso-tab--active]="tabCurso() === 'tareas'" (click)="tabCurso.set('tareas')">
-                          📋 Tareas ({{ c.tareas.length }})
-                        </button>
-                        <button class="curso-tab" [class.curso-tab--active]="tabCurso() === 'examenes'" (click)="tabCurso.set('examenes')">
-                          📝 Exámenes ({{ c.examenes.length }})
-                        </button>
-                      </div>
-
-                      <!-- Tab: Tareas -->
-                      @if (tabCurso() === 'tareas') {
-                        @if (c.tareas.length === 0) {
-                          <p class="tab-empty">No hay tareas registradas para este curso.</p>
-                        } @else {
-                          <table class="notas-tabla">
-                            <thead>
-                              <tr>
-                                <th>Tarea</th>
-                                <th>Entrega</th>
-                                <th>Estado</th>
-                                <th>Nota</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              @for (t of c.tareas; track t.idTarea) {
-                                <tr>
-                                  <td class="nt-titulo">{{ t.titulo }}</td>
-                                  <td class="nt-fecha">{{ t.fechaEntrega }}</td>
-                                  <td>
-                                    <span class="nt-badge" [class.nt-badge--ok]="t.entregado" [class.nt-badge--no]="!t.entregado">
-                                      {{ t.entregado ? 'Entregado' : 'Pendiente' }}
-                                    </span>
-                                  </td>
-                                  <td>
-                                    @if (t.nota !== null) {
-                                      <span class="nt-nota" [style.color]="getNotaColor(t.nota, t.notaMaxima)">
-                                        {{ t.nota }}/{{ t.notaMaxima }}
-                                      </span>
-                                    } @else {
-                                      <span class="nt-sin-nota">Sin calificar</span>
-                                    }
-                                  </td>
-                                </tr>
-                              }
-                            </tbody>
-                          </table>
-                        }
-                      }
-
-                      <!-- Tab: Exámenes -->
-                      @if (tabCurso() === 'examenes') {
-                        @if (c.examenes.length === 0) {
-                          <p class="tab-empty">No hay exámenes registrados para este curso.</p>
-                        } @else {
-                          <table class="notas-tabla">
-                            <thead>
-                              <tr>
-                                <th>Examen</th>
-                                <th>Tipo</th>
-                                <th>Fecha</th>
-                                <th>Asistió</th>
-                                <th>Nota</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              @for (e of c.examenes; track e.idExamen) {
-                                <tr>
-                                  <td class="nt-titulo">{{ e.titulo }}</td>
-                                  <td><span class="nt-tipo">{{ e.tipo }}</span></td>
-                                  <td class="nt-fecha">{{ e.fechaExamen }}</td>
-                                  <td>
-                                    <span class="nt-badge" [class.nt-badge--ok]="e.asistio" [class.nt-badge--no]="!e.asistio">
-                                      {{ e.asistio ? 'Sí' : 'No' }}
-                                    </span>
-                                  </td>
-                                  <td>
-                                    @if (e.nota !== null) {
-                                      <span class="nt-nota" [style.color]="getNotaColor(e.nota, e.notaMaxima)">
-                                        {{ e.nota }}/{{ e.notaMaxima }}
-                                      </span>
-                                    } @else {
-                                      <span class="nt-sin-nota">Sin calificar</span>
-                                    }
-                                  </td>
-                                </tr>
-                              }
-                            </tbody>
-                          </table>
-                        }
-                      }
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          }
-        </div>
+        <app-pad-cursos
+          [hijos]="hijos()"
+          [hijoIdx]="hijoIdx()"
+          [cargandoCursos]="cargandoCursos()"
+          [errorCursos]="errorCursos()"
+          [hijoActual]="hijoActual()"
+          [cursosHijo]="cursosHijo()"
+          [cursoExpandido]="cursoExpandido()"
+          [tabCurso]="tabCurso()"
+          (cambiarHijo)="cambiarHijoCursos($event)"
+          (retryCargarCursos)="cargarCursos($event)"
+          (toggleCurso)="toggleCursoExpandido($event)"
+          (setTabCurso)="tabCurso.set($event)">
+        </app-pad-cursos>
       }
 
       <!-- ========== SECCIÓN: ASISTENCIA ========== -->
       @if (seccionActiva() === 'asistencia') {
-        <div class="asistencia-layout">
-          <!-- Selector de hijo (si hay más de uno) -->
-          @if (hijos().length > 1) {
-            <div class="hijo-tabs">
-              @for (h of hijos(); track h.codigo; let i = $index) {
-                <button class="hijo-tab" [class.hijo-tab--active]="hijoIdx() === i" (click)="cambiarHijoAsistencia(i)">
-                  <span class="hijo-tab-avatar">{{ h.nombre[0] }}</span>
-                  <span>{{ h.nombre }}</span>
-                </button>
-              }
-            </div>
-          }
-
-          <!-- Estado de carga / error -->
-          @if (cargandoAsistencia()) {
-            <div class="cursos-loading">
-              <div class="curso-spinner"></div>
-              <span>Cargando registro de asistencia...</span>
-            </div>
-          } @else if (errorAsistencia()) {
-            <div class="cursos-error">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="1.8">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <p>{{ errorAsistencia() }}</p>
-              <button class="btn-retry" (click)="cargarAsistencia(hijoActual()?.codigo ?? '')">Reintentar</button>
-            </div>
-          } @else if (!asistenciaHijo() || asistenciaHijo()!.total === 0) {
-            <div class="cursos-empty">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2">
-                <polyline points="9 11 12 14 22 4"/>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-              </svg>
-              <p>No se encontraron registros de asistencia para este alumno.</p>
-            </div>
-          } @else {
-            <!-- Tarjetas de métricas de asistencia -->
-            <div class="asistencia-kpis">
-              <div class="asist-kpi-card asist-kpi-card--percentage">
-                <div class="kpi-circle-wrap">
-                  <div class="kpi-pct-text" [style.color]="getBarColor(asistenciaHijo()!.porcentaje)">
-                    {{ asistenciaHijo()!.porcentaje }}%
-                  </div>
-                </div>
-                <div class="kpi-info">
-                  <h4>Asistencia General</h4>
-                  <p>Clases asistidas de un total de {{ asistenciaHijo()!.total }} registros.</p>
-                </div>
-              </div>
-
-              <div class="asist-kpi-grid">
-                <div class="kpi-subcard kpi-subcard--presente">
-                  <span class="kpi-sub-num">{{ asistenciaHijo()!.presente }}</span>
-                  <span class="kpi-sub-lbl">Asistencias</span>
-                </div>
-                <div class="kpi-subcard kpi-subcard--tardanza">
-                  <span class="kpi-sub-num">{{ asistenciaHijo()!.tardanza }}</span>
-                  <span class="kpi-sub-lbl">Tardanzas</span>
-                </div>
-                <div class="kpi-subcard kpi-subcard--falta">
-                  <span class="kpi-sub-num">{{ asistenciaHijo()!.falta }}</span>
-                  <span class="kpi-sub-lbl">Inasistencias</span>
-                </div>
-                <div class="kpi-subcard kpi-subcard--justificado">
-                  <span class="kpi-sub-num">{{ asistenciaHijo()!.justificado }}</span>
-                  <span class="kpi-sub-lbl">Justificados</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Detalle de registros de asistencia -->
-            <div class="asist-list-wrap">
-              <h3 class="asist-list-title">Historial de Clases</h3>
-              <table class="notas-tabla">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Curso</th>
-                    <th>Estado</th>
-                    <th>Detalle / Justificante</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (reg of asistenciaHijo()!.historial; track reg.fecha + reg.curso) {
-                    <tr>
-                      <td class="nt-fecha">{{ reg.fecha }}</td>
-                      <td class="nt-titulo">{{ reg.curso }}</td>
-                      <td>
-                        <span class="asist-badge"
-                              [class.asist-badge--presente]="reg.estado.toLowerCase() === 'presente'"
-                              [class.asist-badge--tardanza]="reg.estado.toLowerCase() === 'tardanza'"
-                              [class.asist-badge--falta]="reg.estado.toLowerCase() === 'falta' || reg.estado.toLowerCase() === 'falto'"
-                              [class.asist-badge--justificado]="reg.estado.toLowerCase() === 'justificado'">
-                          {{ getEstadoAsistenciaLabel(reg.estado) }}
-                        </span>
-                      </td>
-                      <td>
-                        @if (reg.justificante) {
-                          <span class="asist-justificante">📝 {{ reg.justificante }}</span>
-                        } @else {
-                          <span class="asist-no-justificante">—</span>
-                        }
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </div>
+        <app-pad-asistencia
+          [hijos]="hijos()"
+          [hijoIdx]="hijoIdx()"
+          [cargandoAsistencia]="cargandoAsistencia()"
+          [errorAsistencia]="errorAsistencia()"
+          [asistenciaHijo]="asistenciaHijo()"
+          [hijoActual]="hijoActual()"
+          (cambiarHijo)="cambiarHijoAsistencia($event)"
+          (retryCargarAsistencia)="cargarAsistencia($event)">
+        </app-pad-asistencia>
       }
 
       <!-- ========== SECCIÓN: MENSAJES ========== -->
       @if (seccionActiva() === 'mensajes') {
-        <div class="msg-layout">
-
-          <!-- ─── COLUMNA IZQUIERDA: LISTA DE HILOS ─── -->
-          <div class="msg-sidebar">
-            <div class="msg-sidebar-header">
-              <h2 class="msg-sidebar-title">Mensajes</h2>
-              @if (noLeidosPadre() > 0) {
-                <span class="msg-badge">{{ noLeidosPadre() }}</span>
-              }
-              <button class="btn-nuevo-msg" (click)="abrirNuevoChat()" title="Nuevo mensaje">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                Nuevo
-              </button>
-            </div>
-
-            @if (cargandoMensajes()) {
-              <div class="msg-loading"><div class="msg-spinner"></div></div>
-            } @else if (errorMensajes()) {
-              <div class="msg-error">{{ errorMensajes() }}</div>
-            } @else if (mensajes().length === 0) {
-              <div class="msg-empty">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                <p>Aún no tienes mensajes.<br/>Escribe a un docente.</p>
-              </div>
-            } @else {
-              <ul class="msg-list">
-                @for (msg of mensajes(); track msg.id) {
-                  <li class="msg-item"
-                      [class.msg-item--active]="mensajeActivo()?.id === msg.id"
-                      [class.msg-item--unread]="!msg.leido"
-                      (click)="abrirChat(msg.id)">
-                    <div class="msg-item-avatar">{{ msg.nombrePadre?.[0] ?? '?' }}</div>
-                    <div class="msg-item-body">
-                      <div class="msg-item-top">
-                        <span class="msg-item-docente">{{ msg.nombrePadre }}</span>
-                        <span class="msg-item-time">{{ msg.fechaEnvio }}</span>
-                      </div>
-                      <span class="msg-item-asunto">{{ msg.asunto }}</span>
-                      @if (msg.nombreAlumno) {
-                        <span class="msg-item-alumno">👦 {{ msg.nombreAlumno }}</span>
-                      }
-                      <p class="msg-item-preview">{{ msg.ultimaRespuesta }}</p>
-                    </div>
-                    @if (!msg.leido) {
-                      <span class="msg-item-dot"></span>
-                    }
-                  </li>
-                }
-              </ul>
-            }
-          </div>
-
-          <!-- ─── COLUMNA DERECHA: VENTANA DE CHAT ─── -->
-          <div class="msg-chat" [class.msg-chat--empty]="!mensajeActivo()">
-            @if (!mensajeActivo() && !cargandoDetalleChat()) {
-              <!-- Estado vacío del chat -->
-              <div class="msg-chat-empty">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                <h3>Selecciona un chat</h3>
-                <p>Elige una conversación de la lista o inicia una nueva.</p>
-                <button class="btn-nuevo-msg-center" (click)="abrirNuevoChat()">Nuevo mensaje al docente</button>
-              </div>
-            }
-
-            @if (cargandoDetalleChat() && !mensajeActivo()) {
-              <div class="msg-loading msg-loading--full"><div class="msg-spinner"></div></div>
-            }
-
-            @if (mensajeActivo()) {
-              <!-- Cabecera del chat -->
-              <div class="chat-header">
-                <div class="chat-header-info">
-                  <div class="chat-avatar">{{ mensajeActivo()!.nombrePadre?.[0] ?? '?' }}</div>
-                  <div>
-                    <h3 class="chat-title">{{ mensajeActivo()!.asunto }}</h3>
-                    <span class="chat-meta">
-                      {{ mensajeActivo()!.nombrePadre }}
-                      @if (mensajeActivo()!.nombreAlumno) { · {{ mensajeActivo()!.nombreAlumno }} }
-                      @if (mensajeActivo()!.curso) { · {{ mensajeActivo()!.curso }} }
-                    </span>
-                  </div>
-                </div>
-                <button class="chat-close" (click)="cerrarChat()">✕</button>
-              </div>
-
-              <!-- Botón "cargar más" (infinite scroll hacia arriba) -->
-              <div class="chat-load-more">
-                @if (hasMorePages() && !cargandoMasRespuestas()) {
-                  <button class="btn-load-more" (click)="cargarMasRespuestas()">
-                    ↑ Cargar mensajes anteriores
-                  </button>
-                }
-                @if (cargandoMasRespuestas()) {
-                  <div class="msg-spinner msg-spinner--sm"></div>
-                }
-              </div>
-
-              <!-- Mensajes del hilo -->
-              <div class="chat-messages" id="chat-scroll" style="background-color: #efeae2; background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 0), radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 0); background-size: 24px 24px; background-position: 0 0, 12px 12px; padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.65rem; overflow-y: auto; flex: 1;">
-                
-                <!-- Mensaje original -->
-                <div class="bubble" 
-                     [class.bubble--docente]="mensajeActivo()!.iniciadoPorDocente" 
-                     [class.bubble--padre]="!mensajeActivo()!.iniciadoPorDocente"
-                     style="max-width: 65%; padding: 0.55rem 0.8rem 0.4rem 0.8rem; border-radius: 12px; font-size: 0.86rem; line-height: 1.45; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.06); display: flex; flex-direction: column;">
-                  @if (mensajeActivo()!.cuerpo.startsWith('[AUDIO]')) {
-                    <div style="display: flex; align-items: center; gap: 12px; min-width: 230px; padding: 4px 0;">
-                      <button (click)="toggleAudioPlay(mensajeActivo())" 
-                              style="background: #00a884; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; outline: none; transition: background 0.15s; flex-shrink: 0;">
-                        @if (mensajeActivo()!.isPlaying) {
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                        } @else {
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        }
-                      </button>
-                      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
-                        <div (click)="seekAudio($event, mensajeActivo())" 
-                             style="height: 5px; background: rgba(0,0,0,0.08); border-radius: 3px; position: relative; cursor: pointer; overflow: hidden;">
-                          <div [style.width.%]="mensajeActivo()!.audioProgress || 0" 
-                               style="position: absolute; left: 0; top: 0; bottom: 0; background: #00a884; border-radius: 3px; transition: width 0.1s linear;"></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 10px; color: #667781; font-weight: 500;">
-                          <span>{{ formatAudioTime(mensajeActivo()!.currentTime || 0) }}</span>
-                          <span style="display: flex; align-items: center; gap: 2px;">
-                            🎤 {{ formatAudioTime(mensajeActivo()!.duration || 0) }}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  } @else {
-                    <p style="margin: 0; white-space: pre-wrap; word-break: break-word;">{{ mensajeActivo()!.cuerpo }}</p>
-                  }
-                  <span style="font-size: 0.65rem; color: #667781; align-self: flex-end; margin-top: 4px; display: flex; align-items: center; gap: 3px;">
-                    {{ mensajeActivo()!.fechaEnvio }}
-                    @if (!mensajeActivo()!.iniciadoPorDocente) {
-                      <span style="font-weight: 700; color: #3b82f6;">✓✓</span>
-                    }
-                  </span>
-                </div>
-
-                <!-- Respuestas paginadas -->
-                @for (r of respuestasActivas(); track r.id) {
-                  <div class="bubble" 
-                       [class.bubble--docente]="r.esMaestro" 
-                       [class.bubble--padre]="!r.esMaestro"
-                       style="max-width: 65%; padding: 0.55rem 0.8rem 0.4rem 0.8rem; border-radius: 12px; font-size: 0.86rem; line-height: 1.45; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.06); display: flex; flex-direction: column;">
-                    <span style="font-size: 11px; font-weight: 600; color: #0284c7; margin-bottom: 2px;">{{ r.autor }}</span>
-                    @if (r.cuerpo.startsWith('[AUDIO]')) {
-                      <div style="display: flex; align-items: center; gap: 12px; min-width: 230px; padding: 4px 0;">
-                        <button (click)="toggleAudioPlay(r)" 
-                                style="background: #00a884; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; outline: none; transition: background 0.15s; flex-shrink: 0;">
-                          @if (r.isPlaying) {
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                          } @else {
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                          }
-                        </button>
-                        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
-                          <div (click)="seekAudio($event, r)" 
-                               style="height: 5px; background: rgba(0,0,0,0.08); border-radius: 3px; position: relative; cursor: pointer; overflow: hidden;">
-                            <div [style.width.%]="r.audioProgress || 0" 
-                                 style="position: absolute; left: 0; top: 0; bottom: 0; background: #00a884; border-radius: 3px; transition: width 0.1s linear;"></div>
-                          </div>
-                          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #667781; font-weight: 500;">
-                            <span>{{ formatAudioTime(r.currentTime || 0) }}</span>
-                            <span style="display: flex; align-items: center; gap: 2px;">
-                              🎤 {{ formatAudioTime(r.duration || 0) }}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    } @else {
-                      <p style="margin: 0; white-space: pre-wrap; word-break: break-word;">{{ r.cuerpo }}</p>
-                    }
-                    <span style="font-size: 0.65rem; color: #667781; align-self: flex-end; margin-top: 4px; display: flex; align-items: center; gap: 3px;">
-                      {{ r.fecha }}
-                      @if (!r.esMaestro) {
-                        <span style="font-weight: 700; color: #3b82f6;">✓✓</span>
-                      }
-                    </span>
-                  </div>
-                }
-              </div>
-
-              <!-- Caja de respuesta tipo WhatsApp -->
-              <div class="chat-reply-box" style="background: #f0f2f5; border-top: 1px solid #cbd5e1; padding: 8px 16px; display: flex; align-items: center; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
-                @if (grabando()) {
-                  <!-- Grabador de voz activo -->
-                  <div class="audio-recording-overlay" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                    <div class="audio-recording-wave" style="display: flex; align-items: center; gap: 8px; color: #ea4335; font-weight: 700; font-size: 13px;">
-                      <div class="pulsing-mic-icon" style="width: 10px; height: 10px; background-color: #ea4335; border-radius: 50%; animation: pulse 1s infinite alternate;"></div>
-                      <span>Grabando nota de voz... {{ formatAudioTime(duracionGrabacion()) }}</span>
-                    </div>
-                    <div style="display: flex; gap: 12px;">
-                      <button (click)="cancelarGrabacion()" 
-                              style="background: #ea4335; color: white; border: none; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        🗑️ Descartar
-                      </button>
-                      <button (click)="detenerGrabacion()" 
-                              style="background: #00a884; color: white; border: none; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        ⏹️ Detener y Enviar
-                      </button>
-                    </div>
-                  </div>
-                } @else {
-                  <!-- Barra de escritura normal -->
-                  <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                    <!-- Botón de Adjuntos -->
-                    <button class="msg-reply-icon-btn" title="Adjuntar" style="padding: 8px; color: #54656f; background: none; border: none; cursor: pointer; display: flex; align-items: center;">
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                      </svg>
-                    </button>
-
-                    <!-- Textarea de entrada -->
-                    <textarea class="chat-reply-input"
-                              placeholder="Escribe un mensaje..."
-                              rows="1"
-                              style="flex-grow: 1; border: none; outline: none; padding: 9px 12px; border-radius: 8px; background: white; font-family: inherit; font-size: 14px; min-height: 20px; max-height: 120px; resize: none; color: #111b21; margin: 0;"
-                              [ngModel]="replyText()"
-                              (ngModelChange)="replyText.set($event)"
-                              (keydown.enter)="$event.preventDefault(); enviarRespuesta()"
-                              [disabled]="enviandoReply()"></textarea>
-
-                    <!-- Botón de Refinar con IA -->
-                    <button (click)="refinarMensajeConIA('respuesta')"
-                            [disabled]="refinandoConIA() || !replyText().trim()"
-                            style="background: none; border: none; padding: 8px; color: #8696a0; cursor: pointer; display: flex; align-items: center;"
-                            title="Refinar con IA">
-                      @if (refinandoConIA()) {
-                        <div style="width: 16px; height: 16px; border: 2px solid #8696a0; border-top-color: transparent; border-radius: 50%; animation: spin 1s infinite linear;"></div>
-                      } @else {
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7e22ce" stroke-width="2">
-                          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                        </svg>
-                      }
-                    </button>
-
-                    <!-- Botón Dinámico de Enviar o Grabar Micrófono -->
-                    @if (replyText().trim().length > 0) {
-                      <button class="msg-reply-send"
-                              (click)="enviarRespuesta()"
-                              [disabled]="enviandoReply()"
-                              style="background: none; border: none; padding: 8px; color: #00a884; cursor: pointer; display: flex; align-items: center;">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                        </svg>
-                      </button>
-                    } @else {
-                      <button (click)="iniciarGrabacion()"
-                              style="background: none; border: none; padding: 8px; color: #54656f; cursor: pointer; display: flex; align-items: center;"
-                              title="Grabar nota de voz">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                          <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v4M8 23h8"/>
-                        </svg>
-                      </button>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        </div>
-
-        <!-- ──── MODAL: Nuevo Chat ──── -->
-        @if (modalNuevoChat()) {
-          <div class="modal-overlay" (click)="cerrarNuevoChat()">
-            <div class="modal-nuevo-chat" (click)="$event.stopPropagation()">
-              <div class="modal-header">
-                <h3>Nuevo Mensaje al Docente</h3>
-                <button class="modal-close" (click)="cerrarNuevoChat()">✕</button>
-              </div>
-
-              <div class="modal-body">
-                <!-- Selección de Docente / Curso -->
-                <label class="modal-label">Docente y Curso</label>
-                <div class="docente-list">
-                  @for (d of docentesDisponibles(); track d.idAulaCurso) {
-                    <div class="docente-item"
-                         [class.docente-item--sel]="nuevoChatDocenteSel()?.idAulaCurso === d.idAulaCurso"
-                         (click)="nuevoChatDocenteSel.set(d)">
-                      <div class="docente-avatar">{{ d.nombreMaestro[0] }}</div>
-                      <div>
-                        <span class="docente-name">{{ d.nombreMaestro }}</span>
-                        <span class="docente-sub">{{ d.curso }} · {{ d.nombreAlumno }}</span>
-                      </div>
-                    </div>
-                  }
-                </div>
-
-                <!-- Asunto -->
-                <label class="modal-label" for="nc-asunto">Asunto</label>
-                <input id="nc-asunto"
-                       type="text"
-                       class="modal-input"
-                       placeholder="Ej: Consulta sobre asistencia"
-                       [value]="nuevoChatAsunto()"
-                       (input)="nuevoChatAsunto.set($any($event.target).value)" />
-
-                <!-- Mensaje -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                  <label class="modal-label" for="nc-msg" style="margin: 0;">Mensaje</label>
-                  <button type="button" (click)="refinarMensajeConIA('nuevo')" 
-                          [disabled]="refinandoConIA() || !nuevoChatMensaje().trim()"
-                          style="background: #f3e8ff; color: #7e22ce; border: 1px solid #c084fc; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
-                    ✨ {{ refinandoConIA() ? 'Refinando...' : 'Refinar con IA' }}
-                  </button>
-                </div>
-                <textarea id="nc-msg"
-                          class="modal-textarea"
-                          placeholder="Escribe tu mensaje aquí..."
-                          rows="4"
-                          [value]="nuevoChatMensaje()"
-                          (input)="nuevoChatMensaje.set($any($event.target).value)">
-                </textarea>
-              </div>
-
-              <div class="modal-footer">
-                <button class="btn-modal-cancel" (click)="cerrarNuevoChat()">Cancelar</button>
-                <button class="btn-modal-send"
-                        [disabled]="!nuevoChatDocenteSel() || !nuevoChatAsunto().trim() || !nuevoChatMensaje().trim() || enviandoNuevoChat()"
-                        (click)="enviarNuevoChat()">
-                  @if (enviandoNuevoChat()) { Enviando... } @else { Enviar mensaje }
-                </button>
-              </div>
-            </div>
-          </div>
-        }
+        <app-pad-mensajes
+          [mensajes]="mensajes()"
+          [mensajeActivo]="mensajeActivo()"
+          [respuestasActivas]="respuestasActivas()"
+          [replyText]="replyText()"
+          [cargandoMensajes]="cargandoMensajes()"
+          [errorMensajes]="errorMensajes()"
+          [cargandoDetalleChat]="cargandoDetalleChat()"
+          [enviandoReply]="enviandoReply()"
+          [refinandoConIA]="refinandoConIA()"
+          [hasMorePages]="hasMorePages()"
+          [cargandoMasRespuestas]="cargandoMasRespuestas()"
+          [modalNuevoChat]="modalNuevoChat()"
+          [docentesDisponibles]="docentesDisponibles()"
+          [nuevoChatDocenteSel]="nuevoChatDocenteSel()"
+          [nuevoChatAsunto]="nuevoChatAsunto()"
+          [nuevoChatMensaje]="nuevoChatMensaje()"
+          [enviandoNuevoChat]="enviandoNuevoChat()"
+          (abrirChat)="abrirChat($event)"
+          (cerrarChat)="cerrarChat()"
+          (abrirNuevoChat)="abrirNuevoChat()"
+          (cerrarNuevoChat)="cerrarNuevoChat()"
+          (enviarNuevoChat)="enviarNuevoChatDeComponent($event)"
+          (enviarRespuesta)="enviarRespuestaDeComponent($event)"
+          (refinarMensajeConIA)="refinarMensajeConIA($event)"
+          (cargarMasRespuestas)="cargarMasRespuestas()"
+          (enviarAudio)="enviarAudio($event)"
+          (updateReplyText)="replyText.set($event)"
+          (updateNuevoChatAsunto)="nuevoChatAsunto.set($event)"
+          (updateNuevoChatMensaje)="nuevoChatMensaje.set($event)"
+          (updateNuevoChatDocenteSel)="nuevoChatDocenteSel.set($event)">
+        </app-pad-mensajes>
       }
 
       <!-- ========== SECCIÓN: EVENTOS ========== -->
       @if (seccionActiva() === 'eventos') {
-        <div class="eventos-layout">
-          <!-- Selector de hijo -->
-          @if (hijos().length > 1) {
-            <div class="hijo-tabs">
-              @for (h of hijos(); track h.codigo; let i = $index) {
-                <button class="hijo-tab" [class.hijo-tab--active]="hijoIdx() === i" (click)="cambiarHijoEventos(i)">
-                  <span class="hijo-tab-avatar">{{ h.nombre[0] }}</span>
-                  <span>{{ h.nombre }}</span>
-                </button>
-              }
-            </div>
-          }
-
-          <!-- Estado de carga / error -->
-          @if (cargandoEventos()) {
-            <div class="cursos-loading">
-              <div class="curso-spinner"></div>
-              <span>Cargando eventos y comunicados...</span>
-            </div>
-          } @else if (errorEventos()) {
-            <div class="cursos-error">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="1.8">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <p>{{ errorEventos() }}</p>
-              <button class="btn-retry" (click)="cargarEventos(hijoActual()?.codigo ?? '')">Reintentar</button>
-            </div>
-          } @else if (eventosHijo().length === 0) {
-            <div class="cursos-empty">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-              </svg>
-              <p>No hay eventos o comunicados vigentes para el aula de este estudiante.</p>
-            </div>
-          } @else {
-            <div class="eventos-timeline">
-              @for (ev of eventosHijo(); track ev.id) {
-                <div class="evento-card" [class]="'evento-card--' + ev.tipo.toLowerCase()">
-                  <div class="evento-icon-wrap">
-                    <span class="evento-emoji">{{ getBadgeEventoIcon(ev.tipo) }}</span>
-                  </div>
-                  <div class="evento-body">
-                    <div class="evento-meta-row">
-                      <span class="evento-tipo-badge" [class]="'et-badge--' + ev.tipo.toLowerCase()">
-                        {{ getBadgeEventoLabel(ev.tipo) }}
-                      </span>
-                      @if (ev.fechaEvento) {
-                        <span class="evento-fecha-val">📅 {{ ev.fechaEvento }} @if(ev.horaEvento){ · {{ ev.horaEvento }} }</span>
-                      }
-                      <span class="evento-docente-val">👤 {{ ev.docente }}</span>
-                    </div>
-                    <h3 class="evento-titulo-h3">{{ ev.titulo }}</h3>
-                    <p class="evento-descripcion-p">{{ ev.descripcion }}</p>
-                    <span class="evento-creacion-val">Publicado: {{ ev.fechaCreacion }}</span>
-                  </div>
-                </div>
-              }
-            </div>
-          }
-        </div>
+        <app-pad-eventos
+          [hijos]="hijos()"
+          [hijoIdx]="hijoIdx()"
+          [cargandoEventos]="cargandoEventos()"
+          [errorEventos]="errorEventos()"
+          [eventosHijo]="eventosHijo()"
+          [hijoActual]="hijoActual()"
+          (cambiarHijo)="cambiarHijoEventos($event)"
+          (retryCargarEventos)="cargarEventos($event)">
+        </app-pad-eventos>
       }
 
       <!-- ========== SECCIÓN: PAGOS ========== -->
       @if (seccionActiva() === 'pagos') {
-        <div class="pagos-layout">
-          <!-- Selector de hijo -->
-          @if (hijos().length > 1) {
-            <div class="hijo-tabs">
-              @for (h of hijos(); track h.codigo; let i = $index) {
-                <button class="hijo-tab" [class.hijo-tab--active]="hijoIdx() === i" (click)="cambiarHijoPagos(i)">
-                  <span class="hijo-tab-avatar">{{ h.nombre[0] }}</span>
-                  <span>{{ h.nombre }}</span>
-                </button>
-              }
-            </div>
-          }
+        <app-pad-pagos
+          [hijos]="hijos()"
+          [hijoIdx]="hijoIdx()"
+          [cargandoPagos]="cargandoPagos()"
+          [errorPagos]="errorPagos()"
+          [pagosHijo]="pagosHijo()"
+          [pagandoConcepto]="pagandoConcepto()"
+          [hijoActual]="hijoActual()"
+          (cambiarHijo)="cambiarHijoPagos($event)"
+          (retryCargarPagos)="cargarPagos($event)"
+          (simularPago)="simularPago($event)">
+        </app-pad-pagos>
+      }
 
-          <!-- Estado de carga / error -->
-          @if (cargandoPagos()) {
-            <div class="cursos-loading">
-              <div class="curso-spinner"></div>
-              <span>Cargando estado de cuenta...</span>
-            </div>
-          } @else if (errorPagos()) {
-            <div class="cursos-error">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="1.8">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <p>{{ errorPagos() }}</p>
-              <button class="btn-retry" (click)="cargarPagos(hijoActual()?.codigo ?? '')">Reintentar</button>
-            </div>
-          } @else {
-            <!-- Alerta de morosidad si hay algún pago VENCIDO -->
-            @if (pagosHijo().some(p => p.estado === 'VENCIDO')) {
-              <div class="pago-alerta-morosidad">
-                <div class="pam-icon">⚠️</div>
-                <div class="pam-body">
-                  <h4>Aviso de Pago Pendiente</h4>
-                  <p>Estimado apoderado, registramos pensiones vencidas para este estudiante. Agradeceremos regularizar el pago a la brevedad para evitar inconvenientes administrativos.</p>
-                </div>
-              </div>
-            }
-
-            <!-- KPIs de Pagos -->
-            <div class="pagos-kpis">
-              <div class="pago-kpi-card">
-                <span class="pkpi-val">S/. {{ pagosHijo().reduce((sum, p) => p.estado === 'PAGADO' ? sum + p.monto : sum, 0) | number:'1.2-2' }}</span>
-                <span class="pkpi-lbl">Total Pagado</span>
-              </div>
-              <div class="pago-kpi-card pago-kpi-card--pending">
-                <span class="pkpi-val">S/. {{ pagosHijo().reduce((sum, p) => p.estado !== 'PAGADO' ? sum + p.monto : sum, 0) | number:'1.2-2' }}</span>
-                <span class="pkpi-lbl">Total Pendiente</span>
-              </div>
-              <div class="pago-kpi-card pago-kpi-card--overdue">
-                <span class="pkpi-val">
-                  {{ pagosHijo().filter(p => p.estado === 'VENCIDO').length }}
-                </span>
-                <span class="pkpi-lbl">Pensiones Vencidas</span>
-              </div>
-            </div>
-
-            <!-- Tabla de cuotas/pensiones -->
-            <div class="pagos-tabla-wrap">
-              <h3 class="pagos-title">Estado de Pensiones y Cuotas</h3>
-              <table class="notas-tabla">
-                <thead>
-                  <tr>
-                    <th>Concepto</th>
-                    <th>Monto</th>
-                    <th>Vencimiento</th>
-                    <th>Estado</th>
-                    <th>Fecha de Pago</th>
-                    <th>Comprobante</th>
-                    <th>Acción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (p of pagosHijo(); track p.concepto) {
-                    <tr>
-                      <td class="nt-titulo">{{ p.concepto }}</td>
-                      <td class="nt-nota">S/. {{ p.monto | number:'1.2-2' }}</td>
-                      <td class="nt-fecha">{{ p.fechaVencimiento }}</td>
-                      <td>
-                        <span class="pago-badge"
-                              [class.pago-badge--pagado]="p.estado === 'PAGADO'"
-                              [class.pago-badge--pendiente]="p.estado === 'PENDIENTE'"
-                              [class.pago-badge--vencido]="p.estado === 'VENCIDO'">
-                          {{ p.estado }}
-                        </span>
-                      </td>
-                      <td class="nt-fecha">{{ p.fechaPago ?? '—' }}</td>
-                      <td class="pago-doc">{{ p.documento ?? '—' }}</td>
-                      <td>
-                        @if (p.estado !== 'PAGADO') {
-                          <button class="btn-pagar-inline"
-                                  [disabled]="pagandoConcepto() === p.concepto"
-                                  (click)="simularPago(p)">
-                            @if (pagandoConcepto() === p.concepto) {
-                              Procesando...
-                            } @else {
-                              Pagar en línea
-                            }
-                          </button>
-                        } @else {
-                          <span class="pago-completo-check">✓ Completado</span>
-                        }
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </div>
+      <!-- ========== SECCIÓN: GAMIFICACIÓN / METAS ========== -->
+      @if (seccionActiva() === 'metas') {
+        <app-pad-gamificacion
+          [misionesSemanales]="misionesSemanales()"
+          [insigniasObtenidas]="insigniasObtenidas()"
+          [progresoMisionesGeneral]="progresoMisionesGeneral()">
+        </app-pad-gamificacion>
       }
 
     </main>

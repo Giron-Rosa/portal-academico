@@ -3,12 +3,16 @@ package pe.sanagustin.portal.service;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pe.sanagustin.portal.dto.AsistenciaDetalleHijoDto;
 import pe.sanagustin.portal.dto.AsistenciaHijoDto;
 import pe.sanagustin.portal.dto.CursoDetalleHijoDto;
 import pe.sanagustin.portal.dto.CursoHijoDto;
 import pe.sanagustin.portal.dto.ExamenHijoDto;
 import pe.sanagustin.portal.dto.EventoHijoDto;
+import pe.sanagustin.portal.dto.GamificacionHijoDto;
+import pe.sanagustin.portal.dto.InsigniaDto;
+import pe.sanagustin.portal.dto.MisionDto;
 import pe.sanagustin.portal.dto.PagoHijoDto;
 import pe.sanagustin.portal.dto.HijoResumenDto;
 import pe.sanagustin.portal.dto.HorarioDocenteDto;
@@ -460,17 +464,20 @@ public class PadreService {
                        COALESCE(mae.nombre || ' ' || mae.apellido, 'Docente') AS docente
                 FROM matriculas m
                 JOIN aulas a ON a.id_aula = m.id_aula
-                JOIN comunicados c ON (
-                    EXISTS (
-                        SELECT 1 FROM comunicado_aulas ca
-                        WHERE ca.id_comunicado = c.id_comunicado
-                          AND ca.id_aula = a.id_aula
+                 JOIN comunicados c ON (
+                    (c.id_aula IS NULL OR c.id_aula = a.id_aula)
+                    AND (
+                        EXISTS (
+                            SELECT 1 FROM comunicado_aulas ca
+                            WHERE ca.id_comunicado = c.id_comunicado
+                              AND ca.id_aula = a.id_aula
+                        )
+                        OR NOT EXISTS (
+                            SELECT 1 FROM comunicado_aulas ca
+                            WHERE ca.id_comunicado = c.id_comunicado
+                        )
                     )
-                    OR NOT EXISTS (
-                        SELECT 1 FROM comunicado_aulas ca
-                        WHERE ca.id_comunicado = c.id_comunicado
-                    )
-                )
+                 )
                 LEFT JOIN maestros mae ON mae.id_maestro = c.id_maestro
                 WHERE m.id_alumno = :idAlumno AND m.estado = 'activa'
                 ORDER BY c.fecha_evento ASC NULLS LAST, c.fecha_creacion DESC
@@ -630,6 +637,188 @@ public class PadreService {
             ));
         }
         return list;
+    }
+
+    @Transactional
+    public void procesarPago(String codigoPadre, String codigoAlumno, String concepto) {
+        @SuppressWarnings("unchecked")
+        List<?> check = entityManager.createNativeQuery("""
+                SELECT 1
+                FROM padre_hijo ph
+                JOIN padres   p   ON p.id_padre     = ph.id_padre
+                JOIN usuarios u_p ON u_p.id_usuario = p.id_usuario
+                JOIN alumnos  a   ON a.id_alumno    = ph.id_alumno
+                JOIN usuarios u_a ON u_a.id_usuario = a.id_usuario
+                WHERE u_p.codigo = :codPadre AND u_a.codigo = :codAlumno
+                """)
+                .setParameter("codPadre",  codigoPadre)
+                .setParameter("codAlumno", codigoAlumno)
+                .getResultList();
+
+        if (check.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Acceso no autorizado");
+        }
+
+        String sql = """
+                UPDATE cuotas_estudiante
+                SET pagado = TRUE,
+                    fecha_pago = NOW(),
+                    nro_transaccion = :nroTx
+                WHERE id_estudiante = (
+                    SELECT al.id_alumno
+                    FROM alumnos al
+                    JOIN usuarios u ON u.id_usuario = al.id_usuario
+                    WHERE u.codigo = :codAlumno
+                ) AND id_concepto = (
+                    SELECT id_concepto
+                    FROM conceptos_pago
+                    WHERE nombre = :concepto
+                )
+                """;
+
+        String txId = "TX-" + (int)(Math.random() * 90000 + 10000) + "S";
+
+        int updated = entityManager.createNativeQuery(sql)
+                .setParameter("codAlumno", codigoAlumno)
+                .setParameter("concepto", concepto)
+                .setParameter("nroTx", txId)
+                .executeUpdate();
+
+        if (updated == 0) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Concepto o cuota no encontrado");
+        }
+    }
+
+    @Transactional
+    public GamificacionHijoDto getGamificacion(String codigoPadre, String codigoAlumno) {
+        @SuppressWarnings("unchecked")
+        List<?> check = entityManager.createNativeQuery("""
+                SELECT 1
+                FROM padre_hijo ph
+                JOIN padres   p   ON p.id_padre     = ph.id_padre
+                JOIN usuarios u_p ON u_p.id_usuario = p.id_usuario
+                JOIN alumnos  a   ON a.id_alumno    = ph.id_alumno
+                JOIN usuarios u_a ON u_a.id_usuario = a.id_usuario
+                WHERE u_p.codigo = :codPadre AND u_a.codigo = :codAlumno
+                """)
+                .setParameter("codPadre",  codigoPadre)
+                .setParameter("codAlumno", codigoAlumno)
+                .getResultList();
+
+        if (check.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Acceso no autorizado");
+        }
+
+        Long idAlumno = ((Number) entityManager.createNativeQuery(
+                "SELECT a.id_alumno FROM alumnos a JOIN usuarios u ON u.id_usuario=a.id_usuario WHERE u.codigo=:cod")
+                .setParameter("cod", codigoAlumno)
+                .getSingleResult()).longValue();
+
+        String sqlCursos = """
+                SELECT 
+                    (SELECT COUNT(*) FROM tareas_curso WHERE id_aula_curso = ac.id_aula_curso) AS total_tareas,
+                    COALESCE((SELECT ROUND(AVG(nt.nota)::numeric, 1) FROM notas_tarea nt 
+                              JOIN tareas_curso tc ON tc.id_tarea = nt.id_tarea 
+                              WHERE nt.id_alumno = :idAlumno AND tc.id_aula_curso = ac.id_aula_curso AND nt.entregado = true AND nt.nota IS NOT NULL), 0.0) AS promedio,
+                    (SELECT COUNT(*) FROM asistencia_alumno WHERE id_alumno = :idAlumno AND id_aula_curso = ac.id_aula_curso) AS asist_total,
+                    (SELECT COUNT(*) FROM asistencia_alumno WHERE id_alumno = :idAlumno AND id_aula_curso = ac.id_aula_curso AND estado IN ('presente', 'tardanza', 'justificado')) AS asist_pres
+                FROM matriculas m
+                JOIN aula_cursos ac ON ac.id_aula = m.id_aula
+                WHERE m.id_alumno = :idAlumno AND m.estado = 'activa'
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> cursoRows = entityManager.createNativeQuery(sqlCursos)
+                .setParameter("idAlumno", idAlumno)
+                .getResultList();
+
+        double sumPromedio = 0;
+        double sumAsistencia = 0;
+        int cursosRiesgo = 0;
+        int nCursos = cursoRows.size();
+
+        for (Object[] c : cursoRows) {
+            int tTotal = ((Number) c[0]).intValue();
+            double cPromedio = ((Number) c[1]).doubleValue();
+            long aTotal = ((Number) c[2]).longValue();
+            long aPres = ((Number) c[3]).longValue();
+
+            double cAsistencia = aTotal == 0 ? 100.0 : Math.round((aPres * 100.0) / aTotal * 10.0) / 10.0;
+            if (cPromedio < 11.0 && tTotal > 0) {
+                cursosRiesgo++;
+            }
+            sumPromedio += cPromedio;
+            sumAsistencia += cAsistencia;
+        }
+
+        double promedioGral = nCursos == 0 ? 0.0 : Math.round((sumPromedio / nCursos) * 10.0) / 10.0;
+        double asistenciaGral = nCursos == 0 ? 100.0 : Math.round((sumAsistencia / nCursos) * 10.0) / 10.0;
+        String estadoRiesgo = (asistenciaGral < 80.0 || cursosRiesgo > 0) ? "riesgo" : "bueno";
+
+        entityManager.createNativeQuery("DELETE FROM alumnos_misiones WHERE id_alumno = :idAlumno")
+                .setParameter("idAlumno", idAlumno)
+                .executeUpdate();
+
+        int prog1 = asistenciaGral >= 95 ? 100 : (int)Math.round((asistenciaGral / 95.0) * 100);
+        entityManager.createNativeQuery("INSERT INTO alumnos_misiones (id_alumno, titulo, descripcion, icono, progreso, completado, categoria) VALUES (:id, 'Asistencia de Oro', 'Mantener la asistencia escolar sobre el 95%.', '📅', :prog, :comp, 'asistencia')")
+                .setParameter("id", idAlumno).setParameter("prog", prog1).setParameter("comp", asistenciaGral >= 95).executeUpdate();
+
+        int prog2 = promedioGral >= 11 ? 100 : (int)Math.round((promedioGral / 11.0) * 100);
+        entityManager.createNativeQuery("INSERT INTO alumnos_misiones (id_alumno, titulo, descripcion, icono, progreso, completado, categoria) VALUES (:id, 'Esfuerzo Académico', 'Lograr un promedio de notas general aprobatorio (>= 11).', '📚', :prog, :comp, 'notas')")
+                .setParameter("id", idAlumno).setParameter("prog", prog2).setParameter("comp", promedioGral >= 11).executeUpdate();
+
+        int prog3 = !estadoRiesgo.equals("riesgo") ? 100 : 70;
+        entityManager.createNativeQuery("INSERT INTO alumnos_misiones (id_alumno, titulo, descripcion, icono, progreso, completado, categoria) VALUES (:id, 'Compromiso Activo', 'Monitoreo diario de las actividades académicas.', '✍️', :prog, :comp, 'compromiso')")
+                .setParameter("id", idAlumno).setParameter("prog", prog3).setParameter("comp", !estadoRiesgo.equals("riesgo")).executeUpdate();
+
+        entityManager.createNativeQuery("INSERT INTO alumnos_misiones (id_alumno, titulo, descripcion, icono, progreso, completado, categoria) VALUES (:id, 'Alianza Escolar', 'Mantener comunicación activa con el docente.', '💬', 100, true, 'comunicacion')")
+                .setParameter("id", idAlumno).executeUpdate();
+
+        entityManager.createNativeQuery("DELETE FROM alumnos_insignias WHERE id_alumno = :idAlumno")
+                .setParameter("idAlumno", idAlumno)
+                .executeUpdate();
+
+        if (promedioGral >= 17.0) {
+            entityManager.createNativeQuery("INSERT INTO alumnos_insignias (id_alumno, nombre, descripcion, icono) VALUES (:id, 'Súper Estudiante', 'Promedio general sobresaliente (>= 17).', '⭐')")
+                    .setParameter("id", idAlumno).executeUpdate();
+        }
+        if (asistenciaGral >= 98.0) {
+            entityManager.createNativeQuery("INSERT INTO alumnos_insignias (id_alumno, nombre, descripcion, icono) VALUES (:id, 'Asistencia Perfecta', 'Asistencia a clases casi perfecta (>= 98%).', '🏆')")
+                    .setParameter("id", idAlumno).executeUpdate();
+        }
+        if (promedioGral >= 14.0 && asistenciaGral >= 90.0) {
+            entityManager.createNativeQuery("INSERT INTO alumnos_insignias (id_alumno, nombre, descripcion, icono) VALUES (:id, 'Esfuerzo Constante', 'Buen rendimiento y asistencia equilibrada.', '🎖️')")
+                    .setParameter("id", idAlumno).executeUpdate();
+        }
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> mRows = entityManager.createNativeQuery("SELECT id_mision, titulo, descripcion, icono, progreso, completado, categoria FROM alumnos_misiones WHERE id_alumno = :id")
+                .setParameter("id", idAlumno).getResultList();
+        List<MisionDto> misiones = mRows.stream().map(r -> new MisionDto(
+                ((Number) r[0]).longValue(),
+                (String) r[1],
+                (String) r[2],
+                (String) r[3],
+                ((Number) r[4]).intValue(),
+                (Boolean) r[5],
+                (String) r[6]
+        )).toList();
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> iRows = entityManager.createNativeQuery("SELECT id_insignia, nombre, descripcion, icono, TO_CHAR(fecha_desbloqueo, 'DD/MM/YYYY') FROM alumnos_insignias WHERE id_alumno = :id")
+                .setParameter("id", idAlumno).getResultList();
+        List<InsigniaDto> insignias = iRows.stream().map(r -> new InsigniaDto(
+                ((Number) r[0]).longValue(),
+                (String) r[1],
+                (String) r[2],
+                (String) r[3],
+                (String) r[4]
+        )).toList();
+
+        return new GamificacionHijoDto(misiones, insignias);
     }
 }
 

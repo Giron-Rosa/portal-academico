@@ -18,6 +18,7 @@ export class WebSocketService implements OnDestroy {
 
   private client: Client | null = null;
   private subscription: StompSubscription | null = null;
+  private academicSubscription: StompSubscription | null = null;
   private chatSubscription: StompSubscription | null = null;
 
   /** Signal con la última notificación recibida */
@@ -59,6 +60,11 @@ export class WebSocketService implements OnDestroy {
           `/topic/mensajes/${codigo}`,
           (msg: IMessage) => this.onMensajeRecibido(msg)
         );
+        // Suscribirse a notificaciones académicas
+        this.academicSubscription = this.client!.subscribe(
+          `/topic/notificaciones/${codigo}`,
+          (msg: IMessage) => this.onNotificacionAcademicaRecibida(msg)
+        );
       },
 
       onDisconnect: () => {
@@ -74,13 +80,14 @@ export class WebSocketService implements OnDestroy {
     this.client.activate();
   }
 
-  /** Detiene la conexión WebSocket */
   disconnect(): void {
     this.unsubscribeFromChat();
     this.subscription?.unsubscribe();
+    this.academicSubscription?.unsubscribe();
     this.client?.deactivate();
     this.conectado.set(false);
     this.subscription = null;
+    this.academicSubscription = null;
     this.client = null;
   }
 
@@ -146,6 +153,28 @@ export class WebSocketService implements OnDestroy {
       setTimeout(() => this.toastVisible.set(false), 5000);
     } catch {
       console.warn('[WS] Mensaje no parseable:', msg.body);
+    }
+  }
+
+  private onNotificacionAcademicaRecibida(msg: IMessage): void {
+    try {
+      const acad = JSON.parse(msg.body);
+      const notif: NotificacionWs = {
+        tipo: acad.tipo,
+        idMensaje: 0,
+        asunto: acad.titulo,
+        remitente: acad.curso,
+        preview: acad.descripcion,
+        destinatario: ''
+      };
+
+      this.ultimaNotificacion.set(notif);
+      this.contadorNoLeidas.update(n => n + 1);
+
+      this.toastVisible.set(true);
+      setTimeout(() => this.toastVisible.set(false), 6000);
+    } catch (e) {
+      console.warn('[WS] Error al parsear notificación académica:', e);
     }
   }
 

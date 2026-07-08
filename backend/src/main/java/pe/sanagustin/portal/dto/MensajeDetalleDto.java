@@ -21,5 +21,8 @@ public record MensajeDetalleDto(
         String curso,
         String cuerpo,
         List<RespuestaResumenDto> respuestas,
-        boolean iniciadoPorDocente
+        boolean iniciadoPorDocente,
+        String transcripcion,
+        String sentimiento,
+        String analisisCausa
 ) {}

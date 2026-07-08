@@ -116,4 +116,16 @@ public class MensajeController {
         mensajeService.responderConAudio(id, file, userDetails.getUsername(), true);
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * POST /api/portal/docente/mensajes/{id}/sugerir-respuesta
+     * Sugiere una respuesta empática basada en el hilo actual de chat.
+     */
+    @PostMapping("/{id}/sugerir-respuesta")
+    public ResponseEntity<Map<String, String>> sugerirRespuesta(
+            @PathVariable long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String sugerencia = mensajeService.sugerirRespuestaEmpatica(id, userDetails.getUsername());
+        return ResponseEntity.ok(Map.of("sugerencia", sugerencia));
+    }
 }
