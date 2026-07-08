@@ -1,144 +1,57 @@
 import { Component, inject, signal, computed, HostListener, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { WebSocketService } from '../../services/websocket.service';
+import { DocenteService } from '../../services/docente.service';
 import { PrediccionesDashboard } from './predicciones/predicciones-dashboard';
+import { DocInicio } from './sections/doc-inicio/doc-inicio';
+import { DocCursoDetalle } from './sections/doc-curso-detalle/doc-curso-detalle';
+import { DocCalendario } from './sections/doc-calendario/doc-calendario';
+import { DocMensajes } from './sections/doc-mensajes/doc-mensajes';
+import { DocRefuerzos } from './sections/doc-refuerzos/doc-refuerzos';
 
-export interface Curso {
-  idAulaCurso: number;
-  nombre: string;
-  grado: string;
-  seccion: string;
-  color: string;
-  iconType: string;
-  badge: string;
-  horasSemana: number;
-  totalAlumnos: number;
-}
 
-interface CursoApi {
-  idAulaCurso: number;
-  nombre: string;
-  grado: string;
-  seccion: string;
-  horasSemana: number;
-  turno: string;
-  periodo: string;
-  totalAlumnos: number;
-}
 
-/* ── Interfaces de mensajería ── */
-
-/** Resumen de un mensaje para la lista (bandeja de entrada) */
-export interface MensajeResumen {
-  id: number;
-  asunto: string;
-  tipo: string;             // 'justificante' | 'consulta' | 'otro'
-  leido: boolean;
-  fechaEnvio: string;       // "DD/MM/YYYY HH:MM"
-  nombrePadre: string;
-  nombreAlumno: string | null;
-  idAlumno: number | null;
-  grado: string | null;
-  seccion: string | null;
-  curso: string | null;
-  cantRespuestas: number;
-  ultimaRespuesta: string | null;
-}
-
-/** Una respuesta dentro del hilo de un mensaje */
-export interface RespuestaResumen {
-  id: number;
-  cuerpo: string;
-  fecha: string;
-  nombreAutor: string;
-  esMaestro: boolean;
-  isPlaying?: boolean;
-  audioProgress?: number;
-  currentTime?: number;
-  duration?: number;
-}
-
-/** Detalle completo de un mensaje (incluye cuerpo + hilo de respuestas) */
-export interface MensajeDetalle extends MensajeResumen {
-  cuerpo: string;
-  respuestas: RespuestaResumen[];
-  iniciadoPorDocente: boolean;
-  isPlaying?: boolean;
-  audioProgress?: number;
-  currentTime?: number;
-  duration?: number;
-}
-
-/** Contexto del alumno para el panel lateral en mensajes */
-export interface AlumnoContexto {
-  idAlumno: number;
-  nombre: string;
-  apellido: string;
-  grado: string;
-  seccion: string;
-  curso: string;
-  nombrePadre: string;
-  emailPadre: string;
-  totalClases: number;
-  clasesPresente: number;
-  tareasPendientes: number;
-  promedio: number;
-}
-
-/** Alumno disponible para iniciar un nuevo chat */
-export interface AlumnoDisponible {
-  idAlumno: number;
-  nombreAlumno: string;
-  grado: string;
-  seccion: string;
-  idPadre: number;
-  nombrePadre: string;
-  emailPadre: string;
-  idAulaCurso: number;
-  curso: string;
-}
-
-/** Estructura que devuelve el endpoint GET /api/portal/docente/mi-horario */
-export interface ClaseHorario {
-  dia: number;        // 1=Lunes … 5=Viernes
-  diaNombre: string;  // "Lunes", "Martes"…
-  horaInicio: string; // "07:30"
-  horaFin:    string; // "09:00"
-  curso:      string;
-  grado:      string;
-  seccion:    string;
-  idAulaCurso?: number;
-}
-
-/** Reserva de espacio (aula, laboratorio, etc.) creada por un docente */
-export interface Reserva {
-  id:             number;
-  idMaestro:      number;
-  espacio:        string;
-  fecha:          string;      // "YYYY-MM-DD"
-  horaInicio:     string;      // "HH:mm"
-  horaFin:        string;      // "HH:mm"
-  idAulaCurso:    number | null;
-  curso:          string | null;
-  grado:          string | null;
-  seccion:        string | null;
-  proposito:      string;
-  fechaCreacion:  string;
-}
-
-/** Estado del formulario de nueva reserva de espacio */
-export interface FormReserva {
-  espacio:     string;
-  fecha:       string;
-  horaInicio:  string;
-  horaFin:     string;
-  idAulaCurso: number | null;
-  proposito:   string;
-}
+import type {
+  CursoDocente as Curso,
+  CursoDocenteApi as CursoApi,
+  MensajeResumenDocente as MensajeResumen,
+  RespuestaDocente as RespuestaResumen,
+  MensajeDetalleDocente as MensajeDetalle,
+  AlumnoContexto,
+  AlumnoDisponible,
+  ClaseHorario,
+  Reserva,
+  FormReserva,
+  EspacioReserva,
+  PendienteDocente as Pendiente,
+  AlertaCritica,
+  MaterialDocente as Material,
+  ClaseNodoDocente as ClaseNodo,
+  SemanaNodoDocente as SemanaNodo,
+  FormMaterial,
+  TareaDocente as Tarea,
+  NotaTarea,
+  FormTarea,
+  ExamenDocente as Examen,
+  NotaExamen,
+  FormExamen,
+  UnidadDocente as Unidad,
+  FormUnidad,
+  ReporteDocente as Reporte,
+  AlumnoReportes,
+  FormReporte,
+  AsistenciaAlumnoDocente as AsistenciaAlumno,
+  AlumnoConsolidado,
+  ConsolidadoMensual,
+  SesionAsistencia,
+  AulaSimple,
+  TipoEvento,
+  ComunicadoDocente as Comunicado,
+  FormComunicado
+} from '../../shared/models/docente.models';
 
 /**
  * Paleta de colores para los bloques del calendario.
@@ -156,294 +69,12 @@ const CURSO_COLORS: Record<string, string> = {
   'religión':                       '#8d99ae',
 };
 
-/** Espacio disponible para reserva (shape del endpoint) */
-export interface EspacioReserva {
-  idEspacio: number;
-  nombre: string;
-  area: string;
-  limiteMinutos: number;
-}
-
 /** Hora en la que empieza la grilla del calendario (7:00 AM) */
 const CAL_HORA_INICIO = 7;
 /** Hora en la que termina la grilla del calendario (15:00 = 3 PM) */
 const CAL_HORA_FIN    = 15;
 /** Píxeles que ocupa cada hora en la grilla vertical */
 const CAL_PX_POR_HORA = 64;
-
-export interface Pendiente {
-  idAulaCurso:  number;
-  tipo:         string;    // 'tarea' | 'examen'
-  grado:        string;
-  seccion:      string;
-  curso:        string;
-  titulo:       string;
-  sinCalificar: number;
-  totalAlumnos: number;
-}
-
-export interface AlertaCritica {
-  idAlumno: number;
-  nombre: string;
-  descripcion: string;
-  tipo: string;    // 'rendimiento' | 'asistencia'
-  inicial: string;
-  color: string;
-}
-
-/* ── Interfaces de detalle de curso ── */
-
-/** Material didáctico de una semana/clase */
-export interface Material {
-  id: number;
-  semana: number;
-  clase: number;
-  titulo: string;
-  tipo: string;          // 'pdf' | 'word' | 'video' | 'url' | 'youtube'
-  url: string | null;
-  fechaCreacion: string; // "DD/MM/YYYY"
-}
-
-/** Nodo de clase con sus materiales (para el árbol de contenido) */
-export interface ClaseNodo {
-  clase: number;
-  items: Material[];
-}
-
-/** Nodo de semana con sus clases (para el árbol de contenido) */
-export interface SemanaNodo {
-  semana: number;
-  clases: ClaseNodo[];
-}
-
-/** Estado del formulario del modal Subir Material */
-export interface FormMaterial {
-  semana: number;
-  clase: number;
-  titulo: string;
-  tipo: string;   // 'pdf' | 'word' | 'video' | 'url' | 'youtube'
-  url: string;
-}
-
-/* ── Interfaces de Tareas ── */
-
-export interface Tarea {
-  id: number;
-  numeroTarea: number;
-  semana: number;
-  clase: number;
-  titulo: string;
-  descripcion: string | null;
-  tipoEntregable: string | null;
-  fechaEntrega: string | null;   // "DD/MM/YYYY"
-  notaMaxima: number;
-  intentos: number;
-  url: string | null;
-  fechaCreacion: string;
-  totalAlumnos: number;
-  entregadas: number;
-  noEntregadas: number;
-}
-
-export interface NotaTarea {
-  idNota: number;
-  idAlumno: number;
-  codigo: string;
-  nombres: string;
-  entregado: boolean;
-  nota: number | null;
-}
-
-export interface FormTarea {
-  semana: number;
-  clase: number;
-  numeroTarea: number;
-  titulo: string;
-  descripcion: string;
-  tipoEntregable: string;
-  fechaEntrega: string;   // 'YYYY-MM-DD'
-  notaMaxima: number;
-  intentos: number;
-  url: string;
-}
-
-/* ── Interfaces de Exámenes ── */
-
-export interface Examen {
-  id: number;
-  numeroExamen: number;
-  semana: number;
-  clase: number;
-  titulo: string;
-  descripcion: string | null;
-  tipo: string;              // escrito | oral | online | practico
-  fechaExamen: string | null;
-  duracionMinutos: number | null;
-  notaMaxima: number;
-  url: string | null;
-  fechaCreacion: string;
-  totalAlumnos: number;
-  asistieron: number;
-  noAsistieron: number;
-  calificados: number;
-}
-
-export interface NotaExamen {
-  idNotaExamen: number;
-  idAlumno: number;
-  codigo: string;
-  nombres: string;
-  asistio: boolean;
-  nota: number | null;
-}
-
-export interface FormExamen {
-  semana: number;
-  clase: number;
-  numeroExamen: number;
-  titulo: string;
-  descripcion: string;
-  tipo: string;
-  fechaExamen: string;
-  duracionMinutos: number;
-  notaMaxima: number;
-  url: string;
-}
-
-/* ── Interfaces de Temario ── */
-
-export interface Unidad {
-  idUnidad: number;
-  idAulaCurso: number;
-  numero: number;
-  titulo: string;
-  bimestre: string;
-  semanas: string;
-  objetivos: string[];
-  indicadores: string[];
-  contenidos: string[];
-  estado: 'pendiente' | 'en_curso' | 'concluido';
-  fechaConclusion?: string;
-}
-
-export interface FormUnidad {
-  idUnidad?: number;
-  numero: number;
-  titulo: string;
-  bimestre: string;
-  semanas: string;
-  objetivos: string;
-  indicadores: string;
-  contenidos: string;
-  estado: 'pendiente' | 'en_curso' | 'concluido';
-}
-
-/* ── Interfaces de Reportes ── */
-
-export interface Reporte {
-  id: number;
-  tipo: string;          // pendiente | anotacion | llamada_atencion | felicitacion | otro
-  titulo: string;
-  descripcion: string | null;
-  fecha: string;
-  visiblePadre: boolean;
-  fechaCreacion: string;
-}
-
-export interface AlumnoReportes {
-  idAlumno: number;
-  codigo: string;
-  nombres: string;
-  totalReportes: number;
-  reportes: Reporte[];
-}
-
-export interface FormReporte {
-  idAlumno: number | null;
-  tipo: string;
-  titulo: string;
-  descripcion: string;
-  fecha: string;
-  visiblePadre: boolean;
-}
-
-/* ── Interfaces de Asistencia ── */
-
-export interface AsistenciaAlumno {
-  idAsistencia: number | null;
-  idAlumno:     number;
-  codigo:       string;
-  nombres:      string;
-  estado:       string;    // presente | falta | tardanza | justificado
-  justificante: string | null;
-}
-
-export interface AlumnoConsolidado {
-  idAlumno: number;
-  codigo: string;
-  nombres: string;
-  alertaRiesgo: boolean;
-  porcentajeAsistencia: number;
-  estados: string[];
-}
-
-export interface ConsolidadoMensual {
-  fechas: string[];
-  alumnos: AlumnoConsolidado[];
-}
-
-export interface SesionAsistencia {
-  fecha:             string;
-  totalPresentes:    number;
-  totalFaltas:       number;
-  totalTardanzas:    number;
-  totalJustificados: number;
-  alumnos:           AsistenciaAlumno[];
-}
-
-/* ── Interfaces de comunicados (Refuerzos) ── */
-
-/** Aula del docente: id + grado + sección, para el selector del formulario */
-export interface AulaSimple {
-  id: number;
-  grado: string;
-  seccion: string;
-}
-
-/** Tipo de evento disponible */
-export interface TipoEvento {
-  id: number;
-  nombre: string;
-  colorFondo: string;
-  colorTexto: string;
-}
-
-/** Comunicado creado por el docente */
-export interface Comunicado {
-  id: number;
-  titulo: string;
-  descripcion: string | null;
-  tipo: string;
-  fechaEvento: string | null;   // "DD/MM/YYYY"
-  horaEvento: string | null;    // "HH:MM"
-  fechaCreacion: string;        // "DD/MM/YYYY HH:MM"
-  grado: string;                // primer grado o "Todos los grados"
-  seccion: string | null;
-  idAula: number | null;
-  idAulas: number[];            // lista de aulas destino
-}
-
-/** Estado local del formulario de nuevo comunicado */
-export interface FormComunicado {
-  titulo: string;
-  tipo: string;
-  idAulas: number[];     // vacío = todos los grados
-  descripcion: string;
-  fechaEvento: string;   // "YYYY-MM-DD"
-  horaEvento: string;    // "HH:MM"
-  nuevoTipo: string;     // nombre del tipo personalizado (si aplica)
-  mostrarNuevoTipo: boolean;
-}
 
 const CARD_COLORS = ['#dce8f7', '#fde8e8', '#d5e5f5', '#fdd8d8', '#e8f0fc', '#fce8e8', '#e8f7ec', '#fef9e0'];
 
@@ -461,14 +92,14 @@ const ICON_MAP: Record<string, string> = {
 
 @Component({
   selector: 'app-portal-docente',
-  imports: [CommonModule, FormsModule, PrediccionesDashboard],
+  imports: [CommonModule, FormsModule, PrediccionesDashboard, DocInicio, DocCursoDetalle, DocCalendario, DocMensajes, DocRefuerzos],
   templateUrl: './portal-docente.html',
   styleUrl: './portal-docente.scss',
 })
 export class PortalDocente implements OnDestroy {
   private router = inject(Router);
   private auth   = inject(AuthService);
-  private http   = inject(HttpClient);
+  private docenteService = inject(DocenteService);
   readonly ws    = inject(WebSocketService);
   private zone   = inject(NgZone);
 
@@ -478,6 +109,18 @@ export class PortalDocente implements OnDestroy {
   mediaRecorder: any = null;
   audioChunks: Blob[] = [];
   recordingInterval: any = null;
+  activeStream: MediaStream | null = null;
+  isAudioCancelled = false;
+  valoresFrecuencia = signal<number[]>(Array(24).fill(4));
+  audioCtx: AudioContext | null = null;
+  analyser: AnalyserNode | null = null;
+  animationFrameId: any = null;
+
+  // Plus Ultra: dictado por voz y copiloto empático
+  dictando = signal(false);
+  dictadoInterim = signal(''); // Texto provisional mientras se reconoce la voz
+  recognition: any = null;
+  sugiriendoRespuesta = signal(false);
 
   // Exponemos constantes usadas en el template
   calPxPorHora = CAL_PX_POR_HORA;
@@ -928,12 +571,7 @@ export class PortalDocente implements OnDestroy {
 
   /** Carga los espacios disponibles para el docente autenticado */
   cargarEspaciosDisponibles() {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<EspacioReserva[]>(
-      'http://localhost:8080/api/portal/docente/reservas/espacios-disponibles', { headers }
-    ).subscribe({
+    this.docenteService.getEspaciosDisponibles().subscribe({
       next: data => {
         this.espaciosDisponibles.set(data);
         if (data.length > 0 && !this.formReserva().espacio) {
@@ -1106,12 +744,9 @@ export class PortalDocente implements OnDestroy {
 
   /** Carga todas las reservas del docente autenticado */
   cargarReservas() {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.cargandoReservas.set(true);
     this.errorReservas.set('');
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<Reserva[]>('http://localhost:8080/api/portal/docente/reservas', { headers })
+    this.docenteService.getReservas()
       .subscribe({
         next: data => { this.reservas.set(data); this.cargandoReservas.set(false); },
         error: () => { this.errorReservas.set('No se pudieron cargar las reservas.'); this.cargandoReservas.set(false); },
@@ -1121,21 +756,15 @@ export class PortalDocente implements OnDestroy {
   /** Verifica disponibilidad del espacio en el horario del formulario */
   verificarDisponibilidad() {
     const f = this.formReserva();
-    const token = this.auth.getToken();
-    if (!token) return;
     this.errorDisponibilidad.set('');
     this.okDisponibilidad.set(false);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     const body = {
       espacio: f.espacio,
       fecha: f.fecha,
       horaInicio: f.horaInicio,
       horaFin: f.horaFin,
     };
-    this.http.post<{ disponible: boolean; mensaje: string }>(
-      'http://localhost:8080/api/portal/docente/reservas/verificar',
-      body, { headers }
-    ).subscribe({
+    this.docenteService.verificarDisponibilidad(body).subscribe({
       next: res => {
         if (res.disponible) {
           this.okDisponibilidad.set(true);
@@ -1236,10 +865,7 @@ export class PortalDocente implements OnDestroy {
       return;
     }
 
-    const token = this.auth.getToken();
-    if (!token) return;
     this.enviandoReserva.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     const body = {
       espacio: f.espacio,
       fecha: f.fecha,
@@ -1260,7 +886,7 @@ export class PortalDocente implements OnDestroy {
 
     const idEdit = this.reservaEditando();
     if (idEdit) {
-      this.http.put<Reserva>(`http://localhost:8080/api/portal/docente/reservas/${idEdit}`, body, { headers })
+      this.docenteService.actualizarReserva(idEdit, body)
         .subscribe({
           next: () => {
             this.modalReserva.set(false);
@@ -1271,7 +897,7 @@ export class PortalDocente implements OnDestroy {
           error: handleError,
         });
     } else {
-      this.http.post<Reserva>('http://localhost:8080/api/portal/docente/reservas', body, { headers })
+      this.docenteService.crearReserva(body)
         .subscribe({
           next: () => {
             this.modalReserva.set(false);
@@ -1295,11 +921,8 @@ export class PortalDocente implements OnDestroy {
 
   /** Elimina una reserva propia del docente */
   eliminarReserva(id: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.reservas.update(list => list.filter(r => r.id !== id));
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.delete(`http://localhost:8080/api/portal/docente/reservas/${id}`, { headers })
+    this.docenteService.eliminarReserva(id)
       .subscribe({ error: () => this.cargarReservas() });
   }
 
@@ -1308,15 +931,10 @@ export class PortalDocente implements OnDestroy {
   ══════════════════════════════════════════ */
 
   private cargarCursos() {
-    const token = this.auth.getToken();
-    if (!token) return;
-
     this.cargando.set(true);
     this.errorCarga.set('');
 
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-
-    this.http.get<CursoApi[]>('http://localhost:8080/api/portal/docente/mis-cursos', { headers })
+    this.docenteService.getMisCursos()
       .subscribe({
         next: (data) => {
           this.cursos.set(data.map((c, i) => this.mapCurso(c, i)));
@@ -1333,12 +951,9 @@ export class PortalDocente implements OnDestroy {
 
   /** Carga la bandeja de entrada del docente desde el backend */
   cargarMensajes() {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.cargandoMensajes.set(true);
     this.errorMensajes.set('');
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<MensajeResumen[]>('http://localhost:8080/api/portal/docente/mensajes', { headers })
+    this.docenteService.getMensajes()
       .subscribe({
         next: data => { this.mensajes.set(data); this.cargandoMensajes.set(false); },
         error: ()  => { this.errorMensajes.set('No se pudieron cargar los mensajes.'); this.cargandoMensajes.set(false); },
@@ -1351,14 +966,11 @@ export class PortalDocente implements OnDestroy {
    * También actualiza el flag `leido` en la lista local para que el badge desaparezca.
    */
   abrirMensaje(id: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.mensajeActivo.set(null);
     this.contextoAlumno.set(null);
     this.mostrarContexto.set(false);
     this.replyText.set('');
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<MensajeDetalle>(`http://localhost:8080/api/portal/docente/mensajes/${id}`, { headers })
+    this.docenteService.getMensajeDetalle(id)
       .subscribe({
         next: data => {
           this.mensajeActivo.set(data);
@@ -1393,13 +1005,8 @@ export class PortalDocente implements OnDestroy {
 
   /** Carga el resumen del alumno para el panel lateral */
   cargarContextoAlumno(idAlumno: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.cargandoContexto.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<AlumnoContexto>(
-      `http://localhost:8080/api/portal/docente/mensajes/alumno-contexto/${idAlumno}`, { headers }
-    ).subscribe({
+    this.docenteService.getAlumnoContexto(idAlumno).subscribe({
       next: data => {
         this.contextoAlumno.set(data);
         this.cargandoContexto.set(false);
@@ -1430,13 +1037,8 @@ export class PortalDocente implements OnDestroy {
 
   /** Carga el listado de alumnos disponibles desde el backend */
   cargarAlumnosDisponibles() {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.cargandoAlumnos.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<AlumnoDisponible[]>(
-      'http://localhost:8080/api/portal/docente/mensajes/alumnos-disponibles', { headers }
-    ).subscribe({
+    this.docenteService.getAlumnosDisponibles().subscribe({
       next: data => { this.alumnosDisponibles.set(data); this.cargandoAlumnos.set(false); },
       error: () => { this.cargandoAlumnos.set(false); },
     });
@@ -1461,21 +1063,14 @@ export class PortalDocente implements OnDestroy {
     const asunto  = this.nuevoChatAsunto().trim();
     const mensaje = this.nuevoChatMensaje().trim();
     if (!alumno || !asunto || !mensaje) return;
-    const token = this.auth.getToken();
-    if (!token) return;
     this.enviandoNuevoChat.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
-    this.http.post<{ id: number }>(
-      'http://localhost:8080/api/portal/docente/mensajes/iniciar',
-      {
-        idAlumno:    alumno.idAlumno,
-        idPadre:     alumno.idPadre,
-        idAulaCurso: alumno.idAulaCurso,
-        asunto,
-        cuerpo:      mensaje,
-      },
-      { headers }
-    ).subscribe({
+    this.docenteService.crearNuevoMensaje({
+      idAlumno:    alumno.idAlumno,
+      idPadre:     alumno.idPadre,
+      idAulaCurso: alumno.idAulaCurso,
+      asunto,
+      cuerpo:      mensaje,
+    }).subscribe({
       next: res => {
         this.enviandoNuevoChat.set(false);
         this.cerrarModalNuevoChat();
@@ -1508,7 +1103,8 @@ export class PortalDocente implements OnDestroy {
 
   toggleAudioPlay(r: any) {
     const audioUrl = 'http://localhost:8080' + r.cuerpo.replace('[AUDIO]', '').trim();
-    
+
+    // Si ya hay un audio activo para esta misma respuesta, pausar/reanudar
     if (this.playingAudio && this.activeAudioRespuesta === r) {
       if (r.isPlaying) {
         this.playingAudio.pause();
@@ -1520,25 +1116,43 @@ export class PortalDocente implements OnDestroy {
       return;
     }
 
+    // Detener el audio anterior si existe
     if (this.playingAudio) {
       this.playingAudio.pause();
       if (this.activeAudioRespuesta) {
         this.activeAudioRespuesta.isPlaying = false;
+        this.activeAudioRespuesta.audioProgress = 0;
+        this.activeAudioRespuesta.currentTime = 0;
       }
     }
 
-    const audio = new Audio(audioUrl);
+    const audio = new Audio();
+    audio.preload = 'metadata'; // Cargar metadatos (duración) antes de reproducir
     this.playingAudio = audio;
     this.activeAudioRespuesta = r;
-    r.isPlaying = true;
+    r.isPlaying = false; // Esperar a que cargue antes de mostrar como playing
     r.currentTime = 0;
     r.audioProgress = 0;
+
+    // Una vez cargados los metadatos ya tenemos la duración real
+    audio.addEventListener('loadedmetadata', () => {
+      this.zone.run(() => {
+        r.duration = isFinite(audio.duration) ? audio.duration : 0;
+      });
+    });
 
     audio.addEventListener('timeupdate', () => {
       this.zone.run(() => {
         r.currentTime = audio.currentTime;
-        r.duration = audio.duration || 0;
-        r.audioProgress = (audio.currentTime / (audio.duration || 1)) * 100;
+        r.duration = isFinite(audio.duration) ? audio.duration : r.duration || 0;
+        r.audioProgress = r.duration > 0 ? (audio.currentTime / r.duration) * 100 : 0;
+      });
+    });
+
+    audio.addEventListener('canplay', () => {
+      this.zone.run(() => {
+        r.isPlaying = true;
+        audio.play().catch(err => console.warn('Error reproduciendo audio:', err));
       });
     });
 
@@ -1552,7 +1166,17 @@ export class PortalDocente implements OnDestroy {
       });
     });
 
-    audio.play();
+    audio.addEventListener('error', (e) => {
+      console.error('Error cargando audio:', e);
+      this.zone.run(() => {
+        r.isPlaying = false;
+        this.playingAudio = null;
+        this.activeAudioRespuesta = null;
+      });
+    });
+
+    audio.src = audioUrl;
+    audio.load();
   }
 
   seekAudio(event: MouseEvent, r: any) {
@@ -1572,74 +1196,197 @@ export class PortalDocente implements OnDestroy {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   }
 
-  // Audio Recording Methods
+  // ─── GRABACIÓN DE AUDIO (MediaRecorder) ────────────────────────────────────
+
+  /**
+   * Inicia la grabación de audio.
+   * Todos los eventos del MediaRecorder corren FUERA del zone de Angular
+   * para no disparar change detection con cada chunk de audio (cada 500ms).
+   */
   iniciarGrabacion() {
     if (this.grabando()) return;
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      this.audioChunks = [];
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      this.mediaRecorder = mediaRecorder;
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data);
-        }
-      };
+    this.isAudioCancelled = false;
 
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-        this.enviarAudio(audioBlob);
-        stream.getTracks().forEach(track => track.stop());
-      };
+    this.zone.runOutsideAngular(() => {
+      navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+        .then(stream => {
+          this.activeStream = stream;
+          this.audioChunks = [];
 
-      this.grabando.set(true);
-      this.duracionGrabacion.set(0);
-      mediaRecorder.start();
+          // ─── VISUALIZADOR DE ONDAS DE AUDIO ───
+          try {
+            const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+            const audioCtx = new AudioContextClass();
+            this.audioCtx = audioCtx;
 
-      this.recordingInterval = setInterval(() => {
-        this.duracionGrabacion.update(d => d + 1);
-      }, 1000);
-    }).catch(err => {
-      console.error('No se pudo acceder al micrófono:', err);
-      alert('Por favor, concede permisos de micrófono para grabar audios.');
+            const source = audioCtx.createMediaStreamSource(stream);
+            const analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 64; // Bajo fftSize para tener 32 bins de frecuencia
+            source.connect(analyser);
+            this.analyser = analyser;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            const updateWaves = () => {
+              if (!this.grabando() || !this.analyser) {
+                return;
+              }
+              this.analyser.getByteFrequencyData(dataArray);
+
+              // Mapear frecuencia a 24 barras de alturas (entre 4px y 36px)
+              const heights: number[] = [];
+              const step = Math.floor(bufferLength / 24) || 1;
+              for (let i = 0; i < 24; i++) {
+                const val = dataArray[i * step] || 0;
+                const minHeight = 4;
+                const maxHeight = 36;
+                const hVal = minHeight + (val / 255) * (maxHeight - minHeight);
+                heights.push(Math.round(hVal));
+              }
+
+              this.zone.run(() => {
+                this.valoresFrecuencia.set(heights);
+              });
+
+              this.animationFrameId = requestAnimationFrame(updateWaves);
+            };
+
+            this.animationFrameId = requestAnimationFrame(updateWaves);
+          } catch (audioErr) {
+            console.warn('No se pudo inicializar AudioContext del visualizador:', audioErr);
+          }
+
+          // Auto-detectar el codec soportado
+          const mimeType = [
+            'audio/webm;codecs=opus',
+            'audio/webm',
+            'audio/ogg;codecs=opus',
+            'audio/ogg',
+            'audio/mp4',
+          ].find(t => MediaRecorder.isTypeSupported(t)) ?? '';
+
+          const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+          this.mediaRecorder = recorder;
+
+          recorder.ondataavailable = (e: BlobEvent) => {
+            if (e.data && e.data.size > 0) {
+              this.audioChunks.push(e.data);
+            }
+          };
+
+          recorder.onstop = () => {
+            // Detener pistas del micro
+            stream.getTracks().forEach(t => t.stop());
+            this.activeStream = null;
+
+            this.zone.run(() => {
+              this.limpiarVisualizador();
+            });
+
+            if (this.isAudioCancelled) {
+              this.audioChunks = [];
+              return;
+            }
+
+            const blob = new Blob(this.audioChunks, { type: recorder.mimeType || 'audio/webm' });
+            this.audioChunks = [];
+
+            // Volver al zone solo para actualizar la UI y enviar
+            this.zone.run(() => {
+              if (blob.size > 0) {
+                this.enviarAudio(blob, recorder.mimeType);
+              } else {
+                console.warn('El audio capturado está vacío (0 bytes).');
+              }
+            });
+          };
+
+          // Iniciar grabación sin timeslice para obtener un solo blob consolidado
+          recorder.start();
+
+          // Actualizar estado dentro del zone
+          this.zone.run(() => {
+            this.grabando.set(true);
+            this.duracionGrabacion.set(0);
+          });
+
+          // El setInterval también fuera del zone
+          this.recordingInterval = setInterval(() => {
+            this.zone.run(() => this.duracionGrabacion.update(d => d + 1));
+          }, 1000);
+        })
+        .catch(err => {
+          this.zone.run(() => {
+            if (err.name === 'NotAllowedError') {
+              alert('Permiso de micrófono denegado. Habilítalo en la configuración del navegador.');
+            } else {
+              alert('No se pudo acceder al micrófono: ' + err.message);
+            }
+          });
+        });
     });
   }
 
   detenerGrabacion() {
     if (!this.grabando() || !this.mediaRecorder) return;
-    this.mediaRecorder.stop();
+    this.isAudioCancelled = false;
+    clearInterval(this.recordingInterval);
+    this.recordingInterval = null;
     this.grabando.set(false);
-    if (this.recordingInterval) {
-      clearInterval(this.recordingInterval);
-      this.recordingInterval = null;
+    this.limpiarVisualizador();
+    try {
+      this.mediaRecorder.stop();
+    } catch (e) {
+      console.warn('Error al detener grabador:', e);
     }
+    this.mediaRecorder = null;
   }
 
   cancelarGrabacion() {
-    if (!this.grabando() || !this.mediaRecorder) return;
-    this.mediaRecorder.onstop = () => {
-      this.mediaRecorder = null;
-      this.audioChunks = [];
-    };
-    this.mediaRecorder.stop();
+    if (!this.mediaRecorder) return;
+    this.isAudioCancelled = true;
+    clearInterval(this.recordingInterval);
+    this.recordingInterval = null;
     this.grabando.set(false);
-    if (this.recordingInterval) {
-      clearInterval(this.recordingInterval);
-      this.recordingInterval = null;
+    this.limpiarVisualizador();
+    try {
+      this.mediaRecorder.stop();
+    } catch (e) {
+      console.warn('Error al detener grabador:', e);
+    }
+    this.mediaRecorder = null;
+    if (this.activeStream) {
+      this.activeStream.getTracks().forEach(t => t.stop());
+      this.activeStream = null;
     }
   }
 
-  enviarAudio(audioBlob: Blob) {
+  private limpiarVisualizador() {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    if (this.audioCtx) {
+      this.audioCtx.close().catch(() => {});
+      this.audioCtx = null;
+    }
+    this.analyser = null;
+    this.valoresFrecuencia.set(Array(24).fill(4));
+  }
+
+  enviarAudio(audioBlob: Blob, mimeType?: string) {
     const activo = this.mensajeActivo();
     if (!activo) return;
-    const token = this.auth.getToken();
-    if (!token) return;
+
+    // Determinar extensión según el tipo MIME
+    const ext = (mimeType || '').includes('ogg') ? 'ogg' : 'webm';
 
     // Agregar mensaje optimista temporal
     const tempId = -Date.now();
     const tempResp: any = {
       id: tempId,
-      cuerpo: '[AUDIO] /uploads/audios/temp.webm',
+      cuerpo: '[AUDIO] /uploads/audios/temp.' + ext,
       fecha: 'Enviando...',
       nombreAutor: 'Yo',
       esMaestro: true,
@@ -1650,33 +1397,142 @@ export class PortalDocente implements OnDestroy {
 
     this.mensajeActivo.update(curr => {
       if (!curr) return null;
-      return {
-        ...curr,
-        respuestas: [...curr.respuestas, tempResp]
-      };
+      return { ...curr, respuestas: [...curr.respuestas, tempResp] };
     });
     this.scrollToBottom();
 
     const formData = new FormData();
-    formData.append('file', audioBlob, 'audio.webm');
+    formData.append('file', audioBlob, 'audio.' + ext);
 
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.post(`http://localhost:8080/api/portal/docente/mensajes/${activo.id}/responder-audio`,
-      formData, { headers })
+    this.docenteService.responderMensajeAudio(activo.id, formData)
       .subscribe({
-        next: () => {
-          // El WebSocket se encargará de remover el temporal y poner el real.
-        },
+        next: () => { /* WebSocket actualizará con el mensaje real */ },
         error: () => {
-          // Remover el temporal si falla
           this.mensajeActivo.update(curr => {
             if (!curr) return null;
-            return {
-              ...curr,
-              respuestas: curr.respuestas.filter(r => r.id !== tempId)
-            };
+            return { ...curr, respuestas: curr.respuestas.filter(r => r.id !== tempId) };
           });
           alert('Error al enviar nota de voz.');
+        }
+      });
+  }
+
+  // ─── DICTADO POR VOZ (Speech-to-Text) ──────────────────────────────────────
+
+  /**
+   * Activa/desactiva el dictado por voz.
+   * - Los callbacks del SpeechRecognition ya corren fuera del zone de Angular
+   *   (son callbacks nativos del browser), por eso necesitamos zone.run() para updates.
+   * - Auto-reinicia cuando Chrome detiene la sesión en silencio.
+   * - Al detener, el texto provisional (interim) se confirma en el textarea.
+   */
+  toggleDictado() {
+    if (this.dictando()) {
+      this._stopDictado(/* commitInterim= */ true);
+      return;
+    }
+
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      alert('Tu navegador no soporta el reconocimiento de voz.\nUsa Google Chrome o Microsoft Edge.');
+      return;
+    }
+
+    const rec = new SR() as any;
+    rec.lang = 'es-ES';
+    rec.continuous = true;        // Sesión larga (no termina tras 1 frase)
+    rec.interimResults = true;    // Resultados provisionales en tiempo real
+    rec.maxAlternatives = 1;
+
+    rec.onstart = () => {
+      this.zone.run(() => this.dictando.set(true));
+    };
+
+    rec.onresult = (ev: any) => {
+      let final = '';
+      let interim = '';
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const text = ev.results[i][0].transcript;
+        if (ev.results[i].isFinal) {
+          final += text;
+        } else {
+          interim += text;
+        }
+      }
+      this.zone.run(() => {
+        if (final) {
+          // Texto confirmado → acumular en el input
+          const prev = this.replyText();
+          this.replyText.set(prev ? (prev + ' ' + final).trim() : final.trim());
+          this.dictadoInterim.set('');
+        } else {
+          // Texto provisional → mostrarlo solo visualmente
+          this.dictadoInterim.set(interim);
+        }
+      });
+    };
+
+    rec.onerror = (ev: any) => {
+      if (ev.error === 'not-allowed') {
+        this.zone.run(() => {
+          alert('Permiso de micrófono denegado para el dictado.\nHabilítalo en la configuración del navegador.');
+          this._stopDictado(false);
+        });
+      } else if (ev.error === 'network') {
+        this.zone.run(() => {
+          alert('Error de red: el dictado requiere conexión a Internet.');
+          this._stopDictado(false);
+        });
+      }
+    };
+
+    rec.onend = () => {
+      if (this.dictando()) {
+        try {
+          rec.start(); // Auto-reiniciar para dictado continuo
+        } catch {
+          this.zone.run(() => this._stopDictado(false));
+        }
+      }
+    };
+
+    this.recognition = rec;
+    rec.start();
+  }
+
+  /** Detiene el dictado. Si commitInterim=true, el texto provisional se confirma. */
+  private _stopDictado(commitInterim: boolean) {
+    if (this.recognition) {
+      try { this.recognition.stop(); } catch { /* ignorar */ }
+      this.recognition = null;
+    }
+    if (commitInterim) {
+      const interim = this.dictadoInterim();
+      if (interim.trim()) {
+        const prev = this.replyText();
+        this.replyText.set(prev ? (prev + ' ' + interim).trim() : interim.trim());
+      }
+    }
+    this.dictando.set(false);
+    this.dictadoInterim.set('');
+  }
+
+  copilotoSugerirRespuesta() {
+    const activo = this.mensajeActivo();
+    if (!activo) return;
+
+    this.sugiriendoRespuesta.set(true);
+    this.docenteService.sugerirRespuesta(activo.id)
+      .subscribe({
+        next: (data) => {
+          this.sugiriendoRespuesta.set(false);
+          if (data && data.sugerencia) {
+            this.replyText.set(data.sugerencia);
+          }
+        },
+        error: () => {
+          this.sugiriendoRespuesta.set(false);
+          alert('No se pudo generar la sugerencia empática en este momento.');
         }
       });
   }
@@ -1688,8 +1544,6 @@ export class PortalDocente implements OnDestroy {
     const activo = this.mensajeActivo();
     const texto  = this.replyText().trim();
     if (!activo || !texto) return;
-    const token = this.auth.getToken();
-    if (!token) return;
 
     // Agregar de forma optimista localmente de inmediato
     const tempId = -Date.now();
@@ -1712,9 +1566,7 @@ export class PortalDocente implements OnDestroy {
     this.replyText.set('');
 
     this.enviandoReply.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
-    this.http.post(`http://localhost:8080/api/portal/docente/mensajes/${activo.id}/responder`,
-      { cuerpo: texto }, { headers })
+    this.docenteService.responderMensaje(activo.id, { cuerpo: texto })
       .subscribe({
         next: () => {
           this.enviandoReply.set(false);
@@ -1743,12 +1595,6 @@ export class PortalDocente implements OnDestroy {
     if (!texto || this.refinandoConIA()) return;
 
     this.refinandoConIA.set(true);
-    const token = this.auth.getToken();
-    if (!token) {
-      this.refinandoConIA.set(false);
-      return;
-    }
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
     let nombreAlumno = 'el estudiante';
     let nombreDestinatario = 'Apoderado';
@@ -1767,15 +1613,11 @@ export class PortalDocente implements OnDestroy {
       }
     }
 
-    this.http.post<{ resultado: string }>(
-      'http://localhost:8080/api/portal/docente/mensajes/ia-redactar',
-      { 
-        texto,
-        nombreAlumno,
-        nombreDestinatario
-      },
-      { headers }
-    ).subscribe({
+    this.docenteService.refinarRespuestaIA({ 
+      texto,
+      nombreAlumno,
+      nombreDestinatario
+    }).subscribe({
       next: (res) => {
         if (tipo === 'respuesta') {
           this.replyText.set(res.resultado);
@@ -1815,12 +1657,9 @@ export class PortalDocente implements OnDestroy {
 
   /** Carga todos los comunicados del docente desde el backend */
   cargarComunicados() {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.cargandoComunicados.set(true);
     this.errorComunicados.set('');
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<Comunicado[]>('http://localhost:8080/api/portal/docente/comunicados', { headers })
+    this.docenteService.getComunicados()
       .subscribe({
         next: data => { this.comunicados.set(data); this.cargandoComunicados.set(false); },
         error: ()   => { this.errorComunicados.set('No se pudieron cargar los comunicados.'); this.cargandoComunicados.set(false); },
@@ -1829,21 +1668,13 @@ export class PortalDocente implements OnDestroy {
 
   /** Carga las aulas del docente para poblar el selector del formulario */
   private cargarMisAulas() {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<AulaSimple[]>('http://localhost:8080/api/portal/docente/comunicados/mis-aulas', { headers })
+    this.docenteService.getMisAulasComunicados()
       .subscribe({ next: data => this.misAulas.set(data) });
   }
 
   /** Carga los tipos de evento desde el backend */
   cargarTiposEvento() {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<TipoEvento[]>(
-      'http://localhost:8080/api/portal/docente/comunicados/tipos-evento', { headers }
-    ).subscribe({ next: data => this.tiposEvento.set(data) });
+    this.docenteService.getTiposEventos().subscribe({ next: data => this.tiposEvento.set(data) });
   }
 
   /** Abre/cierra el formulario y lo resetea al abrir */
@@ -1880,13 +1711,7 @@ export class PortalDocente implements OnDestroy {
   crearNuevoTipoEvento() {
     const nombre = this.formCom().nuevoTipo.trim();
     if (!nombre) return;
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
-    this.http.post<TipoEvento>(
-      'http://localhost:8080/api/portal/docente/comunicados/tipos-evento',
-      { nombre }, { headers }
-    ).subscribe({
+    this.docenteService.crearTipoEvento({ nombre }).subscribe({
       next: nuevo => {
         this.tiposEvento.update(t => [...t, nuevo]);
         this.formCom.update(f => ({ ...f, tipo: nuevo.nombre, nuevoTipo: '', mostrarNuevoTipo: false }));
@@ -1902,10 +1727,7 @@ export class PortalDocente implements OnDestroy {
   enviarComunicado() {
     const f = this.formCom();
     if (!f.titulo.trim() || !f.tipo) return;
-    const token = this.auth.getToken();
-    if (!token) return;
     this.enviandoCom.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     const body = {
       titulo:      f.titulo.trim(),
       tipo:        f.tipo,
@@ -1914,7 +1736,7 @@ export class PortalDocente implements OnDestroy {
       fechaEvento: f.fechaEvento || null,
       horaEvento:  f.horaEvento  || null,
     };
-    this.http.post<Comunicado>('http://localhost:8080/api/portal/docente/comunicados', body, { headers })
+    this.docenteService.crearComunicado(body)
       .subscribe({
         next: () => {
           this.mostrarFormCom.set(false);
@@ -1930,11 +1752,8 @@ export class PortalDocente implements OnDestroy {
    * Lo quita de la lista local antes de llamar al backend (optimistic update).
    */
   eliminarComunicado(id: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.comunicados.update(lista => lista.filter(c => c.id !== id));
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.delete(`http://localhost:8080/api/portal/docente/comunicados/${id}`, { headers })
+    this.docenteService.eliminarComunicado(id)
       .subscribe({ error: () => this.cargarComunicados() /* revertir si falla */ });
   }
 
@@ -1955,15 +1774,10 @@ export class PortalDocente implements OnDestroy {
 
   /** Llama al endpoint /mi-horario y guarda los bloques en el signal `horario` */
   private cargarHorario() {
-    const token = this.auth.getToken();
-    if (!token) return;
-
     this.cargandoHorario.set(true);
     this.errorHorario.set('');
 
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-
-    this.http.get<ClaseHorario[]>('http://localhost:8080/api/portal/docente/mi-horario', { headers })
+    this.docenteService.getMiHorario()
       .subscribe({
         next: (data) => {
           this.horario.set(data);
@@ -2070,14 +1884,8 @@ export class PortalDocente implements OnDestroy {
   /* ── Métodos de Temario ── */
 
   cargarTemario(idAulaCurso: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.cargandoTemario.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<Unidad[]>(
-      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/temario`,
-      { headers }
-    ).subscribe({
+    this.docenteService.getUnidades(idAulaCurso).subscribe({
       next: data => {
         this.unidades.set(data);
         this.cargandoTemario.set(false);
@@ -2095,9 +1903,6 @@ export class PortalDocente implements OnDestroy {
   }
 
   actualizarEstadoUnidad(unidad: Unidad, nuevoEstado: 'pendiente' | 'en_curso' | 'concluido') {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     const body = {
       numero: unidad.numero,
       titulo: unidad.titulo,
@@ -2114,10 +1919,7 @@ export class PortalDocente implements OnDestroy {
       list.map(u => u.idUnidad === unidad.idUnidad ? { ...u, estado: nuevoEstado } : u)
     );
 
-    this.http.put(
-      `http://localhost:8080/api/portal/docente/temario/${unidad.idUnidad}`,
-      body, { headers }
-    ).subscribe({
+    this.docenteService.actualizarUnidad(unidad.idUnidad, body).subscribe({
       error: () => {
         const curso = this.cursoActivo();
         if (curso) this.cargarTemario(curso.idAulaCurso);
@@ -2158,12 +1960,9 @@ export class PortalDocente implements OnDestroy {
   guardarUnidad() {
     const curso = this.cursoActivo();
     if (!curso) return;
-    const token = this.auth.getToken();
-    if (!token) return;
     const f = this.formUnidad();
     if (!f.titulo.trim()) return;
 
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     const body = {
       numero: f.numero,
       titulo: f.titulo.trim(),
@@ -2177,10 +1976,7 @@ export class PortalDocente implements OnDestroy {
 
     if (f.idUnidad) {
       // Edit mode
-      this.http.put(
-        `http://localhost:8080/api/portal/docente/temario/${f.idUnidad}`,
-        body, { headers }
-      ).subscribe({
+      this.docenteService.actualizarUnidad(f.idUnidad, body).subscribe({
         next: () => {
           this.cargarTemario(curso.idAulaCurso);
           this.mostrarFormUnidad.set(false);
@@ -2189,10 +1985,7 @@ export class PortalDocente implements OnDestroy {
       });
     } else {
       // Create mode
-      this.http.post(
-        `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/temario`,
-        body, { headers }
-      ).subscribe({
+      this.docenteService.crearUnidad(curso.idAulaCurso, body).subscribe({
         next: () => {
           this.cargarTemario(curso.idAulaCurso);
           this.mostrarFormUnidad.set(false);
@@ -2204,14 +1997,8 @@ export class PortalDocente implements OnDestroy {
 
   /** Carga los materiales del aula_curso dado */
   cargarMateriales(idAulaCurso: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.cargandoMat.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<Material[]>(
-      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/materiales`,
-      { headers }
-    ).subscribe({
+    this.docenteService.getMateriales(idAulaCurso).subscribe({
       next: data => { this.materiales.set(data); this.cargandoMat.set(false); },
       error: ()   => this.cargandoMat.set(false),
     });
@@ -2244,10 +2031,7 @@ export class PortalDocente implements OnDestroy {
     if (!f.titulo.trim()) return;
     const curso = this.cursoActivo();
     if (!curso) return;
-    const token = this.auth.getToken();
-    if (!token) return;
     this.enviandoMat.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     const body = {
       semana: f.semana,
       clase:  f.clase,
@@ -2255,10 +2039,7 @@ export class PortalDocente implements OnDestroy {
       tipo:   f.tipo,
       url:    f.url?.trim() || null,
     };
-    this.http.post<Material>(
-      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/materiales`,
-      body, { headers }
-    ).subscribe({
+    this.docenteService.crearMaterial(curso.idAulaCurso, body).subscribe({
       next: () => {
         this.modalMaterial.set(false);
         this.enviandoMat.set(false);
@@ -2273,15 +2054,11 @@ export class PortalDocente implements OnDestroy {
 
   /** Elimina un material con optimistic update */
   eliminarMaterial(id: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     const curso = this.cursoActivo();
     this.materiales.update(list => list.filter(m => m.id !== id));
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.delete(
-      `http://localhost:8080/api/portal/docente/cursos/materiales/${id}`,
-      { headers }
-    ).subscribe({ error: () => curso && this.cargarMateriales(curso.idAulaCurso) });
+    this.docenteService.eliminarMaterial(id).subscribe({
+      error: () => curso && this.cargarMateriales(curso.idAulaCurso)
+    });
   }
 
   /** Devuelve el icono del tipo de material */
@@ -2310,14 +2087,8 @@ export class PortalDocente implements OnDestroy {
 
   /** Carga las tareas del aula_curso activo */
   cargarTareas(idAulaCurso: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.cargandoTareas.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<Tarea[]>(
-      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/tareas`,
-      { headers }
-    ).subscribe({
+    this.docenteService.getTareas(idAulaCurso).subscribe({
       next: data => { this.tareas.set(data); this.cargandoTareas.set(false); },
       error: ()   => this.cargandoTareas.set(false),
     });
@@ -2355,10 +2126,7 @@ export class PortalDocente implements OnDestroy {
     if (!f.titulo.trim()) return;
     const curso = this.cursoActivo();
     if (!curso) return;
-    const token = this.auth.getToken();
-    if (!token) return;
     this.enviandoTarea.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     const body = {
       semana:         f.semana,
       clase:          f.clase,
@@ -2371,10 +2139,7 @@ export class PortalDocente implements OnDestroy {
       intentos:       f.intentos,
       url:            f.url?.trim() || null,
     };
-    this.http.post<Tarea>(
-      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/tareas`,
-      body, { headers }
-    ).subscribe({
+    this.docenteService.crearTarea(curso.idAulaCurso, body).subscribe({
       next: () => {
         this.mostrarFormTarea.set(false);
         this.enviandoTarea.set(false);
@@ -2386,17 +2151,14 @@ export class PortalDocente implements OnDestroy {
 
   /** Elimina una tarea con optimistic update */
   eliminarTarea(id: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     const curso = this.cursoActivo();
     this.tareas.update(list => list.filter(t => t.id !== id));
     /* Limpiar notas y estado de expansión */
     this.tareasExpandidas.update(s => { const n = new Set(s); n.delete(id); return n; });
     this.notasPorTarea.update(m => { const n = new Map(m); n.delete(id); return n; });
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.delete(
-      `http://localhost:8080/api/portal/docente/tareas/${id}`, { headers }
-    ).subscribe({ error: () => curso && this.cargarTareas(curso.idAulaCurso) });
+    this.docenteService.eliminarTarea(id).subscribe({
+      error: () => curso && this.cargarTareas(curso.idAulaCurso)
+    });
   }
 
   /** Expande/colapsa una tarea y carga sus notas si no las tiene */
@@ -2415,13 +2177,7 @@ export class PortalDocente implements OnDestroy {
 
   /** Carga las notas de una tarea específica */
   cargarNotasTarea(idTarea: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<NotaTarea[]>(
-      `http://localhost:8080/api/portal/docente/tareas/${idTarea}/notas`,
-      { headers }
-    ).subscribe({
+    this.docenteService.getNotasTarea(idTarea).subscribe({
       next: data => this.notasPorTarea.update(m => new Map(m).set(idTarea, data)),
     });
   }
@@ -2443,23 +2199,17 @@ export class PortalDocente implements OnDestroy {
 
   /** Guarda la nota en el backend y actualiza el signal localmente */
   guardarNotaAlumno(idNota: number, idTarea: number, entregado?: boolean) {
-    const token = this.auth.getToken();
-    if (!token) return;
     const editMap = this.editandoNota();
     const notaStr = editMap.get(idNota);
     const nota = notaStr !== undefined && notaStr !== '' ? parseFloat(notaStr) : null;
     if (nota !== null && isNaN(nota)) return;
 
     this.guardandoNota.update(s => new Set(s).add(idNota));
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     const body: Record<string, unknown> = {};
     if (nota !== null) body['nota'] = nota;
     if (entregado !== undefined) body['entregado'] = entregado;
 
-    this.http.patch<NotaTarea>(
-      `http://localhost:8080/api/portal/docente/tareas/notas/${idNota}`,
-      body, { headers }
-    ).subscribe({
+    this.docenteService.guardarNotaTarea(idNota, body).subscribe({
       next: updated => {
         /* Actualizar la nota en notasPorTarea */
         this.notasPorTarea.update(m => {
@@ -2485,32 +2235,21 @@ export class PortalDocente implements OnDestroy {
 
   /** Toggle rápido de entregado sin abrir edición */
   toggleEntregado(idNota: number, idTarea: number, entregadoActual: boolean) {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     /* Optimistic update */
     this.notasPorTarea.update(m => {
       const notas = m.get(idTarea) ?? [];
       return new Map(m).set(idTarea,
         notas.map(n => n.idNota === idNota ? { ...n, entregado: !entregadoActual } : n));
     });
-    this.http.patch<NotaTarea>(
-      `http://localhost:8080/api/portal/docente/tareas/notas/${idNota}`,
-      { entregado: !entregadoActual }, { headers }
-    ).subscribe({ error: () => this.cargarNotasTarea(idTarea) });
+    this.docenteService.guardarNotaTarea(idNota, { entregado: !entregadoActual })
+      .subscribe({ error: () => this.cargarNotasTarea(idTarea) });
   }
 
   /* ── Métodos de Exámenes ── */
 
   cargarExamenes(idAulaCurso: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.cargandoExamenes.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<Examen[]>(
-      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/examenes`,
-      { headers }
-    ).subscribe({
+    this.docenteService.getExamenes(idAulaCurso).subscribe({
       next: data => { this.examenes.set(data); this.cargandoExamenes.set(false); },
       error: ()   => this.cargandoExamenes.set(false),
     });
@@ -2543,10 +2282,7 @@ export class PortalDocente implements OnDestroy {
     if (!f.titulo.trim()) return;
     const curso = this.cursoActivo();
     if (!curso) return;
-    const token = this.auth.getToken();
-    if (!token) return;
     this.enviandoExamen.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     const body = {
       semana:           f.semana,
       clase:            f.clase,
@@ -2559,10 +2295,7 @@ export class PortalDocente implements OnDestroy {
       notaMaxima:       f.notaMaxima,
       url:              f.url?.trim() || null,
     };
-    this.http.post<Examen>(
-      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/examenes`,
-      body, { headers }
-    ).subscribe({
+    this.docenteService.crearExamen(curso.idAulaCurso, body).subscribe({
       next: () => {
         this.mostrarFormExamen.set(false);
         this.enviandoExamen.set(false);
@@ -2573,16 +2306,13 @@ export class PortalDocente implements OnDestroy {
   }
 
   eliminarExamen(id: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     const curso = this.cursoActivo();
     this.examenes.update(list => list.filter(e => e.id !== id));
     this.examenesExpandidos.update(s => { const n = new Set(s); n.delete(id); return n; });
     this.notasPorExamen.update(m => { const n = new Map(m); n.delete(id); return n; });
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.delete(
-      `http://localhost:8080/api/portal/docente/examenes/${id}`, { headers }
-    ).subscribe({ error: () => curso && this.cargarExamenes(curso.idAulaCurso) });
+    this.docenteService.eliminarExamen(id).subscribe({
+      error: () => curso && this.cargarExamenes(curso.idAulaCurso)
+    });
   }
 
   toggleExamen(id: number) {
@@ -2599,13 +2329,7 @@ export class PortalDocente implements OnDestroy {
   }
 
   cargarNotasExamen(idExamen: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<NotaExamen[]>(
-      `http://localhost:8080/api/portal/docente/examenes/${idExamen}/notas`,
-      { headers }
-    ).subscribe({
+    this.docenteService.getNotasExamen(idExamen).subscribe({
       next: data => this.notasPorExamen.update(m => new Map(m).set(idExamen, data)),
     });
   }
@@ -2623,21 +2347,15 @@ export class PortalDocente implements OnDestroy {
   }
 
   guardarNotaExamen(idNota: number, idExamen: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     const notaStr = this.editandoNotaEx().get(idNota);
     const nota = notaStr !== undefined && notaStr !== '' ? parseFloat(notaStr) : null;
     if (nota !== null && isNaN(nota)) return;
 
     this.guardandoNotaEx.update(s => new Set(s).add(idNota));
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     const body: Record<string, unknown> = {};
     if (nota !== null) body['nota'] = nota;
 
-    this.http.patch<NotaExamen>(
-      `http://localhost:8080/api/portal/docente/examenes/notas/${idNota}`,
-      body, { headers }
-    ).subscribe({
+    this.docenteService.guardarNotaExamen(idNota, body).subscribe({
       next: updated => {
         this.notasPorExamen.update(m => {
           const notas = m.get(idExamen) ?? [];
@@ -2656,18 +2374,12 @@ export class PortalDocente implements OnDestroy {
   }
 
   toggleAsistio(idNota: number, idExamen: number, asistioActual: boolean) {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     this.notasPorExamen.update(m => {
       const notas = m.get(idExamen) ?? [];
       return new Map(m).set(idExamen,
         notas.map(n => n.idNotaExamen === idNota ? { ...n, asistio: !asistioActual } : n));
     });
-    this.http.patch<NotaExamen>(
-      `http://localhost:8080/api/portal/docente/examenes/notas/${idNota}`,
-      { asistio: !asistioActual }, { headers }
-    ).subscribe({
+    this.docenteService.registrarAsistenciaExamen(idNota, { asistio: !asistioActual }).subscribe({
       next: updated => {
         this.notasPorExamen.update(m => {
           const notas = m.get(idExamen) ?? [];
@@ -2694,14 +2406,8 @@ export class PortalDocente implements OnDestroy {
   /* ── Métodos de Reportes ── */
 
   cargarReportes(idAulaCurso: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.cargandoReportes.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<AlumnoReportes[]>(
-      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/reportes`,
-      { headers }
-    ).subscribe({
+    this.docenteService.getAlumnosReportes(idAulaCurso).subscribe({
       next: data => { this.reportesAlumnos.set(data); this.cargandoReportes.set(false); },
       error: ()   => this.cargandoReportes.set(false),
     });
@@ -2734,10 +2440,7 @@ export class PortalDocente implements OnDestroy {
     if (!f.titulo.trim() || !f.idAlumno) return;
     const curso = this.cursoActivo();
     if (!curso) return;
-    const token = this.auth.getToken();
-    if (!token) return;
     this.enviandoReporte.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     const body = {
       idAlumno:     f.idAlumno,
       tipo:         f.tipo,
@@ -2746,10 +2449,7 @@ export class PortalDocente implements OnDestroy {
       fecha:        f.fecha || null,
       visiblePadre: f.visiblePadre,
     };
-    this.http.post<Reporte>(
-      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/reportes`,
-      body, { headers }
-    ).subscribe({
+    this.docenteService.crearReporte(curso.idAulaCurso, body).subscribe({
       next: nuevoReporte => {
         /* Insertar localmente sin recargar todo */
         this.reportesAlumnos.update(list =>
@@ -2768,8 +2468,6 @@ export class PortalDocente implements OnDestroy {
   }
 
   eliminarReporte(idReporte: number, idAlumno: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
     /* Optimistic update */
     this.reportesAlumnos.update(list =>
       list.map(a => a.idAlumno === idAlumno
@@ -2780,10 +2478,7 @@ export class PortalDocente implements OnDestroy {
         : a
       )
     );
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.delete(
-      `http://localhost:8080/api/portal/docente/reportes/${idReporte}`, { headers }
-    ).subscribe({
+    this.docenteService.eliminarReporte(idReporte).subscribe({
       error: () => {
         const curso = this.cursoActivo();
         if (curso) this.cargarReportes(curso.idAulaCurso);
@@ -2792,9 +2487,6 @@ export class PortalDocente implements OnDestroy {
   }
 
   toggleVisibilidadReporte(idReporte: number, idAlumno: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
     /* Optimistic update */
     this.reportesAlumnos.update(list =>
       list.map(a => a.idAlumno === idAlumno
@@ -2802,10 +2494,7 @@ export class PortalDocente implements OnDestroy {
         : a
       )
     );
-    this.http.patch<Reporte>(
-      `http://localhost:8080/api/portal/docente/reportes/${idReporte}/visibilidad`,
-      {}, { headers }
-    ).subscribe({
+    this.docenteService.toggleVisibilidadReporte(idReporte).subscribe({
       next: updated => {
         this.reportesAlumnos.update(list =>
           list.map(a => a.idAlumno === idAlumno
@@ -2824,13 +2513,8 @@ export class PortalDocente implements OnDestroy {
   exportarCurso(formato: 'excel' | 'pdf') {
     const curso = this.cursoActivo();
     if (!curso) return;
-    const token = this.auth.getToken();
-    if (!token) return;
 
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    const url = `http://localhost:8080/api/portal/docente/export/curso/${curso.idAulaCurso}/${formato}`;
-
-    this.http.get(url, { headers, responseType: 'blob' }).subscribe({
+    this.docenteService.exportarCursoBlob(curso.idAulaCurso, formato).subscribe({
       next: (blob) => {
         const type = formato === 'excel'
           ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -2853,20 +2537,14 @@ export class PortalDocente implements OnDestroy {
   }
 
   cargarSesionAsistencia(idAulaCurso: number, fecha?: string) {
-    const token = this.auth.getToken();
-    if (!token) return;
     const f = fecha ?? (this.fechaAsistencia() || this.hoy());
     this.fechaAsistencia.set(f);
     this.cargandoAsistencia.set(true);
     this.asistenciaModificada.set(false);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<SesionAsistencia>(
-      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/asistencia?fecha=${f}`,
-      { headers }
-    ).subscribe({
+    this.docenteService.getSesionAsistencia(idAulaCurso, f).subscribe({
       next: data => {
         this.sesionAsistencia.set(data);
-        this.asistenciaLocal.set(data.alumnos.map(a => ({ ...a })));
+        this.asistenciaLocal.set(data.alumnos.map((a: AsistenciaAlumno) => ({ ...a })));
         this.cargandoAsistencia.set(false);
       },
       error: () => this.cargandoAsistencia.set(false),
@@ -2874,13 +2552,7 @@ export class PortalDocente implements OnDestroy {
   }
 
   cargarFechasSesiones(idAulaCurso: number) {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<string[]>(
-      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/asistencia/fechas`,
-      { headers }
-    ).subscribe({ next: data => this.fechasSesiones.set(data) });
+    this.docenteService.getFechasAsistencias(idAulaCurso).subscribe({ next: data => this.fechasSesiones.set(data) });
   }
 
   cambiarFechaAsistencia(fecha: string) {
@@ -2919,10 +2591,7 @@ export class PortalDocente implements OnDestroy {
   guardarAsistencia() {
     const curso = this.cursoActivo();
     if (!curso) return;
-    const token = this.auth.getToken();
-    if (!token) return;
     this.guardandoAsistencia.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     const body = {
       fecha:   this.fechaAsistencia(),
       alumnos: this.asistenciaLocal().map(a => ({
@@ -2931,13 +2600,10 @@ export class PortalDocente implements OnDestroy {
         justificante: a.justificante || null,
       })),
     };
-    this.http.post<SesionAsistencia>(
-      `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/asistencia`,
-      body, { headers }
-    ).subscribe({
+    this.docenteService.registrarAsistencias(curso.idAulaCurso, body).subscribe({
       next: data => {
         this.sesionAsistencia.set(data);
-        this.asistenciaLocal.set(data.alumnos.map(a => ({ ...a })));
+        this.asistenciaLocal.set(data.alumnos.map((a: AsistenciaAlumno) => ({ ...a })));
         this.guardandoAsistencia.set(false);
         this.asistenciaModificada.set(false);
         this.cargarFechasSesiones(curso.idAulaCurso);
@@ -2987,25 +2653,21 @@ export class PortalDocente implements OnDestroy {
     }
   }
 
-  getHeaders(): HttpHeaders {
-    const token = this.auth.getToken();
-    return new HttpHeaders({ Authorization: `Bearer ${token}` });
-  }
+
 
   cargarConsolidado() {
     const curso = this.cursoActivo();
     if (!curso) return;
     this.cargandoConsolidado.set(true);
-    this.http.get<ConsolidadoMensual>(`/api/portal/docente/cursos/${curso.idAulaCurso}/asistencia/consolidado?mes=${this.mesConsolidado()}`, { headers: this.getHeaders() })
-      .subscribe({
-        next: (res) => {
-          this.datosConsolidado.set(res);
-          this.cargandoConsolidado.set(false);
-        },
-        error: () => {
-          this.cargandoConsolidado.set(false);
-        }
-      });
+    this.docenteService.getAsistenciaConsolidado(curso.idAulaCurso, this.mesConsolidado()).subscribe({
+      next: (res) => {
+        this.datosConsolidado.set(res);
+        this.cargandoConsolidado.set(false);
+      },
+      error: () => {
+        this.cargandoConsolidado.set(false);
+      }
+    });
   }
 
   cambiarMesConsolidado(deltaMeses: number) {
@@ -3052,23 +2714,11 @@ export class PortalDocente implements OnDestroy {
   }
 
   cargarPendientes() {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<Pendiente[]>(
-      'http://localhost:8080/api/portal/docente/pendientes',
-      { headers }
-    ).subscribe({ next: data => this.pendientes.set(data) });
+    this.docenteService.getPendientes().subscribe({ next: data => this.pendientes.set(data) });
   }
 
   cargarAlertasCriticas() {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<any[]>(
-      'http://localhost:8080/api/portal/docente/predicciones',
-      { headers }
-    ).subscribe({
+    this.docenteService.getPrediccionesGlobales().subscribe({
       next: (data) => {
         const alertas: AlertaCritica[] = [];
         data.forEach(al => {
@@ -3157,13 +2807,8 @@ export class PortalDocente implements OnDestroy {
     };
 
     if (this.alumnosDisponibles().length === 0) {
-      const token = this.auth.getToken();
-      if (!token) return;
       this.cargandoAlumnos.set(true);
-      const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-      this.http.get<AlumnoDisponible[]>(
-        'http://localhost:8080/api/portal/docente/mensajes/alumnos-disponibles', { headers }
-      ).subscribe({
+      this.docenteService.getAlumnosDisponibles().subscribe({
         next: data => {
           this.alumnosDisponibles.set(data);
           this.cargandoAlumnos.set(false);
@@ -3175,6 +2820,50 @@ export class PortalDocente implements OnDestroy {
       preselect();
     }
   }
+
+  crearMaterialDeForm(form: FormMaterial) {
+    this.formMaterial.set(form);
+    this.enviarMaterial();
+  }
+
+  crearTareaDeForm(form: FormTarea) {
+    this.formTarea.set(form);
+    this.enviarTarea();
+  }
+
+  crearExamenDeForm(form: FormExamen) {
+    this.formExamen.set(form);
+    this.enviarExamen();
+  }
+
+  crearUnidadDeForm(form: FormUnidad) {
+    this.formUnidad.set(form);
+    this.guardarUnidad();
+  }
+
+  crearReporteDeForm(form: FormReporte) {
+    this.formReporte.set(form);
+    this.enviarReporte();
+  }
+
+  guardarNotaAlumnoDeForm(idNota: number, idTarea: number, nota: number) {
+    this.editandoNota.update(m => new Map(m).set(idNota, nota.toString()));
+    this.guardarNotaAlumno(idNota, idTarea);
+  }
+
+  guardarNotaExamenDeForm(idNotaExamen: number, idExamen: number, nota: number) {
+    this.editandoNotaEx.update(m => new Map(m).set(idNotaExamen, nota.toString()));
+    this.guardarNotaExamen(idNotaExamen, idExamen);
+  }
+
+  setFormReservaDeComponent(e: { campo: string, valor: any }) {
+    this.formReserva.update(form => ({ ...form, [e.campo]: e.valor }));
+  }
+
+  setFormComDeComponent(e: { campo: string, valor: any }) {
+    this.formCom.update(form => ({ ...form, [e.campo]: e.valor }));
+  }
+
 
   @HostListener('document:click', ['$event'])
   onDocClick(e: MouseEvent) {

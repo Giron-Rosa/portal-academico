@@ -18,6 +18,7 @@ import java.util.List;
 public class TareaService {
 
     private final EntityManager em;
+    private final NotificacionWsService notificacionWsService;
 
     // ────────────────────────────────────────────────────────
     // Listar tareas de un aula_curso con estadísticas
@@ -119,6 +120,22 @@ public class TareaService {
                 .executeUpdate();
 
         long id = newId.longValue();
+
+        try {
+            String cNombre = (String) em.createNativeQuery("SELECT c.nombre FROM aula_cursos ac JOIN cursos c ON c.id_curso = ac.id_curso WHERE ac.id_aula_curso = :iac")
+                    .setParameter("iac", idAulaCurso)
+                    .getSingleResult();
+            notificacionWsService.notificarAulaCurso(
+                    idAulaCurso,
+                    "NUEVA_TAREA",
+                    req.getTitulo().trim(),
+                    req.getDescripcion() != null ? req.getDescripcion() : "Se ha publicado una nueva tarea.",
+                    cNombre
+            );
+        } catch (Exception e) {
+            // Ignore
+        }
+
         return getTareas(idAulaCurso, codigoDocente).stream()
                 .filter(t -> t.id() == id)
                 .findFirst()
@@ -238,6 +255,34 @@ public class TareaService {
         if (req.getEntregado() != null) q.setParameter("ent",  req.getEntregado());
         if (req.getNota()      != null) q.setParameter("nota", req.getNota());
         q.executeUpdate();
+
+        if (req.getNota() != null) {
+            try {
+                Object[] info = (Object[]) em.createNativeQuery("""
+                        SELECT nt.id_alumno, t.titulo, c.nombre
+                        FROM notas_tarea nt
+                        JOIN tareas_curso t ON t.id_tarea = nt.id_tarea
+                        JOIN aula_cursos ac ON ac.id_aula_curso = t.id_aula_curso
+                        JOIN cursos c ON c.id_curso = ac.id_curso
+                        WHERE nt.id_nota = :id
+                        """)
+                        .setParameter("id", idNota)
+                        .getSingleResult();
+                long idAlumno = ((Number) info[0]).longValue();
+                String tTitulo = (String) info[1];
+                String cNombre = (String) info[2];
+
+                notificacionWsService.notificarAlumno(
+                        idAlumno,
+                        "NUEVA_NOTA",
+                        "Calificación de Tarea",
+                        "Se ha registrado la nota " + req.getNota() + " para la tarea '" + tTitulo + "'.",
+                        cNombre
+                );
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
 
         /* Devolver el registro actualizado */
         String fetchSql = """

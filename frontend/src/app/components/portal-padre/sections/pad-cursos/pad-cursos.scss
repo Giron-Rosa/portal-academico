@@ -1,0 +1,365 @@
+// =====================================================
+// PadCursos — Estilos de la sección Cursos
+// =====================================================
+
+:host { display: block; }
+
+$rojo:       #c1121f;
+$azul:       #0d1b2a;
+$azul-med:   #003566;
+$blanco:     #ffffff;
+$gris-fondo: #f0f2f5;
+$gris-borde: #e2e8f0;
+$gris-texto: #64748b;
+$verde:      #22c55e;
+$amarillo:   #eab308;
+
+// ─── Shared: hijo-tabs ───────────────────────────────
+.hijo-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.hijo-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.9rem;
+  border: 1.5px solid $gris-borde;
+  border-radius: 20px;
+  background: $blanco;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: $gris-texto;
+  cursor: pointer;
+  transition: all .2s;
+
+  &:hover { background: #f1f5f9; border-color: $azul-med; color: $azul-med; }
+
+  &--active {
+    background: $azul-med;
+    border-color: $azul-med;
+    color: $blanco;
+    font-weight: 600;
+  }
+}
+
+.hijo-tab-avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700;
+}
+
+// ─── Loading / Error / Empty ──────────────────────────
+.cursos-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  color: $gris-texto;
+  font-size: 0.9rem;
+}
+
+.curso-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid $gris-borde;
+  border-top-color: $azul-med;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.cursos-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  text-align: center;
+  color: $rojo;
+  font-size: 0.9rem;
+}
+
+.cursos-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  color: $gris-texto;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.btn-retry {
+  padding: 0.4rem 1.2rem;
+  background: $rojo;
+  color: $blanco;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: opacity .2s;
+  &:hover { opacity: 0.85; }
+}
+
+// ─── Layout ───────────────────────────────────────────
+.cursos-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+// ─── Barra de resumen ─────────────────────────────────
+.cursos-resumen-bar {
+  display: flex;
+  gap: 1rem;
+  background: $blanco;
+  border-radius: 12px;
+  border: 1.5px solid $gris-borde;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  flex-wrap: wrap;
+}
+
+.crb-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 90px;
+  border-right: 1px solid $gris-borde;
+  padding: 0 1rem;
+
+  &:last-child { border-right: none; }
+}
+
+.crb-val {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: $azul;
+}
+
+.crb-lbl {
+  font-size: 0.75rem;
+  color: $gris-texto;
+  text-align: center;
+}
+
+// ─── Lista de cursos ──────────────────────────────────
+.curso-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.curso-card {
+  background: $blanco;
+  border-radius: 12px;
+  border: 1.5px solid $gris-borde;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  overflow: hidden;
+  transition: box-shadow .2s, border-color .2s;
+
+  &:hover { border-color: $azul-med; }
+
+  &--open {
+    border-color: $azul-med;
+    box-shadow: 0 4px 16px rgba(0,53,102,.1);
+  }
+}
+
+.curso-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  gap: 1rem;
+}
+
+.curso-card-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.curso-area-badge {
+  flex-shrink: 0;
+  background: #e8eef7;
+  color: $azul-med;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.curso-nombre {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: $azul;
+  margin: 0 0 0.15rem;
+}
+
+.curso-docente {
+  font-size: 0.78rem;
+  color: $gris-texto;
+}
+
+.curso-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-shrink: 0;
+}
+
+.curso-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  min-width: 50px;
+}
+
+.cstat-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: $azul;
+}
+
+.cstat-lbl {
+  font-size: 0.7rem;
+  color: $gris-texto;
+  text-align: center;
+}
+
+.curso-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 90px;
+}
+
+.curso-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: $gris-borde;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.curso-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .4s;
+}
+
+.curso-progress-pct {
+  font-size: 0.72rem;
+  color: $gris-texto;
+  white-space: nowrap;
+}
+
+.curso-chevron {
+  color: $gris-texto;
+  transition: transform .2s;
+
+  .curso-card--open & {
+    transform: rotate(180deg);
+  }
+}
+
+// ─── Cuerpo expandido ─────────────────────────────────
+.curso-card-body {
+  border-top: 1px solid $gris-borde;
+  padding: 1rem 1.25rem;
+}
+
+.curso-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.curso-tab {
+  padding: 0.35rem 0.9rem;
+  border: 1.5px solid $gris-borde;
+  border-radius: 20px;
+  background: transparent;
+  font-size: 0.8rem;
+  color: $gris-texto;
+  cursor: pointer;
+  transition: all .2s;
+
+  &:hover { border-color: $azul-med; color: $azul-med; }
+
+  &--active {
+    background: $azul-med;
+    border-color: $azul-med;
+    color: $blanco;
+    font-weight: 600;
+  }
+}
+
+.tab-empty {
+  padding: 1.5rem;
+  text-align: center;
+  color: $gris-texto;
+  font-size: 0.85rem;
+}
+
+// ─── Tabla compartida ─────────────────────────────────
+.notas-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  thead th {
+    background: $gris-fondo;
+    color: $azul-med;
+    font-weight: 600;
+    padding: 0.6rem 0.85rem;
+    text-align: left;
+    border-bottom: 2px solid $gris-borde;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid $gris-borde;
+    transition: background .15s;
+    &:hover { background: #f8fafc; }
+  }
+
+  td { padding: 0.55rem 0.85rem; color: #334155; vertical-align: middle; }
+}
+
+.nt-titulo   { font-weight: 500; color: $azul; }
+.nt-fecha    { color: $gris-texto; font-size: 0.8rem; white-space: nowrap; }
+.nt-nota     { font-weight: 600; }
+.nt-sin-nota { color: #94a3b8; font-style: italic; font-size: 0.8rem; }
+.nt-tipo     { font-size: 0.78rem; color: $gris-texto; }
+
+.nt-badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &--ok { background: #dcfce7; color: #15803d; }
+  &--no { background: #fee2e2; color: $rojo; }
+}

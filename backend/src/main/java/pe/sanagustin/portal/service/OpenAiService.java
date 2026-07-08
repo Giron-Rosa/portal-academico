@@ -77,4 +77,57 @@ public class OpenAiService {
         }
         return "ERROR_CONEXION: Ocurrió un error inesperado al conectar con el servidor de IA de OpenAI. Revisa los logs del servidor.";
     }
+
+    public String transcribirAudio(java.io.File audioFile) {
+        try {
+            String boundary = "MultipartBoundary-" + System.currentTimeMillis();
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            
+            byte[] fileBytes = java.nio.file.Files.readAllBytes(audioFile.toPath());
+            
+            String beforeFile = "--" + boundary + "\r\n" +
+                    "Content-Disposition: form-data; name=\"model\"\r\n\r\n" +
+                    "whisper-1\r\n" +
+                    "--" + boundary + "\r\n" +
+                    "Content-Disposition: form-data; name=\"file\"; filename=\"" + audioFile.getName() + "\"\r\n" +
+                    "Content-Type: audio/webm\r\n\r\n";
+                    
+            String afterFile = "\r\n--" + boundary + "--\r\n";
+            
+            byte[] beforeBytes = beforeFile.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            byte[] afterBytes = afterFile.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            
+            byte[] requestBody = new byte[beforeBytes.length + fileBytes.length + afterBytes.length];
+            System.arraycopy(beforeBytes, 0, requestBody, 0, beforeBytes.length);
+            System.arraycopy(fileBytes, 0, requestBody, beforeBytes.length, fileBytes.length);
+            System.arraycopy(afterBytes, 0, requestBody, beforeBytes.length + fileBytes.length, afterBytes.length);
+            
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.openai.com/v1/audio/transcriptions"))
+                    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofByteArray(requestBody))
+                    .build();
+                    
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            
+            if (response.statusCode() == 200) {
+                Map<?, ?> responseMap = objectMapper.readValue(response.body(), Map.class);
+                return (String) responseMap.get("text");
+            } else {
+                System.err.println("Error de transcripción de Whisper (" + response.statusCode() + "): " + response.body());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public String analizarSentimientoYCausas(String transcripcion) {
+        String systemPrompt = "Eres un asistente psicopedagógico experto. Analiza el mensaje recibido (el cual puede ser de un docente o de un apoderado peruano) y devuelve EXCLUSIVAMENTE un objeto JSON con dos campos:\n" +
+                "1. \"sentimiento\": Un sentimiento predominante detectado (ej. 'Ansiedad', 'Frustración', 'Compromiso', 'Neutral', 'Preocupación', 'Optimismo').\n" +
+                "2. \"analisis_causa\": Breve descripción de la causa raíz pedagógica o familiar si se menciona (ej. 'Problemas económicos', 'Cuidado de familiares', 'Falta de internet', 'Horarios de trabajo'). Si no hay causa explícita o relevante, pon null.\n" +
+                "Responde estrictamente con el JSON.";
+        return llamarOpenAi(systemPrompt, transcripcion, true);
+    }
 }

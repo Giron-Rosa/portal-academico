@@ -1,5 +1,18 @@
 <div class="pa-wrapper">
 
+  <!-- ===== TOAST WEBSOCKET — Notificaciones en Tiempo Real ===== -->
+  @if (ws.toastVisible()) {
+    <div class="ws-toast-padre">
+      <div class="ws-toast-icon">📢</div>
+      <div class="ws-toast-content">
+        <span class="ws-toast-title">{{ ws.ultimaNotificacion()?.asunto }}</span>
+        <span class="ws-toast-from">{{ ws.ultimaNotificacion()?.remitente }}</span>
+        <span class="ws-toast-preview">{{ ws.ultimaNotificacion()?.preview }}</span>
+      </div>
+      <button class="ws-toast-close" (click)="ws.cerrarToast()">✕</button>
+    </div>
+  }
+
   <!-- ===== NAVBAR SUPERIOR ===== -->
   <header class="pa-navbar">
 
@@ -126,942 +139,96 @@
 
       <!-- ========== INICIO ========== -->
       @if (seccionActiva() === 'inicio') {
-
-        <!-- Detalle de curso activo -->
         @if (cursoActivo()) {
           <app-curso-detalle
             [curso]="cursoActivo()!"
             (volver)="volverAInicio()">
           </app-curso-detalle>
         } @else {
-
-        <div class="pa-inicio">
-
-          <!-- Panel izquierdo: Mis cursos -->
-          <div class="pa-cursos-panel">
-
-            <div class="pa-cursos-header">
-              <h2 class="pa-cursos-title">Mis cursos</h2>
-              <div class="pa-filter">
-                <label class="pa-filter-label">Filtrar por</label>
-                <div class="pa-filter-select">
-                  <span>{{ periodo() }}</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <div class="pa-periodo-label">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
-              Período {{ periodo() }} · Actual
-            </div>
-
-            @if (cargando()) {
-              <div class="pa-loading">
-                <div class="pa-spinner"></div>
-                <span>Cargando tus cursos...</span>
-              </div>
-            }
-
-            @if (errorCarga()) {
-              <div class="pa-error">{{ errorCarga() }}</div>
-            }
-
-            <div class="pa-cursos-grid">
-              @for (curso of cursos(); track curso.nombre) {
-                <div class="pa-curso-card">
-
-                   <!-- Área de imagen / color -->
-                  <div class="pa-card-visual" [style.background]="curso.color">
-                    <!-- Ilustración SVG decorativa -->
-                    <svg class="pa-card-deco" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <ellipse cx="100" cy="110" rx="80" ry="18" fill="rgba(0,0,0,0.06)"/>
-                      <circle cx="70" cy="55" r="30" fill="rgba(255,255,255,0.35)"/>
-                      <circle cx="130" cy="45" r="22" fill="rgba(255,255,255,0.25)"/>
-                      <rect x="50" y="70" width="100" height="8" rx="4" fill="rgba(255,255,255,0.4)"/>
-                      <rect x="60" y="84" width="80" height="6" rx="3" fill="rgba(255,255,255,0.3)"/>
-                      <!-- Ícono central por área -->
-                      @if (curso.areaKey === 'mat') {
-                        <text x="95" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">∑</text>
-                      }
-                      @if (curso.areaKey === 'com') {
-                        <text x="88" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">Aa</text>
-                      }
-                      @if (curso.areaKey === 'cie') {
-                        <text x="88" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">⚗</text>
-                      }
-                      @if (curso.areaKey === 'his') {
-                        <text x="90" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">🌍</text>
-                      }
-                      @if (curso.areaKey === 'ing') {
-                        <text x="88" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">EN</text>
-                      }
-                      @if (curso.areaKey === 'art') {
-                        <text x="90" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">🎨</text>
-                      }
-                      @if (curso.areaKey === 'efi') {
-                        <text x="90" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">⚽</text>
-                      }
-                      @if (curso.areaKey === 'rel') {
-                        <text x="92" y="65" font-size="36" fill="rgba(13,27,42,0.25)" font-family="serif">✝</text>
-                      }
-                    </svg>
-
-                    <!-- Badge horas/semana -->
-                    <div class="pa-horas-badge">
-                      {{ curso.horasSemana }} h/sem
-                    </div>
-                  </div>
-
-                  <!-- Información del curso -->
-                  <div class="pa-card-body">
-                    <h3 class="pa-card-nombre">{{ curso.nombre }}</h3>
-
-                    <div class="pa-card-meta-row">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                      </svg>
-                      <span>{{ curso.grado }} · Sección {{ curso.seccion }}</span>
-                    </div>
-
-                    <div class="pa-card-meta-row">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                      </svg>
-                      <span>Turno {{ curso.turno }}</span>
-                    </div>
-
-                    <div class="pa-card-docente">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                      </svg>
-                      <span>{{ curso.docente }}</span>
-                    </div>
-
-                    <!-- Botón Ver detalle -->
-                    <button class="pa-card-detalle-btn" (click)="abrirDetalleCurso(curso)">
-                      Ver detalle
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="9 18 15 12 9 6"/>
-                      </svg>
-                    </button>
-                  </div>
-
-                </div>
-              }
-            </div>
-          </div>
-
-          <!-- Panel derecho: Actividades semanales -->
-          <aside class="pa-actividades-panel">
-            <div class="pa-actividades-header">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="8" y1="6" x2="21" y2="6"/>
-                <line x1="8" y1="12" x2="21" y2="12"/>
-                <line x1="8" y1="18" x2="21" y2="18"/>
-                <line x1="3" y1="6" x2="3.01" y2="6"/>
-                <line x1="3" y1="12" x2="3.01" y2="12"/>
-                <line x1="3" y1="18" x2="3.01" y2="18"/>
-              </svg>
-              <h3>Actividades semanales</h3>
-            </div>
-
-            <div class="pa-actividades-list">
-              @for (act of actividades; track act.titulo) {
-                <div class="pa-actividad-item">
-                  <div class="pa-act-top">
-                    <div class="pa-act-tipo">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                      </svg>
-                      {{ act.tipo }}
-                    </div>
-                    <span class="pa-act-estado" [class]="'estado-' + act.estado">
-                      {{ act.estado === 'pendiente' ? 'Por entregar' : act.estado === 'vencido' ? 'Vencido' : 'Entregado' }}
-                    </span>
-                  </div>
-                  <p class="pa-act-titulo">{{ act.titulo }}</p>
-                  <p class="pa-act-curso">{{ act.curso }}</p>
-                  <p class="pa-act-vence">Vence: {{ act.vence }}</p>
-                </div>
-              }
-            </div>
-          </aside>
-
-        </div><!-- /pa-inicio -->
-        }<!-- @else -->
+          <app-alu-inicio
+            [cursos]="cursos()"
+            [periodo]="periodo()"
+            [cargando]="cargando()"
+            [errorCarga]="errorCarga()"
+            [actividades]="actividades()"
+            (abrirDetalleCurso)="abrirDetalleCurso($event)">
+          </app-alu-inicio>
+        }
       }
 
       <!-- ========== CALIFICACIONES ========== -->
       @if (seccionActiva() === 'calificaciones') {
-        <div class="pa-calendar-view animate-fade-in" style="padding: 24px;">
-          <div class="pa-view-header" style="margin-bottom: 24px;">
-            <div class="pa-header-info">
-              <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Calificaciones Bimestrales</h2>
-              <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Resumen global de promedios de todas tus asignaturas</p>
-            </div>
-          </div>
-
-          <!-- Tarjetas KPI Calificaciones -->
-          <div class="pa-kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 24px;">
-            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-              <div style="background: #eff6ff; color: #3b82f6; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">📈</div>
-              <div>
-                <div style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Promedio General</div>
-                <div style="font-size: 1.5rem; font-weight: 800; color: #1e3a8a;">{{ promedioGeneral() | number:'1.1-1' }}</div>
-              </div>
-            </div>
-            
-            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-              <div style="background: #e6f4ea; color: #137333; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">✅</div>
-              <div>
-                <div style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Cursos Aprobados</div>
-                <div style="font-size: 1.5rem; font-weight: 800; color: #137333;">{{ cursosAprobados() }}</div>
-              </div>
-            </div>
-
-            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-              <div style="background: #fce8e6; color: #c5221f; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">⚠️</div>
-              <div>
-                <div style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Por Recuperar</div>
-                <div style="font-size: 1.5rem; font-weight: 800; color: #c5221f;">{{ cursosPorRecuperar() }}</div>
-              </div>
-            </div>
-          </div>
-
-          @if (cargandoCalificaciones()) {
-            <div class="pa-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px;">
-              <div class="pa-spinner"></div>
-              <span style="margin-top: 12px; color: #6b7280;">Cargando tus notas globales...</span>
-            </div>
-          }
-
-          @if (!cargandoCalificaciones() && calificacionesGlobales().length > 0) {
-            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-              <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
-                <thead>
-                  <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
-                    <th style="padding: 16px; font-weight: 600; color: #374151;">Asignatura</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Bimestre I</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Bimestre II</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Bimestre III</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Bimestre IV</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Promedio Final</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (c of calificacionesGlobales(); track c.idAulaCurso) {
-                    <tr style="border-bottom: 1px solid #f3f4f6; transition: background 0.2s; cursor: default;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
-                      <td style="padding: 16px; font-weight: 600; color: #111827;">{{ c.curso }}</td>
-                      
-                      <!-- Bimestre 1 -->
-                      <td style="padding: 16px; text-align: center; font-weight: 500;" 
-                          [style.color]="c.bim1 !== null ? (c.bim1 >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
-                        {{ c.bim1 !== null ? c.bim1 : '—' }}
-                      </td>
-                      
-                      <!-- Bimestre 2 -->
-                      <td style="padding: 16px; text-align: center; font-weight: 500;" 
-                          [style.color]="c.bim2 !== null ? (c.bim2 >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
-                        {{ c.bim2 !== null ? c.bim2 : '—' }}
-                      </td>
-                      
-                      <!-- Bimestre 3 -->
-                      <td style="padding: 16px; text-align: center; font-weight: 500;" 
-                          [style.color]="c.bim3 !== null ? (c.bim3 >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
-                        {{ c.bim3 !== null ? c.bim3 : '—' }}
-                      </td>
-                      
-                      <!-- Bimestre 4 -->
-                      <td style="padding: 16px; text-align: center; font-weight: 500;" 
-                          [style.color]="c.bim4 !== null ? (c.bim4 >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
-                        {{ c.bim4 !== null ? c.bim4 : '—' }}
-                      </td>
-
-                      <!-- Promedio Final -->
-                      @let finalAvg = (
-                        (c.bim1 || 0) + (c.bim2 || 0) + (c.bim3 || 0) + (c.bim4 || 0)
-                      ) / (
-                        (c.bim1 !== null ? 1 : 0) + (c.bim2 !== null ? 1 : 0) + (c.bim3 !== null ? 1 : 0) + (c.bim4 !== null ? 1 : 0) || 1
-                      );
-                      @let hasGrades = (c.bim1 !== null || c.bim2 !== null || c.bim3 !== null || c.bim4 !== null);
-                      
-                      <td style="padding: 16px; text-align: center; font-weight: 700;" 
-                          [style.color]="hasGrades ? (finalAvg >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
-                        {{ hasGrades ? (finalAvg | number:'1.1-1') : '—' }}
-                      </td>
-
-                      <!-- Estado Badge -->
-                      <td style="padding: 16px; text-align: center;">
-                        @if (hasGrades) {
-                          <span style="font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase;"
-                                [style.background]="finalAvg >= 11 ? '#e6f4ea' : '#fce8e6'"
-                                [style.color]="finalAvg >= 11 ? '#137333' : '#c5221f'">
-                            {{ finalAvg >= 11 ? 'Aprobado' : 'Desaprobado' }}
-                          </span>
-                        } @else {
-                          <span style="font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; background: #f1f3f4; color: #5f6368;">
-                            Pendiente
-                          </span>
-                        }
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </div>
+        <app-alu-calificaciones
+          [promedioGeneral]="promedioGeneral()"
+          [cursosAprobados]="cursosAprobados()"
+          [cursosPorRecuperar]="cursosPorRecuperar()"
+          [cargandoCalificaciones]="cargandoCalificaciones()"
+          [calificacionesGlobales]="calificacionesGlobales()">
+        </app-alu-calificaciones>
       }
 
       <!-- ========== ASISTENCIA GLOBAL ========== -->
       @if (seccionActiva() === 'asistencias') {
-        <div class="pa-calendar-view animate-fade-in" style="padding: 24px;">
-          <div class="pa-view-header" style="margin-bottom: 24px;">
-            <div class="pa-header-info">
-              <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Asistencia Consolidada</h2>
-              <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Historial global de asistencias y faltas por materia</p>
-            </div>
-          </div>
-
-          <!-- Tarjetas KPI Asistencia -->
-          <div class="pa-kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 24px;">
-            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-              <div style="background: #f1f5f9; color: #475569; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">📊</div>
-              <div>
-                <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Clases Totales</div>
-                <div style="font-size: 1.25rem; font-weight: 800; color: #1e293b;">{{ totalClasesAsistencia() }}</div>
-              </div>
-            </div>
-
-            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-              <div style="background: #e6f4ea; color: #137333; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">✔️</div>
-              <div>
-                <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Asistencias</div>
-                <div style="font-size: 1.25rem; font-weight: 800; color: #137333;">{{ totalPresenteAsistencia() }}</div>
-              </div>
-            </div>
-
-            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-              <div style="background: #fffbeb; color: #d97706; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">⏳</div>
-              <div>
-                <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Tardanzas</div>
-                <div style="font-size: 1.25rem; font-weight: 800; color: #d97706;">{{ totalTardanzaAsistencia() }}</div>
-              </div>
-            </div>
-
-            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-              <div style="background: #fce8e6; color: #c5221f; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">❌</div>
-              <div>
-                <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Faltas</div>
-                <div style="font-size: 1.25rem; font-weight: 800; color: #c5221f;">
-                  {{ totalFaltaAsistencia() }} 
-                  <span style="font-size: 0.7rem; font-weight: 500; color: #64748b;">(Just: {{ totalJustificadoAsistencia() }})</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-              <div 
-                [style.background]="porcentajeGlobalAsistencia() >= 90 ? '#e6f4ea' : porcentajeGlobalAsistencia() >= 80 ? '#fffbeb' : '#fce8e6'"
-                [style.color]="porcentajeGlobalAsistencia() >= 90 ? '#137333' : porcentajeGlobalAsistencia() >= 80 ? '#d97706' : '#c5221f'"
-                style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">🎯</div>
-              <div>
-                <div style="font-size: 0.75rem; font-weight: 600; color: #64748b;">% Asistencia</div>
-                <div style="font-size: 1.25rem; font-weight: 800;" [style.color]="porcentajeGlobalAsistencia() >= 90 ? '#137333' : porcentajeGlobalAsistencia() >= 80 ? '#d97706' : '#c5221f'">{{ porcentajeGlobalAsistencia() | number:'1.1-1' }}%</div>
-              </div>
-            </div>
-          </div>
-
-          @if (cargandoAsistencias()) {
-            <div class="pa-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px;">
-              <div class="pa-spinner"></div>
-              <span style="margin-top: 12px; color: #6b7280;">Cargando consolidado de asistencias...</span>
-            </div>
-          }
-
-          @if (!cargandoAsistencias() && asistenciasGlobales().length > 0) {
-            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-              <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
-                <thead>
-                  <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
-                    <th style="padding: 16px; font-weight: 600; color: #374151;">Asignatura</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Total Clases</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Presentes</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Tardanzas</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Faltas Justificadas</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Faltas Injustificadas</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Porcentaje Asistencia</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Estado Alerta</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (a of asistenciasGlobales(); track a.idAulaCurso) {
-                    <tr style="border-bottom: 1px solid #f3f4f6; transition: background 0.2s; cursor: default;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
-                      <td style="padding: 16px; font-weight: 600; color: #111827;">{{ a.curso }}</td>
-                      <td style="padding: 16px; text-align: center; color: #374151;">{{ a.total }}</td>
-                      <td style="padding: 16px; text-align: center; color: #137333; font-weight: 500;">{{ a.presente }}</td>
-                      <td style="padding: 16px; text-align: center; color: #b06000; font-weight: 500;">{{ a.tardanza }}</td>
-                      <td style="padding: 16px; text-align: center; color: #1a73e8; font-weight: 500;">{{ a.justificado }}</td>
-                      <td style="padding: 16px; text-align: center; color: #c5221f; font-weight: 500;">{{ a.falta }}</td>
-                      <td style="padding: 16px; text-align: center; font-weight: 700;"
-                          [style.color]="a.porcentaje >= 80 ? '#137333' : a.porcentaje >= 70 ? '#b06000' : '#c5221f'">
-                        {{ a.total > 0 ? (a.porcentaje | number:'1.1-1') + '%' : '—' }}
-                      </td>
-                      <td style="padding: 16px; text-align: center;">
-                        @if (a.total > 0) {
-                          <span style="font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase;"
-                                [style.background]="a.porcentaje >= 80 ? '#e6f4ea' : a.porcentaje >= 70 ? '#fef7e0' : '#fce8e6'"
-                                [style.color]="a.porcentaje >= 80 ? '#137333' : a.porcentaje >= 70 ? '#b06000' : '#c5221f'">
-                            {{ a.porcentaje >= 80 ? 'Normal' : a.porcentaje >= 70 ? 'Alerta' : 'Riesgo' }}
-                          </span>
-                        } @else {
-                          <span style="font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; background: #f1f3f4; color: #5f6368;">
-                            Sin datos
-                          </span>
-                        }
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </div>
+        <app-alu-asistencia
+          [totalClasesAsistencia]="totalClasesAsistencia()"
+          [totalPresenteAsistencia]="totalPresenteAsistencia()"
+          [totalTardanzaAsistencia]="totalTardanzaAsistencia()"
+          [totalFaltaAsistencia]="totalFaltaAsistencia()"
+          [totalJustificadoAsistencia]="totalJustificadoAsistencia()"
+          [porcentajeGlobalAsistencia]="porcentajeGlobalAsistencia()"
+          [cargandoAsistencias]="cargandoAsistencias()"
+          [asistenciasGlobales]="asistenciasGlobales()">
+        </app-alu-asistencia>
       }
 
       <!-- ========== CALENDARIO ========== -->
       @if (seccionActiva() === 'calendario') {
-        <div class="pa-calendar-view animate-fade-in" style="padding: 24px;">
-          <div class="pa-view-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
-            <div class="pa-header-info">
-              <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Calendario Escolar</h2>
-              <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Fechas límite de entregas, evaluaciones y tu horario de clases</p>
-            </div>
-            
-            <!-- Selector de Subsección (Mensual vs Horario Semanal) -->
-            <div style="display: flex; gap: 0.25rem; background: #f1f5f9; padding: 4px; border-radius: 8px;">
-              <button 
-                (click)="subSeccionCalendario.set('mensual')"
-                [style.background]="subSeccionCalendario() === 'mensual' ? 'white' : 'transparent'"
-                [style.box-shadow]="subSeccionCalendario() === 'mensual' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'"
-                style="border: none; padding: 6px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; cursor: pointer; color: #1b3a5c; transition: all 0.2s;">
-                Calendario Mensual
-              </button>
-              <button 
-                (click)="subSeccionCalendario.set('horario')"
-                [style.background]="subSeccionCalendario() === 'horario' ? 'white' : 'transparent'"
-                [style.box-shadow]="subSeccionCalendario() === 'horario' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'"
-                style="border: none; padding: 6px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; cursor: pointer; color: #1b3a5c; transition: all 0.2s;">
-                Horario Semanal
-              </button>
-            </div>
-          </div>
-
-          <!-- SUBSECCIÓN: CALENDARIO MENSUAL -->
-          @if (subSeccionCalendario() === 'mensual') {
-            <div>
-              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1.5rem; margin-bottom: 1rem;">
-                <!-- Leyenda de colores -->
-                <div style="display: flex; gap: 1rem; font-size: 0.8rem; font-weight: 600;">
-                  <div style="display: flex; align-items: center; gap: 4px;">
-                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #0284c7;"></span>
-                    <span style="color: #0369a1;">Tareas</span>
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 4px;">
-                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #8b5cf6;"></span>
-                    <span style="color: #6b21a8;">Evaluaciones / Exámenes</span>
-                  </div>
-                </div>
-
-                <!-- Navegación mensual -->
-                <div class="pa-calendar-nav" style="margin: 0;">
-                  <button class="pa-btn-nav" (click)="cambiarMes(-1)" title="Mes anterior">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                      <polyline points="15 18 9 12 15 6"/>
-                    </svg>
-                  </button>
-                  <span class="pa-calendar-month-label">{{ nombreMesActual() }} {{ anoActual() }}</span>
-                  <button class="pa-btn-nav" (click)="cambiarMes(1)" title="Mes siguiente">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div class="pa-calendar-container" style="margin-top: 0;">
-                <div class="pa-calendar-weekdays">
-                  <div>Lun</div>
-                  <div>Mar</div>
-                  <div>Mié</div>
-                  <div>Jue</div>
-                  <div>Vie</div>
-                  <div>Sáb</div>
-                  <div>Dom</div>
-                </div>
-
-                <div class="pa-calendar-grid">
-                  @for (dia of diasCalendario(); track dia.fechaStr) {
-                    <div 
-                      class="pa-calendar-day" 
-                      [class.different-month]="dia.mesDiferente"
-                      [class.is-today]="dia.esHoy"
-                      [class.has-events]="dia.eventos.length > 0">
-                      
-                      <div class="pa-day-number-wrapper">
-                        <span class="pa-day-number">{{ dia.diaNumero }}</span>
-                      </div>
-                      
-                      <div class="pa-day-events">
-                        @for (evt of dia.eventos; track evt.titulo) {
-                          <div class="pa-day-event" 
-                               [class.event-tarea]="evt.tipo === 'tarea'" 
-                               [class.event-actividad]="evt.tipo === 'actividad'" 
-                               [class.event-clase]="evt.tipo === 'clase'"
-                               [title]="evt.curso + ': ' + evt.titulo">
-                            <span class="pa-event-dot"></span>
-                            <span class="pa-event-text">{{ evt.titulo }}</span>
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
-          }
-
-          <!-- SUBSECCIÓN: HORARIO DE CLASES -->
-          @if (subSeccionCalendario() === 'horario') {
-            <div class="animate-fade-in" style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-              <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
-                <thead>
-                  <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
-                    <th style="padding: 16px; font-weight: 600; color: #374151; width: 15%;">Hora</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Lunes</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Martes</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Miércoles</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Jueves</th>
-                    <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Viernes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (row of horarioSemanal; track row.hora) {
-                    <tr style="border-bottom: 1px solid #f3f4f6;">
-                      <!-- Hora -->
-                      <td style="padding: 16px; font-weight: 700; color: #4b5563; background: #f9fafb;">{{ row.hora }}</td>
-                      
-                      <!-- Lunes -->
-                      <td style="padding: 16px; text-align: center;" 
-                          [style.background]="row.lunes === 'Recreo' ? '#fffbeb' : 'transparent'"
-                          [style.color]="row.lunes === 'Recreo' ? '#d97706' : '#111827'">
-                        <span [style.font-weight]="row.lunes === 'Recreo' || row.lunes === 'Tutoría' ? '700' : '600'">{{ row.lunes }}</span>
-                      </td>
-
-                      <!-- Martes -->
-                      <td style="padding: 16px; text-align: center;" 
-                          [style.background]="row.martes === 'Recreo' ? '#fffbeb' : 'transparent'"
-                          [style.color]="row.martes === 'Recreo' ? '#d97706' : '#111827'">
-                        <span [style.font-weight]="row.martes === 'Recreo' ? '700' : '600'">{{ row.martes }}</span>
-                      </td>
-
-                      <!-- Miércoles -->
-                      <td style="padding: 16px; text-align: center;" 
-                          [style.background]="row.miercoles === 'Recreo' ? '#fffbeb' : 'transparent'"
-                          [style.color]="row.miercoles === 'Recreo' ? '#d97706' : '#111827'">
-                        <span [style.font-weight]="row.miercoles === 'Recreo' ? '700' : '600'">{{ row.miercoles }}</span>
-                      </td>
-
-                      <!-- Jueves -->
-                      <td style="padding: 16px; text-align: center;" 
-                          [style.background]="row.jueves === 'Recreo' ? '#fffbeb' : 'transparent'"
-                          [style.color]="row.jueves === 'Recreo' ? '#d97706' : '#111827'">
-                        <span [style.font-weight]="row.jueves === 'Recreo' || row.jueves === 'Educación Física' ? '700' : '600'">{{ row.jueves }}</span>
-                      </td>
-
-                      <!-- Viernes -->
-                      <td style="padding: 16px; text-align: center;" 
-                          [style.background]="row.viernes === 'Recreo' ? '#fffbeb' : 'transparent'"
-                          [style.color]="row.viernes === 'Recreo' ? '#d97706' : '#111827'">
-                        <span [style.font-weight]="row.viernes === 'Recreo' ? '700' : '600'">{{ row.viernes }}</span>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </div>
+        <app-alu-calendario
+          [subSeccionCalendario]="subSeccionCalendario()"
+          [nombreMesActual]="nombreMesActual()"
+          [anoActual]="anoActual()"
+          [diasCalendario]="diasCalendario()"
+          [horarioSemanal]="horarioSemanal"
+          (setSubSeccion)="subSeccionCalendario.set($event)"
+          (cambiarMes)="cambiarMes($event)">
+        </app-alu-calendario>
       }
 
       <!-- ========== KANBAN ========== -->
       @if (seccionActiva() === 'kanban') {
-        <div class="pa-kanban-view animate-fade-in">
-          <div class="pa-view-header">
-            <div class="pa-header-info">
-              <h2 class="pa-view-title">Tablero de Actividades (Kanban)</h2>
-              <p class="pa-view-subtitle">Seguimiento de tu progreso académico</p>
-            </div>
-          </div>
-
-          <div class="pa-kanban-board">
-            
-            <!-- Columna: Pendiente -->
-            <div class="pa-kanban-col col-pendiente"
-                 [class.drag-over]="activeDragOverCol() === 'pendiente'"
-                 (dragover)="onDragOver($event, 'pendiente')"
-                 (dragleave)="onDragLeave($event, 'pendiente')"
-                 (drop)="onDrop($event, 'pendiente')">
-              <div class="pa-kanban-col-header">
-                <span class="pa-col-title">Pendientes</span>
-                <span class="pa-col-count">{{ tareasPendientes().length }}</span>
-              </div>
-              <div class="pa-kanban-col-cards">
-                @if (tareasPendientes().length === 0) {
-                  <div class="pa-kanban-empty">Sin tareas pendientes</div>
-                }
-                @for (t of tareasPendientes(); track t.idTarea) {
-                  <div class="pa-kanban-card"
-                       draggable="true"
-                       (dragstart)="onDragStart($event, t)"
-                       (dragend)="onDragEnd($event)">
-                    <div class="pa-kcard-header">
-                      <span class="pa-kcard-curso">{{ t.cursoNombre }}</span>
-                      <span class="pa-kcard-badge badge-pendiente">Pendiente</span>
-                    </div>
-                    <h4 class="pa-kcard-title">{{ t.titulo }}</h4>
-                    <p class="pa-kcard-desc" *ngIf="t.descripcion">{{ t.descripcion }}</p>
-                    <div class="pa-kcard-footer">
-                      <span class="pa-kcard-due text-red">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                           <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                        </svg>
-                        Vence: {{ t.fechaEntrega }}
-                      </span>
-                      <button 
-                        style="margin-top:10px;width:100%;padding:8px 12px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity 0.2s;"
-                        (click)="entregarTarea(t)">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Entregar tarea
-                      </button>
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-
-            <!-- Columna: Enviado (Por calificar) -->
-            <div class="pa-kanban-col col-enviado"
-                 [class.drag-over]="activeDragOverCol() === 'entregado'"
-                 (dragover)="onDragOver($event, 'entregado')"
-                 (dragleave)="onDragLeave($event, 'entregado')"
-                 (drop)="onDrop($event, 'entregado')">
-              <div class="pa-kanban-col-header">
-                <span class="pa-col-title">Entregados</span>
-                <span class="pa-col-count">{{ tareasEntregadas().length }}</span>
-              </div>
-              <div class="pa-kanban-col-cards">
-                @if (tareasEntregadas().length === 0) {
-                  <div class="pa-kanban-empty">Sin entregas por calificar</div>
-                }
-                @for (t of tareasEntregadas(); track t.idTarea) {
-                  <div class="pa-kanban-card"
-                       draggable="true"
-                       (dragstart)="onDragStart($event, t)"
-                       (dragend)="onDragEnd($event)">
-                    <div class="pa-kcard-header">
-                      <span class="pa-kcard-curso">{{ t.cursoNombre }}</span>
-                      <span class="pa-kcard-badge badge-enviado">Enviado</span>
-                    </div>
-                    <h4 class="pa-kcard-title">{{ t.titulo }}</h4>
-                    <div class="pa-kcard-footer" style="display: flex; flex-direction: column; gap: 8px;">
-                      <span class="pa-kcard-status text-blue" style="display: flex; align-items: center; gap: 4px;">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                        </svg>
-                        Esperando calificación
-                      </span>
-                      <button 
-                        style="width:100%;padding:8px 12px;background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity 0.2s;"
-                        (click)="anularEntrega(t)">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <polyline points="15 18 9 12 15 6"/>
-                        </svg>
-                        Anular entrega
-                      </button>
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-
-            <!-- Columna: Calificado -->
-            <div class="pa-kanban-col col-calificado"
-                 [class.drag-over]="activeDragOverCol() === 'calificado'"
-                 (dragover)="onDragOver($event, 'calificado')"
-                 (dragleave)="onDragLeave($event, 'calificado')"
-                 (drop)="onDrop($event, 'calificado')">
-              <div class="pa-kanban-col-header">
-                <span class="pa-col-title">Calificados</span>
-                <span class="pa-col-count">{{ tareasCalificadas().length }}</span>
-              </div>
-              <div class="pa-kanban-col-cards">
-                @if (tareasCalificadas().length === 0) {
-                  <div class="pa-kanban-empty">Sin tareas calificadas</div>
-                }
-                @for (t of tareasCalificadas(); track t.idTarea) {
-                  <div class="pa-kanban-card"
-                       draggable="true"
-                       (dragstart)="onDragStart($event, t)"
-                       (dragend)="onDragEnd($event)">
-                    <div class="pa-kcard-header">
-                      <span class="pa-kcard-curso">{{ t.cursoNombre }}</span>
-                      <span class="pa-kcard-badge badge-calificado">Calificado</span>
-                    </div>
-                    <h4 class="pa-kcard-title">{{ t.titulo }}</h4>
-                    <div class="pa-kcard-footer">
-                      <span class="pa-kcard-score">
-                        Nota: <strong class="pa-score" [class.nota-aprobada]="t.nota! >= 11" [class.nota-desaprobada]="t.nota! < 11">{{ t.nota }}</strong>/{{ t.notaMaxima }}
-                      </span>
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-
-          </div>
-        </div>
+        <app-alu-tareas
+          [tareasPendientes]="tareasPendientes()"
+          [tareasEntregadas]="tareasEntregadas()"
+          [tareasCalificadas]="tareasCalificadas()"
+          (entregarTarea)="entregarTarea($event)"
+          (anularEntrega)="anularEntrega($event)">
+        </app-alu-tareas>
       }
 
       <!-- ========== REFUERZO ========== -->
       @if (seccionActiva() === 'refuerzo') {
-        <div class="pa-refuerzo-view animate-fade-in" style="padding: 24px;">
-          <div class="pa-view-header" style="margin-bottom: 24px;">
-            <div class="pa-header-info">
-              <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Refuerzo Académico (RN-10.2)</h2>
-              <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Materiales sugeridos de recuperación para cursos con promedio en riesgo (&lt; 11) y recursos semanales</p>
-            </div>
-          </div>
-
-          <!-- Alerta de Cursos en Riesgo (RN-10.2) -->
-          @if (tieneCursosEnRiesgo()) {
-            <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; color: #856404;">
-              <span style="font-size: 1.5rem;">⚠️</span>
-              <div>
-                <strong style="display: block; font-size: 0.95rem; margin-bottom: 2px;">Cursos con Promedio en Riesgo (&lt; 11):</strong>
-                <span style="font-size: 0.85rem;">Tienes asignaturas con notas bajas. Te recomendamos revisar el material de reforzamiento de cada semana: 
-                  @for (c of cursosConRiesgo(); track c.idAulaCurso; let isLast = $last) {
-                    <strong>{{ c.nombre }} (Promedio: {{ c.promedio }})</strong>{{ isLast ? '' : ', ' }}
-                  }
-                </span>
-              </div>
-            </div>
-          } @else {
-            <div style="background: #e6f4ea; border: 1px solid #c3e6cb; border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; color: #155724;">
-              <span style="font-size: 1.5rem;">✅</span>
-              <div>
-                <strong style="display: block; font-size: 0.95rem; margin-bottom: 2px;">¡Buen rendimiento!</strong>
-                <span style="font-size: 0.85rem;">No tienes cursos con promedios en riesgo actualmente. Sigue revisando el material semanal para mantener tu nivel.</span>
-              </div>
-            </div>
-          }
-
-          <!-- Selector de Semanas -->
-          <div style="margin-bottom: 24px;">
-            <h3 style="font-size: 1rem; font-weight: 700; color: #1f2937; margin-bottom: 12px;">Selecciona la Semana de Estudio</h3>
-            <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 8px;">
-              @for (sem of semanasLista; track sem) {
-                <button 
-                  (click)="semanaRefuerzoSeleccionada.set(sem)"
-                  [style.background]="semanaRefuerzoSeleccionada() === sem ? '#1b3a5c' : 'white'"
-                  [style.color]="semanaRefuerzoSeleccionada() === sem ? 'white' : '#1b3a5c'"
-                  [style.border]="semanaRefuerzoSeleccionada() === sem ? '1px solid #1b3a5c' : '1px solid #cbd5e1'"
-                  style="min-width: 48px; height: 36px; padding: 0 12px; font-size: 0.85rem; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
-                  Sem {{ sem }}
-                </button>
-              }
-            </div>
-          </div>
-
-          <!-- Contenido de Refuerzo de la Semana Seleccionada -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-            
-            <!-- Bloque 1: Videos Explicativos -->
-            <div style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-              <h3 style="font-size: 1.1rem; font-weight: 700; color: #1b3a5c; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                🎬 Videos Explicativos
-              </h3>
-              @if (videosExplicativos().length === 0) {
-                <p style="font-size: 0.85rem; color: #9ca3af; text-align: center; padding: 24px 0;">No hay videos explicativos para esta semana.</p>
-              } @else {
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                  @for (vid of videosExplicativos(); track vid.idMaterial) {
-                    <div style="display: flex; gap: 12px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; align-items: center;">
-                      <span style="font-size: 1.5rem; background: #fee2e2; color: #dc2626; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">▶️</span>
-                      <div style="flex: 1; min-width: 0;">
-                        <h4 style="font-size: 0.85rem; font-weight: 700; color: #111827; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ vid.titulo }}</h4>
-                        <span style="font-size: 0.75rem; color: #6b7280;">Curso: {{ vid.cursoNombre }}</span>
-                      </div>
-                      <a [href]="vid.url" target="_blank" style="background: #1b3a5c; color: white; padding: 6px 12px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; text-decoration: none; transition: background 0.2s;">Ver Video</a>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-
-            <!-- Bloque 2: Libros de Referencia y Lecturas -->
-            <div style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-              <h3 style="font-size: 1.1rem; font-weight: 700; color: #1b3a5c; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                📚 Libros y Lecturas de Apoyo
-              </h3>
-              @if (librosReferencia().length === 0) {
-                <p style="font-size: 0.85rem; color: #9ca3af; text-align: center; padding: 24px 0;">No hay libros de referencia disponibles para esta semana.</p>
-              } @else {
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                  @for (lib of librosReferencia(); track lib.idMaterial) {
-                    <div style="display: flex; gap: 12px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; align-items: center;">
-                      <span style="font-size: 1.5rem; background: #e0f2fe; color: #0284c7; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">📄</span>
-                      <div style="flex: 1; min-width: 0;">
-                        <h4 style="font-size: 0.85rem; font-weight: 700; color: #111827; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ lib.titulo }}</h4>
-                        <span style="font-size: 0.75rem; color: #6b7280;">Curso: {{ lib.cursoNombre }}</span>
-                      </div>
-                      <a [href]="lib.url" target="_blank" style="background: #1b3a5c; color: white; padding: 6px 12px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; text-decoration: none; transition: background 0.2s;">Leer</a>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-
-            <!-- Bloque 3: Fichas de Práctica y Ejercicios -->
-            <div style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-              <h3 style="font-size: 1.1rem; font-weight: 700; color: #1b3a5c; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                📝 Fichas y Ejercicios de Práctica
-              </h3>
-              @if (fichasPractica().length === 0) {
-                <p style="font-size: 0.85rem; color: #9ca3af; text-align: center; padding: 24px 0;">No hay fichas de práctica disponibles para esta semana.</p>
-              } @else {
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                  @for (fic of fichasPractica(); track fic.idMaterial) {
-                    <div style="display: flex; gap: 12px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; align-items: center;">
-                      <span style="font-size: 1.5rem; background: #e2f0d9; color: #385723; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">📝</span>
-                      <div style="flex: 1; min-width: 0;">
-                        <h4 style="font-size: 0.85rem; font-weight: 700; color: #111827; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ fic.titulo }}</h4>
-                        <span style="font-size: 0.75rem; color: #6b7280;">Curso: {{ fic.cursoNombre }}</span>
-                      </div>
-                      <a [href]="fic.url" target="_blank" style="background: #1b3a5c; color: white; padding: 6px 12px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; text-decoration: none; transition: background 0.2s;">Descargar</a>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-
-          </div>
-        </div>
+        <app-alu-refuerzo
+          [tieneCursosEnRiesgo]="tieneCursosEnRiesgo()"
+          [cursosConRiesgo]="cursosConRiesgo()"
+          [semanaRefuerzoSeleccionada]="semanaRefuerzoSeleccionada()"
+          [semanasLista]="semanasLista"
+          [videosExplicativos]="videosExplicativos()"
+          [librosReferencia]="librosReferencia()"
+          [fichasPractica]="fichasPractica()"
+          (setSemanaRefuerzo)="semanaRefuerzoSeleccionada.set($event)">
+        </app-alu-refuerzo>
       }
 
       <!-- ========== RECURSOS ========== -->
       @if (seccionActiva() === 'recursos') {
-        <div class="pa-recursos-view animate-fade-in" style="padding: 24px;">
-          <div class="pa-view-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-            <div class="pa-header-info">
-              <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Biblioteca de Recursos</h2>
-              <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Buscador de recursos, herramientas digitales y material complementario externo</p>
-            </div>
-
-            <!-- Buscador Textual -->
-            <div style="position: relative; width: 100%; max-width: 320px;">
-              <input 
-                type="text" 
-                placeholder="Buscar recursos (ej. GeoGebra)..." 
-                [value]="busquedaRecurso()"
-                (input)="actualizarBusqueda($event)"
-                style="width: 100%; padding: 10px 16px 10px 40px; border-radius: 30px; border: 1px solid #cbd5e1; font-size: 0.88rem; font-weight: 500; outline: none; transition: border-color 0.2s;"
-                onfocus="this.style.borderColor='#1b3a5c'"
-                onblur="this.style.borderColor='#cbd5e1'" />
-              <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 1.1rem;">🔍</span>
-            </div>
-          </div>
-
-          <!-- Cuadrados de Categorías -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 32px;">
-            @for (cat of categoriasRecursos; track cat.id) {
-              <div 
-                (click)="categoriaRecursoActiva.set(cat.id); busquedaRecurso.set('')"
-                [style.background]="categoriaRecursoActiva() === cat.id && busquedaRecurso() === '' ? '#1b3a5c' : cat.color"
-                [style.color]="categoriaRecursoActiva() === cat.id && busquedaRecurso() === '' ? 'white' : '#1e293b'"
-                [style.border-color]="categoriaRecursoActiva() === cat.id && busquedaRecurso() === '' ? '#1b3a5c' : cat.border"
-                style="border: 1px solid; border-radius: 12px; padding: 1.25rem 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s; min-height: 100px;">
-                <span style="font-size: 2rem;">{{ cat.icon }}</span>
-                <span style="font-size: 0.82rem; font-weight: 700; line-height: 1.2;">{{ cat.id }}</span>
-              </div>
-            }
-          </div>
-
-          <!-- Cabecera de Listado -->
-          <div style="border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin: 0;">
-              @if (busquedaRecurso() !== '') {
-                Resultados de búsqueda para "{{ busquedaRecurso() }}"
-              } @else {
-                Recursos en "{{ categoriaRecursoActiva() }}"
-              }
-            </h3>
-            <span style="font-size: 0.82rem; color: #64748b; font-weight: 600;">{{ recursosFiltrados().length }} recursos encontrados</span>
-          </div>
-
-          <!-- Listado de Recursos Filtrados (Recuadros Abajo) -->
-          @if (recursosFiltrados().length === 0) {
-            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 48px; text-align: center;">
-              <span style="font-size: 3rem; display: block; margin-bottom: 12px;">📂</span>
-              <h3 style="font-size: 1.1rem; font-weight: 700; color: #475569; margin: 0 0 6px 0;">No se encontraron recursos</h3>
-              <p style="font-size: 0.85rem; color: #94a3b8; margin: 0;">Intenta con otro término o selecciona otra categoría arriba.</p>
-            </div>
-          } @else {
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem;">
-              @for (rec of recursosFiltrados(); track rec.nombre) {
-                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.01); transition: transform 0.2s;"
-                     onmouseover="this.style.transform='translateY(-2px)'"
-                     onmouseout="this.style.transform='none'">
-                  <div>
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                      <span style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 20px;">
-                        {{ rec.cat }}
-                      </span>
-                      <span style="font-size: 1.25rem;">{{ tipoIcon(rec.tipo) }}</span>
-                    </div>
-                    <h4 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0 0 8px 0; line-height: 1.3;">
-                      {{ rec.nombre }}
-                    </h4>
-                    <p style="font-size: 0.82rem; color: #64748b; margin: 0 0 16px 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 52px;">
-                      {{ rec.desc }}
-                    </p>
-                  </div>
-                  <a 
-                    [href]="rec.url" 
-                    target="_blank" 
-                    style="display: block; width: 100%; background: #1b3a5c; color: white; text-align: center; padding: 8px 0; font-size: 0.82rem; font-weight: 700; border-radius: 8px; text-decoration: none; transition: background 0.2s;"
-                    onmouseover="this.style.background='#0d1b2a'"
-                    onmouseout="this.style.background='#1b3a5c'">
-                    Acceder
-                  </a>
-                </div>
-              }
-            </div>
-          }
-        </div>
+        <app-alu-recursos
+          [busquedaRecurso]="busquedaRecurso()"
+          [categoriaRecursoActiva]="categoriaRecursoActiva()"
+          [categoriasRecursos]="categoriasRecursos"
+          [recursosFiltrados]="recursosFiltrados()"
+          (setBusqueda)="busquedaRecurso.set($event)"
+          (setCategoria)="categoriaRecursoActiva.set($event)">
+        </app-alu-recursos>
       }
 
     </main>

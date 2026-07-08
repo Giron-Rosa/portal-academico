@@ -1,0 +1,161 @@
+<div class="pa-calendar-view animate-fade-in" style="padding: 24px;">
+  <div class="pa-view-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+    <div class="pa-header-info">
+      <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Calendario Escolar</h2>
+      <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Fechas límite de entregas, evaluaciones y tu horario de clases</p>
+    </div>
+    
+    <!-- Selector de Subsección (Mensual vs Horario Semanal) -->
+    <div style="display: flex; gap: 0.25rem; background: #f1f5f9; padding: 4px; border-radius: 8px;">
+      <button 
+        (click)="setSubSeccion.emit('mensual')"
+        [style.background]="subSeccionCalendario === 'mensual' ? 'white' : 'transparent'"
+        [style.box-shadow]="subSeccionCalendario === 'mensual' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'"
+        style="border: none; padding: 6px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; cursor: pointer; color: #1b3a5c; transition: all 0.2s;">
+        Calendario Mensual
+      </button>
+      <button 
+        (click)="setSubSeccion.emit('horario')"
+        [style.background]="subSeccionCalendario === 'horario' ? 'white' : 'transparent'"
+        [style.box-shadow]="subSeccionCalendario === 'horario' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'"
+        style="border: none; padding: 6px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; cursor: pointer; color: #1b3a5c; transition: all 0.2s;">
+        Horario Semanal
+      </button>
+    </div>
+  </div>
+
+  <!-- SUBSECCIÓN: CALENDARIO MENSUAL -->
+  @if (subSeccionCalendario === 'mensual') {
+    <div>
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1.5rem; margin-bottom: 1rem;">
+        <!-- Leyenda de colores -->
+        <div style="display: flex; gap: 1rem; font-size: 0.8rem; font-weight: 600;">
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #0284c7;"></span>
+            <span style="color: #0369a1;">Tareas</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #8b5cf6;"></span>
+            <span style="color: #6b21a8;">Evaluaciones / Exámenes</span>
+          </div>
+        </div>
+
+        <!-- Navegación mensual -->
+        <div class="pa-calendar-nav" style="margin: 0;">
+          <button class="pa-btn-nav" (click)="cambiarMes.emit(-1)" title="Mes anterior">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <span class="pa-calendar-month-label">{{ nombreMesActual }} {{ anoActual }}</span>
+          <button class="pa-btn-nav" (click)="cambiarMes.emit(1)" title="Mes siguiente">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="pa-calendar-container" style="margin-top: 0;">
+        <div class="pa-calendar-weekdays">
+          <div>Lun</div>
+          <div>Mar</div>
+          <div>Mié</div>
+          <div>Jue</div>
+          <div>Vie</div>
+          <div>Sáb</div>
+          <div>Dom</div>
+        </div>
+
+        <div class="pa-calendar-grid">
+          @for (dia of diasCalendario; track dia.fechaStr) {
+            <div 
+              class="pa-calendar-day" 
+              [class.different-month]="dia.mesDiferente"
+              [class.is-today]="dia.esHoy"
+              [class.has-events]="dia.eventos.length > 0">
+              
+              <div class="pa-day-number-wrapper">
+                <span class="pa-day-number">{{ dia.diaNumero }}</span>
+              </div>
+              
+              <div class="pa-day-events">
+                @for (evt of dia.eventos; track evt.titulo) {
+                  <div class="pa-day-event" 
+                       [class.event-tarea]="evt.tipo === 'tarea'" 
+                       [class.event-actividad]="evt.tipo === 'actividad'" 
+                       [class.event-clase]="evt.tipo === 'clase'"
+                       [title]="evt.curso + ': ' + evt.titulo">
+                    <span class="pa-event-dot"></span>
+                    <span class="pa-event-text">{{ evt.titulo }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- SUBSECCIÓN: HORARIO DE CLASES -->
+  @if (subSeccionCalendario === 'horario') {
+    <div class="animate-fade-in" style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+        <thead>
+          <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+            <th style="padding: 16px; font-weight: 600; color: #374151; width: 15%;">Hora</th>
+            <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Lunes</th>
+            <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Martes</th>
+            <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Miércoles</th>
+            <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Jueves</th>
+            <th style="padding: 16px; font-weight: 600; color: #374151; width: 17%; text-align: center;">Viernes</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of horarioSemanal; track row.hora) {
+            <tr style="border-bottom: 1px solid #f3f4f6;">
+              <!-- Hora -->
+              <td style="padding: 16px; font-weight: 700; color: #4b5563; background: #f9fafb;">{{ row.hora }}</td>
+              
+              <!-- Lunes -->
+              <td style="padding: 16px; text-align: center;" 
+                  [style.background]="row.lunes === 'Recreo' ? '#fffbeb' : 'transparent'"
+                  [style.color]="row.lunes === 'Recreo' ? '#d97706' : '#111827'">
+                <span [style.font-weight]="row.lunes === 'Recreo' || row.lunes === 'Tutoría' ? '700' : '600'">{{ row.lunes }}</span>
+              </td>
+
+              <!-- Martes -->
+              <td style="padding: 16px; text-align: center;" 
+                  [style.background]="row.martes === 'Recreo' ? '#fffbeb' : 'transparent'"
+                  [style.color]="row.martes === 'Recreo' ? '#d97706' : '#111827'">
+                <span [style.font-weight]="row.martes === 'Recreo' ? '700' : '600'">{{ row.martes }}</span>
+              </td>
+
+              <!-- Miércoles -->
+              <td style="padding: 16px; text-align: center;" 
+                  [style.background]="row.miercoles === 'Recreo' ? '#fffbeb' : 'transparent'"
+                  [style.color]="row.miercoles === 'Recreo' ? '#d97706' : '#111827'">
+                <span [style.font-weight]="row.miercoles === 'Recreo' ? '700' : '600'">{{ row.miercoles }}</span>
+              </td>
+
+              <!-- Jueves -->
+              <td style="padding: 16px; text-align: center;" 
+                  [style.background]="row.jueves === 'Recreo' ? '#fffbeb' : 'transparent'"
+                  [style.color]="row.jueves === 'Recreo' ? '#d97706' : '#111827'">
+                <span [style.font-weight]="row.jueves === 'Recreo' || row.jueves === 'Educación Física' ? '700' : '600'">{{ row.jueves }}</span>
+              </td>
+
+              <!-- Viernes -->
+              <td style="padding: 16px; text-align: center;" 
+                  [style.background]="row.viernes === 'Recreo' ? '#fffbeb' : 'transparent'"
+                  [style.color]="row.viernes === 'Recreo' ? '#d97706' : '#111827'">
+                <span [style.font-weight]="row.viernes === 'Recreo' ? '700' : '600'">{{ row.viernes }}</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

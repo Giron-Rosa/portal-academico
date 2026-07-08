@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import pe.sanagustin.portal.dto.AsistenciaDetalleHijoDto;
 import pe.sanagustin.portal.dto.CursoDetalleHijoDto;
 import pe.sanagustin.portal.dto.HijoResumenDto;
@@ -82,5 +79,21 @@ public class PadreController {
             @PathVariable String codigoAlumno) {
         return ResponseEntity.ok(
                 padreService.getHorarioHijo(userDetails.getUsername(), codigoAlumno));
+    }
+
+    @PostMapping("/pagos/procesar")
+    public ResponseEntity<Void> procesarPago(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody pe.sanagustin.portal.dto.ProcesarPagoDto req) {
+        padreService.procesarPago(userDetails.getUsername(), req.codigoAlumno(), req.concepto());
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/gamificacion/{codigoAlumno}")
+    public ResponseEntity<pe.sanagustin.portal.dto.GamificacionHijoDto> getGamificacion(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String codigoAlumno) {
+        return ResponseEntity.ok(
+                padreService.getGamificacion(userDetails.getUsername(), codigoAlumno));
     }
 }

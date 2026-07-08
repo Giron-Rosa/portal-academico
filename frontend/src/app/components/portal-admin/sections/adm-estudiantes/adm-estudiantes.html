@@ -1,0 +1,51 @@
+<div class="seccion-crud">
+  <div class="crud-header">
+    <div>
+      <h1 class="page-title">Gestión de Estudiantes</h1>
+      <p class="page-subtitle">Administra los expedientes y matrículas de todos los alumnos</p>
+    </div>
+    <div class="crud-actions">
+      <button type="button" class="btn-export excel" (click)="exportar.emit('excel')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Excel
+      </button>
+      <button type="button" class="btn-export pdf" (click)="exportar.emit('pdf')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        PDF
+      </button>
+      <button class="btn-primary" (click)="abrirNuevo.emit()">+ Nueva Matrícula</button>
+    </div>
+  </div>
+
+  <div class="table-container mt-md">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Estudiante</th>
+          <th>Grado y Sección</th>
+          <th>Email institucional</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (est of estudiantes; track est.idAlumno) {
+          <tr>
+            <td><strong>{{ est.codigo }}</strong></td>
+            <td>{{ est.apellido }}, {{ est.nombre }}</td>
+            <td>{{ est.grado }} · {{ est.seccion }}</td>
+            <td>{{ est.email }}</td>
+            <td><span class="status-badge" [class]="est.estado">{{ est.estado }}</span></td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-edit" (click)="abrirEditar.emit(est)">Editar</button>
+                <button class="btn-delete" (click)="eliminar.emit(est.idAlumno)">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

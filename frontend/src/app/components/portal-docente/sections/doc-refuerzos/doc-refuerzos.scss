@@ -1,0 +1,336 @@
+/* ===================================================================
+   DocRefuerzos — Estilos del módulo de Comunicados y Anuncios
+   =================================================================== */
+
+.com-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.com-subtitle {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.com-btn-nuevo {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { background: #f3f4f6; border-color: #9ca3af; }
+}
+
+.com-form-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+  padding: 1.25rem;
+}
+
+.com-form-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 1rem;
+}
+
+.com-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem 1.25rem;
+  @media (max-width: 640px) { grid-template-columns: 1fr; }
+}
+
+.com-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.com-form-full {
+  grid-column: 1 / -1;
+}
+
+.com-form-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.com-req {
+  color: #ef4444;
+}
+
+.com-form-input, .com-form-select, .com-form-textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.83rem;
+  font-family: inherit;
+  color: #1f2937;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+  &:focus { border-color: #2563eb; }
+}
+
+.com-form-textarea {
+  resize: vertical;
+}
+
+.com-tipo-row {
+  display: flex;
+  gap: 0.5rem;
+  .com-form-select { flex: 1; }
+}
+
+.com-btn-new-tipo {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { background: #e5e7eb; }
+}
+
+.com-nuevo-tipo-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  .com-form-input { flex: 1; }
+}
+
+.com-btn-save-tipo {
+  padding: 0.25rem 0.75rem;
+  background: #10b981;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover:not(:disabled) { background: #059669; }
+  &:disabled { background: #a7f3d0; cursor: not-allowed; }
+}
+
+.com-aulas-check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.5rem;
+  background: #fff;
+}
+
+.com-aula-check-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+  input { cursor: pointer; }
+}
+
+.com-optional {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.com-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.com-btn-cancel {
+  padding: 0.45rem 1rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: #e5e7eb; }
+}
+
+.com-btn-submit {
+  padding: 0.45rem 1.25rem;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover:not(:disabled) { background: #1d4ed8; }
+  &:disabled { background: #9ca3af; cursor: not-allowed; }
+}
+
+.com-filter-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.com-tab {
+  padding: 0.35rem 0.85rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { border-color: #cbd5e1; color: #374151; }
+  &.active {
+    background: #0d1b2a;
+    color: #fff;
+    border-color: #0d1b2a;
+  }
+}
+
+.com-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 3rem 1rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.com-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.com-card {
+  display: flex;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.com-card-stripe {
+  width: 4px;
+  flex-shrink: 0;
+}
+
+.com-card-body {
+  flex: 1;
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.com-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.com-tipo-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.com-card-grado {
+  font-size: 0.72rem;
+  color: #6b7280;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.com-card-fecha-evento {
+  font-size: 0.72rem;
+  color: #b45309;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.com-card-delete {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: #9ca3af;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+  &:hover { background: #fee2e2; color: #dc2626; }
+}
+
+.com-card-titulo {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.com-card-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #4b5563;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.com-card-creacion {
+  font-size: 0.68rem;
+  color: #9ca3af;
+  margin-top: 2px;
+}

@@ -1,0 +1,43 @@
+<div class="seccion-crud">
+  <div class="crud-header">
+    <div>
+      <h1 class="page-title">Gestión de Docentes</h1>
+      <p class="page-subtitle">Administra los perfiles de la plana docente y especialidades</p>
+    </div>
+    <button class="btn-primary" (click)="abrirNuevo.emit()">+ Nuevo Docente</button>
+  </div>
+
+  <div class="table-container mt-md">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Código DOC</th>
+          <th>Nombre y Apellido</th>
+          <th>Especialidad</th>
+          <th>Departamento</th>
+          <th>Email</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (doc of docentes; track doc.idMaestro) {
+          <tr>
+            <td><strong>{{ doc.codigo }}</strong></td>
+            <td>{{ doc.apellido }}, {{ doc.nombre }}</td>
+            <td>{{ doc.especialidad }}</td>
+            <td>{{ doc.departamento }}</td>
+            <td>{{ doc.email }}</td>
+            <td><span class="status-badge" [class]="doc.activo ? 'activo' : 'retirado'">{{ doc.activo ? 'Activo' : 'Inactivo' }}</span></td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-edit" (click)="abrirEditar.emit(doc)">Editar</button>
+                <button class="btn-delete" (click)="eliminar.emit(doc.idMaestro)">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

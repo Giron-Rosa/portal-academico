@@ -1,0 +1,274 @@
+// =====================================================
+// PadAsistencia — Estilos de la sección Asistencia
+// =====================================================
+
+:host { display: block; }
+
+$rojo:       #c1121f;
+$azul:       #0d1b2a;
+$azul-med:   #003566;
+$blanco:     #ffffff;
+$gris-fondo: #f0f2f5;
+$gris-borde: #e2e8f0;
+$gris-texto: #64748b;
+$verde:      #22c55e;
+$amarillo:   #eab308;
+
+// ─── Shared: hijo-tabs ───────────────────────────────
+.hijo-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.hijo-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.9rem;
+  border: 1.5px solid $gris-borde;
+  border-radius: 20px;
+  background: $blanco;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: $gris-texto;
+  cursor: pointer;
+  transition: all .2s;
+
+  &:hover { background: #f1f5f9; border-color: $azul-med; color: $azul-med; }
+
+  &--active {
+    background: $azul-med;
+    border-color: $azul-med;
+    color: $blanco;
+    font-weight: 600;
+  }
+}
+
+.hijo-tab-avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700;
+}
+
+// ─── Loading / Error / Empty ──────────────────────────
+.cursos-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  color: $gris-texto;
+  font-size: 0.9rem;
+}
+
+.curso-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid $gris-borde;
+  border-top-color: $azul-med;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.cursos-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  text-align: center;
+  color: $rojo;
+  font-size: 0.9rem;
+}
+
+.cursos-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  color: $gris-texto;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.btn-retry {
+  padding: 0.4rem 1.2rem;
+  background: $rojo;
+  color: $blanco;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: opacity .2s;
+  &:hover { opacity: 0.85; }
+}
+
+// ─── Layout principal ─────────────────────────────────
+.asistencia-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+// ─── KPIs de Asistencia ───────────────────────────────
+.asistencia-kpis {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.asist-kpi-card {
+  background: $blanco;
+  border-radius: 12px;
+  border: 1.5px solid $gris-borde;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-width: 220px;
+
+  &--percentage {
+    flex: 1;
+    border-left: 4px solid $azul-med;
+  }
+}
+
+.kpi-circle-wrap {
+  flex-shrink: 0;
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: 4px solid $gris-borde;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.kpi-pct-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.kpi-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  h4 {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: $azul;
+    margin: 0;
+  }
+
+  p {
+    font-size: 0.8rem;
+    color: $gris-texto;
+    margin: 0;
+    line-height: 1.4;
+  }
+}
+
+.asist-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 240px;
+}
+
+.kpi-subcard {
+  background: $blanco;
+  border-radius: 10px;
+  border: 1.5px solid $gris-borde;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+
+  &--presente  { border-top: 3px solid $verde; }
+  &--tardanza  { border-top: 3px solid $amarillo; }
+  &--falta     { border-top: 3px solid $rojo; }
+  &--justificado { border-top: 3px solid #6366f1; }
+}
+
+.kpi-sub-num {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: $azul;
+  line-height: 1;
+}
+
+.kpi-sub-lbl {
+  font-size: 0.75rem;
+  color: $gris-texto;
+  text-align: center;
+}
+
+// ─── Lista / Tabla de asistencia ─────────────────────
+.asist-list-wrap {
+  background: $blanco;
+  border-radius: 12px;
+  border: 1.5px solid $gris-borde;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+
+.asist-list-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: $azul;
+  margin: 0 0 1rem;
+}
+
+// ─── Tabla shared ─────────────────────────────────────
+.notas-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  thead th {
+    background: $gris-fondo;
+    color: $azul-med;
+    font-weight: 600;
+    padding: 0.6rem 0.85rem;
+    text-align: left;
+    border-bottom: 2px solid $gris-borde;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid $gris-borde;
+    transition: background .15s;
+    &:hover { background: #f8fafc; }
+  }
+
+  td { padding: 0.55rem 0.85rem; color: #334155; vertical-align: middle; }
+}
+
+.nt-fecha  { color: $gris-texto; font-size: 0.8rem; white-space: nowrap; }
+.nt-titulo { font-weight: 500; color: $azul; }
+
+// ─── Badges de asistencia ────────────────────────────
+.asist-badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &--presente    { background: #dcfce7; color: #15803d; }
+  &--tardanza    { background: #fef9c3; color: #854d0e; }
+  &--falta       { background: #fee2e2; color: $rojo; }
+  &--justificado { background: #ede9fe; color: #6366f1; }
+}
+
+.asist-justificante    { font-size: 0.8rem; color: $gris-texto; }
+.asist-no-justificante { color: #cbd5e1; }

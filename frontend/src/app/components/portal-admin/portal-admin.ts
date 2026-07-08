@@ -1,74 +1,36 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
+import { AdminService } from '../../services/admin.service';
+import { AdmDashboard } from './sections/adm-dashboard/adm-dashboard';
+import { AdmEstudiantes } from './sections/adm-estudiantes/adm-estudiantes';
+import { AdmDocentes } from './sections/adm-docentes/adm-docentes';
+import { AdmApoderados } from './sections/adm-apoderados/adm-apoderados';
+import { AdmKanban } from './sections/adm-kanban/adm-kanban';
+import { AdmModal } from './sections/adm-modal/adm-modal';
 
-type Seccion = 'dashboard' | 'estudiantes' | 'docentes' | 'padres' | 'kanban';
 
-interface Kpis {
-  totalEstudiantes: number;
-  totalDocentes: number;
-  totalCursos: number;
-  morosidadPct: number;
-}
+import type {
+  SeccionAdmin as Seccion,
+  KpisAdmin as Kpis,
+  EstudianteAdmin as Estudiante,
+  DocenteAdmin as Docente,
+  PadreAdmin as Padre,
+  NotaKanban
+} from '../../shared/models/admin.models';
 
-interface Estudiante {
-  idAlumno: number;
-  codigo: string;
-  nombre: string;
-  apellido: string;
-  grado: string;
-  seccion: string;
-  email: string;
-  estado: string;
-}
-
-interface Docente {
-  idMaestro: number;
-  codigo: string;
-  nombre: string;
-  apellido: string;
-  especialidad: string;
-  email: string;
-  departamento: string;
-  activo: boolean;
-}
-
-interface Padre {
-  idPadre: number;
-  codigo: string;
-  nombre: string;
-  apellido: string;
-  email: string;
-  telefono: string;
-  dni: string;
-  hijosVinculados: string;
-}
-
-interface NotaKanban {
-  idNota?: number;
-  titulo: string;
-  descripcion: string;
-  prioridad: 'alta' | 'media' | 'baja';
-  estado: 'pendiente' | 'en_progreso' | 'completada';
-  responsable: string;
-  fechaLimite: string;
-  etiquetas: string;
-}
 
 @Component({
   selector: 'app-portal-admin',
-  imports: [FormsModule],
+  imports: [FormsModule, AdmDashboard, AdmEstudiantes, AdmDocentes, AdmApoderados, AdmKanban, AdmModal],
   templateUrl: './portal-admin.html',
   styleUrl: './portal-admin.scss',
 })
 export class PortalAdmin implements OnInit {
   private router = inject(Router);
   private auth   = inject(AuthService);
-  private http   = inject(HttpClient);
-
-  private readonly API_BASE = 'http://localhost:8080/api/admin';
+  private adminService = inject(AdminService);
 
   nombreAdmin = this.auth.getNombre() ?? 'Administrador';
   codigoAdmin = this.auth.getCodigo() ?? 'ADM-001';
@@ -91,10 +53,7 @@ export class PortalAdmin implements OnInit {
     this.cargandoAnalisis.set(true);
     this.analisisResultado.set(null);
 
-    const token = this.auth.getToken();
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-
-    this.http.get<{ resultado: string }>('http://localhost:8080/api/admin/bi/ia-analisis', { headers }).subscribe({
+    this.adminService.getIaAnalisis().subscribe({
       next: (res) => {
         this.analisisResultado.set(res.resultado);
         this.cargandoAnalisis.set(false);
@@ -107,16 +66,13 @@ export class PortalAdmin implements OnInit {
   }
 
   cargarAlertasYScores() {
-    const token = this.auth.getToken();
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-
-    this.http.get<any[]>('http://localhost:8080/api/admin/bi/ia-alertas-efectividad', { headers }).subscribe({
+    this.adminService.getIaAlertasEfectividad().subscribe({
       next: (data) => {
         this.alertasEfectividad.set(data);
       }
     });
 
-    this.http.get<any>('http://localhost:8080/api/admin/bi/ia-tutor-scores', { headers }).subscribe({
+    this.adminService.getIaTutorScores().subscribe({
       next: (res) => {
         this.tutorScores.set(res.scores);
         this.scoreAnalisisIA.set(res.analisis);
@@ -161,18 +117,12 @@ export class PortalAdmin implements OnInit {
     this.cargarDatos();
   }
 
-  private getHeaders(): HttpHeaders {
-    const token = this.auth.getToken();
-    return new HttpHeaders({ Authorization: `Bearer ${token}` });
-  }
-
   cargarDatos() {
     this.cargando.set(true);
     this.errorCarga.set('');
-    const headers = this.getHeaders();
 
     if (this.seccionActiva() === 'dashboard') {
-      this.http.get<Kpis>(`${this.API_BASE}/dashboard/kpis`, { headers }).subscribe({
+      this.adminService.getKpis().subscribe({
         next: (data) => { 
           this.kpis.set(data); 
           this.cargarAlertasYScores();
@@ -181,22 +131,22 @@ export class PortalAdmin implements OnInit {
         error: () => { this.errorCarga.set('Error al cargar KPIs.'); this.cargando.set(false); }
       });
     } else if (this.seccionActiva() === 'estudiantes') {
-      this.http.get<Estudiante[]>(`${this.API_BASE}/estudiantes`, { headers }).subscribe({
+      this.adminService.getEstudiantes().subscribe({
         next: (data) => { this.estudiantes.set(data); this.cargando.set(false); },
         error: () => { this.errorCarga.set('Error al cargar estudiantes.'); this.cargando.set(false); }
       });
     } else if (this.seccionActiva() === 'docentes') {
-      this.http.get<Docente[]>(`${this.API_BASE}/docentes`, { headers }).subscribe({
+      this.adminService.getDocentes().subscribe({
         next: (data) => { this.docentes.set(data); this.cargando.set(false); },
         error: () => { this.errorCarga.set('Error al cargar docentes.'); this.cargando.set(false); }
       });
     } else if (this.seccionActiva() === 'padres') {
-      this.http.get<Padre[]>(`${this.API_BASE}/padres`, { headers }).subscribe({
+      this.adminService.getPadres().subscribe({
         next: (data) => { this.padres.set(data); this.cargando.set(false); },
         error: () => { this.errorCarga.set('Error al cargar apoderados.'); this.cargando.set(false); }
       });
     } else if (this.seccionActiva() === 'kanban') {
-      this.http.get<NotaKanban[]>(`${this.API_BASE}/notas-kanban`, { headers }).subscribe({
+      this.adminService.getNotasKanban().subscribe({
         next: (data) => { this.notas.set(data); this.cargando.set(false); },
         error: () => { this.errorCarga.set('Error al cargar el tablero Kanban.'); this.cargando.set(false); }
       });
@@ -242,7 +192,6 @@ export class PortalAdmin implements OnInit {
 
   // Submit operations
   guardar() {
-    const headers = this.getHeaders();
     const tipo = this.modalAbierto();
     const edicion = this.modoEdicion();
     const id = this.idSeleccionado();
@@ -252,22 +201,22 @@ export class PortalAdmin implements OnInit {
     if (tipo === 'estudiante') {
       const req = this.formEstudiante;
       const obs = edicion 
-        ? this.http.put<Estudiante>(`${this.API_BASE}/estudiantes/${id}`, req, { headers })
-        : this.http.post<Estudiante>(`${this.API_BASE}/estudiantes`, req, { headers });
+        ? this.adminService.actualizarEstudiante(id!, req)
+        : this.adminService.crearEstudiante(req);
       obs.subscribe({ next: () => { this.cerrarModal(); this.cargarDatos(); }, error: () => { alert('Error al guardar estudiante.'); this.cargando.set(false); } });
     }
     else if (tipo === 'docente') {
       const req = this.formDocente;
       const obs = edicion 
-        ? this.http.put<Docente>(`${this.API_BASE}/docentes/${id}`, req, { headers })
-        : this.http.post<Docente>(`${this.API_BASE}/docentes`, req, { headers });
+        ? this.adminService.actualizarDocente(id!, req)
+        : this.adminService.crearDocente(req);
       obs.subscribe({ next: () => { this.cerrarModal(); this.cargarDatos(); }, error: () => { alert('Error al guardar docente.'); this.cargando.set(false); } });
     }
     else if (tipo === 'padre') {
       const req = this.formPadre;
       const obs = edicion 
-        ? this.http.put<Padre>(`${this.API_BASE}/padres/${id}`, req, { headers })
-        : this.http.post<Padre>(`${this.API_BASE}/padres`, req, { headers });
+        ? this.adminService.actualizarPadre(id!, req)
+        : this.adminService.crearPadre(req);
       obs.subscribe({ next: () => { this.cerrarModal(); this.cargarDatos(); }, error: () => { alert('Error al guardar apoderado.'); this.cargando.set(false); } });
     }
     else if (tipo === 'nota') {
@@ -278,18 +227,14 @@ export class PortalAdmin implements OnInit {
         return;
       }
       const obs = edicion 
-        ? this.http.put<NotaKanban>(`${this.API_BASE}/notas-kanban/${id}`, req, { headers })
-        : this.http.post<NotaKanban>(`${this.API_BASE}/notas-kanban`, req, { headers });
+        ? this.adminService.actualizarNotaKanban(id!, req)
+        : this.adminService.crearNotaKanban(req);
       obs.subscribe({ next: () => { this.cerrarModal(); this.cargarDatos(); }, error: () => { alert('Error al guardar nota.'); this.cargando.set(false); } });
     }
   }
 
   exportarEstudiantes(formato: 'excel' | 'pdf') {
-    const headers = this.getHeaders();
-    const endpoint = formato === 'excel' ? 'excel' : 'pdf';
-    const url = `http://localhost:8080/api/admin/export/estudiantes/${endpoint}`;
-
-    this.http.get(url, { headers, responseType: 'blob' }).subscribe({
+    this.adminService.exportarEstudiantesBlob(formato).subscribe({
       next: (blob) => {
         const type = formato === 'excel' 
           ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
@@ -306,20 +251,18 @@ export class PortalAdmin implements OnInit {
 
   eliminar(tipo: 'estudiante' | 'docente' | 'padre' | 'nota', id: number) {
     if (!confirm('¿Estás seguro de eliminar este registro?')) return;
-    const headers = this.getHeaders();
     this.cargando.set(true);
 
     const ruta = tipo === 'estudiante' ? `estudiantes` : tipo === 'docente' ? `docentes` : tipo === 'padre' ? `padres` : `notas-kanban`;
-    this.http.delete(`${this.API_BASE}/${ruta}/${id}`, { headers }).subscribe({
+    this.adminService.eliminar(ruta, id).subscribe({
       next: () => { this.cargarDatos(); },
       error: () => { alert('Error al eliminar registro.'); this.cargando.set(false); }
     });
   }
 
   cambiarEstadoNota(nota: NotaKanban, nuevoEstado: 'pendiente' | 'en_progreso' | 'completada') {
-    const headers = this.getHeaders();
     const notaActualizada = { ...nota, estado: nuevoEstado };
-    this.http.put<NotaKanban>(`${this.API_BASE}/notas-kanban/${nota.idNota}`, notaActualizada, { headers }).subscribe({
+    this.adminService.actualizarNotaKanban(nota.idNota!, notaActualizada).subscribe({
       next: () => { this.cargarDatos(); },
       error: () => { alert('Error al mover la nota.'); }
     });
@@ -329,4 +272,9 @@ export class PortalAdmin implements OnInit {
     this.auth.logout();
     this.router.navigate(['/']);
   }
+
+  cambiarEstadoNotaDeComponent(event: { nota: any, nuevoEstado: 'pendiente' | 'en_progreso' | 'completada' }) {
+    this.cambiarEstadoNota(event.nota, event.nuevoEstado);
+  }
 }
+

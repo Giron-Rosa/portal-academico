@@ -1,94 +1,43 @@
-import { Component, inject, signal, OnInit, HostListener, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, HostListener, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { WebSocketService } from '../../services/websocket.service';
+import { AlumnoService } from '../../services/alumno.service';
 import { CursoDetalle } from './curso-detalle/curso-detalle';
-import type { TareaAlumno, ActividadAlumno, MaterialAlumno } from './curso-detalle/curso-detalle';
+import { AluInicio } from './sections/alu-inicio/alu-inicio';
+import { AluCalificaciones } from './sections/alu-calificaciones/alu-calificaciones';
+import { AluAsistencia } from './sections/alu-asistencia/alu-asistencia';
+import { AluCalendario } from './sections/alu-calendario/alu-calendario';
+import { AluTareas } from './sections/alu-tareas/alu-tareas';
+import { AluRefuerzo } from './sections/alu-refuerzo/alu-refuerzo';
+import { AluRecursos } from './sections/alu-recursos/alu-recursos';
+
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
+import type {
+  CursoAlumno, CursoAlumnoApi, CalificacionGlobal, AsistenciaGlobal,
+  ActividadDashboard, TareaAlumno, TareaAlumnoExt, ActividadAlumno,
+  ActividadAlumnoExt, MaterialAlumno, MaterialAlumnoExt, SeccionAlumno
+} from '../../shared/models/alumno.models';
 
-type Seccion = 'inicio' | 'calificaciones' | 'asistencias' | 'calendario' | 'kanban' | 'refuerzo' | 'recursos';
+type Seccion = SeccionAlumno;
+export type Curso = CursoAlumno;
+type CursoApi = CursoAlumnoApi;
+type Actividad = ActividadDashboard;
 
-interface CalificacionGlobal {
-  idAulaCurso: number;
-  curso: string;
-  bim1: number | null;
-  bim2: number | null;
-  bim3: number | null;
-  bim4: number | null;
-}
-
-interface AsistenciaGlobal {
-  idAulaCurso: number;
-  curso: string;
-  total: number;
-  presente: number;
-  tardanza: number;
-  falta: number;
-  justificado: number;
-  porcentaje: number;
-}
-
-interface CursoApi {
-  idAulaCurso: number;
-  nombre: string;
-  area: string;
-  horasSemana: number;
-  grado: string;
-  seccion: string;
-  turno: string;
-  periodo: string;
-  docente: string;
-}
-
-export interface Curso {
-  idAulaCurso: number;
-  nombre: string;
-  grado: string;
-  seccion: string;
-  turno: string;
-  horasSemana: number;
-  docente: string;
-  color: string;
-  areaKey: string;
-}
-
-interface Actividad {
-  tipo: string;
-  titulo: string;
-  curso: string;
-  vence: string;
-  estado: 'pendiente' | 'entregado' | 'vencido';
-}
-
-export interface TareaAlumnoExt extends TareaAlumno {
-  idAulaCurso: number;
-  cursoNombre: string;
-}
-
-export interface ActividadAlumnoExt extends ActividadAlumno {
-  idAulaCurso: number;
-  cursoNombre: string;
-}
-
-export interface MaterialAlumnoExt extends MaterialAlumno {
-  idAulaCurso: number;
-  cursoNombre: string;
-}
 
 @Component({
   selector: 'app-portal-alumno',
-  imports: [CommonModule, CursoDetalle],
+  imports: [CommonModule, CursoDetalle, AluInicio, AluCalificaciones, AluAsistencia, AluCalendario, AluTareas, AluRefuerzo, AluRecursos],
   templateUrl: './portal-alumno.html',
   styleUrl: './portal-alumno.scss',
 })
-export class PortalAlumno implements OnInit {
+export class PortalAlumno implements OnInit, OnDestroy {
   private router = inject(Router);
   private auth = inject(AuthService);
-  private http = inject(HttpClient);
-
-  private readonly API = 'http://localhost:8080/api/portal/alumno/mis-cursos';
+  private alumnoService = inject(AlumnoService);
+  readonly ws = inject(WebSocketService);
 
   seccionActiva = signal<Seccion>('inicio');
   dropdownOpen = signal(false);
@@ -167,13 +116,13 @@ export class PortalAlumno implements OnInit {
   // Calendario Subsección
   subSeccionCalendario = signal<'mensual' | 'horario'>('mensual');
 
-  // Horario Semanal Estático para 5to Sec B
-  horarioSemanal = [
-    { hora: '07:30 - 09:00', lunes: 'Matemática', martes: 'Comunicación', miercoles: 'Matemática', jueves: 'Comunicación', viernes: 'Ciencia y Tecnología' },
-    { hora: '09:00 - 10:30', lunes: 'Ciencia y Tecnología', martes: 'Inglés', miercoles: 'Comunicación', jueves: 'Inglés', viernes: 'Matemática' },
+  // Horario Semanal Dinámico (cargado de la base de datos)
+  horarioSemanal: any[] = [
+    { hora: '07:30 - 09:00', lunes: '', martes: '', miercoles: '', jueves: '', viernes: '' },
+    { hora: '09:00 - 10:30', lunes: '', martes: '', miercoles: '', jueves: '', viernes: '' },
     { hora: '10:30 - 11:00', lunes: 'Recreo', martes: 'Recreo', miercoles: 'Recreo', jueves: 'Recreo', viernes: 'Recreo' },
-    { hora: '11:00 - 12:30', lunes: 'Historia', martes: 'Religión', miercoles: 'Historia', jueves: 'Educación Física', viernes: 'Arte y Cultura' },
-    { hora: '12:30 - 14:00', lunes: 'Arte y Cultura', martes: 'Educación Física', miercoles: 'Tutoría', jueves: 'Religión', viernes: 'Historia' },
+    { hora: '11:00 - 12:30', lunes: '', martes: '', miercoles: '', jueves: '', viernes: '' },
+    { hora: '12:30 - 14:00', lunes: '', martes: '', miercoles: '', jueves: '', viernes: '' }
   ];
 
   /** Curso activo para la vista de detalle (null = mostrar grid) */
@@ -193,12 +142,65 @@ export class PortalAlumno implements OnInit {
     { id: 'recursos', label: 'Recursos', icon: 'recursos' },
   ];
 
-  actividades: Actividad[] = [
-    { tipo: 'Evaluación', titulo: 'Práctica calificada', curso: 'Matemática', vence: '25/04 · 11:59 PM', estado: 'pendiente' },
-    { tipo: 'Tarea', titulo: 'Ensayo narrativo', curso: 'Comunicación', vence: '28/04 · 11:59 PM', estado: 'pendiente' },
-    { tipo: 'Laboratorio', titulo: 'Informe de experimento', curso: 'Ciencia y Tecnología', vence: '30/04 · 11:59 PM', estado: 'pendiente' },
-    { tipo: 'Examen', titulo: 'Quiz de vocabulario', curso: 'Inglés', vence: '26/04 · 08:00 AM', estado: 'vencido' },
-  ];
+  // Actividades calculadas dinámicamente desde tareas y exámenes de la BD
+  actividades = computed<Actividad[]>(() => {
+    const ts = this.tareasTotal();
+    const as = this.actividadesTotal();
+    const list: Actividad[] = [];
+
+    // Mapear tareas
+    ts.forEach(t => {
+      let estado: 'pendiente' | 'vencido' | 'entregado' = 'pendiente';
+      if (t.entregado) {
+        estado = 'entregado';
+      } else if (t.fechaEntrega) {
+        const dueDate = new Date(t.fechaEntrega + 'T23:59:59');
+        if (dueDate < new Date()) {
+          estado = 'vencido';
+        }
+      }
+      list.push({
+        tipo: 'Tarea',
+        titulo: t.titulo,
+        curso: t.cursoNombre,
+        vence: t.fechaEntrega ? this.formatDateReadable(t.fechaEntrega) : 'Sin fecha',
+        estado
+      });
+    });
+
+    // Mapear exámenes/actividades
+    as.forEach(a => {
+      let estado: 'pendiente' | 'vencido' | 'entregado' = 'pendiente';
+      if (a.nota !== null || a.asistio) {
+        estado = 'entregado';
+      } else if (a.fechaExamen) {
+        const dueDate = new Date(a.fechaExamen + 'T23:59:59');
+        if (dueDate < new Date()) {
+          estado = 'vencido';
+        }
+      }
+
+      let tipoText = 'Evaluación';
+      if (a.tipo === 'escrito') tipoText = 'Examen Escrito';
+      else if (a.tipo === 'oral') tipoText = 'Evaluación Oral';
+      else if (a.tipo === 'online') tipoText = 'Examen Online';
+      else if (a.tipo === 'practico') tipoText = 'Práctica';
+
+      list.push({
+        tipo: tipoText,
+        titulo: a.titulo,
+        curso: a.cursoNombre,
+        vence: a.fechaExamen ? this.formatDateReadable(a.fechaExamen) : 'Sin fecha',
+        estado
+      });
+    });
+
+    return list.sort((a, b) => {
+      if (a.estado === 'pendiente' && b.estado !== 'pendiente') return -1;
+      if (a.estado !== 'pendiente' && b.estado === 'pendiente') return 1;
+      return 0;
+    }).slice(0, 8);
+  });
 
   private readonly COLORES: Record<string, string> = {
     'Matemática': '#dce8f7',
@@ -362,16 +364,9 @@ export class PortalAlumno implements OnInit {
 
   /** Marca una tarea pendiente como entregada llamando al endpoint del alumno */
   marcarComoEntregada(tarea: TareaAlumnoExt) {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     // Marcar como procesando
     this.kanbanEntregando.update(s => { const n = new Set(s); n.add(tarea.idTarea); return n; });
-    this.http.post(
-      `http://localhost:8080/api/portal/alumno/cursos/${tarea.idAulaCurso}/tareas/${tarea.idTarea}/entregar`,
-      {},
-      { headers }
-    ).subscribe({
+    this.alumnoService.entregarTarea(tarea.idAulaCurso, tarea.idTarea).subscribe({
       next: () => {
         // Actualizar la tarea localmente (optimistic update)
         this.tareasTotal.update(list =>
@@ -457,41 +452,7 @@ export class PortalAlumno implements OnInit {
     { id: 'Comunidad', icon: '👥', color: '#f8fafc', border: '#e2e8f0' },
   ];
 
-  listadoRecursos = [
-    // Biblioteca Digital
-    { nombre: 'Biblioteca Virtual San Agustín', desc: 'Accede a miles de libros, enciclopedias y lecturas digitalizadas recomendadas para secundaria.', url: 'https://biblioteca.sanagustin.edu.pe', cat: 'Biblioteca Digital', tipo: 'pdf' },
-    { nombre: 'Colección de Obras Literarias', desc: 'Lecturas clásicas y contemporáneas en formato PDF para el curso de Comunicación.', url: 'https://bibliotecadigital.pe/obras_clasicas', cat: 'Biblioteca Digital', tipo: 'pdf' },
-    { nombre: 'Enciclopedia Histórica del Perú', desc: 'Compendio histórico interactivo sobre el patrimonio cultural y sucesos históricos peruanos.', url: 'https://historiaperu.pe', cat: 'Biblioteca Digital', tipo: 'url' },
-
-    // Herramientas
-    { nombre: 'GeoGebra Clásico', desc: 'Herramienta interactiva para geometría, álgebra, cálculo y gráficos matemáticos en tiempo real.', url: 'https://www.geogebra.org/classic', cat: 'Herramientas', tipo: 'url' },
-    { nombre: 'Calculadora Desmos', desc: 'Calculadora gráfica y científica en línea, ideal para graficar funciones complejas.', url: 'https://www.desmos.com/calculator', cat: 'Herramientas', tipo: 'url' },
-    { nombre: 'Diccionario RAE', desc: 'Consulta de dudas, significados y ortografía oficial de la Real Academia Española.', url: 'https://dle.rae.es', cat: 'Herramientas', tipo: 'word' },
-
-    // Enlaces Útiles
-    { nombre: 'Khan Academy en Español', desc: 'Lecciones interactivas gratuitas de matemáticas, ciencia y más para todos los niveles.', url: 'https://es.khanacademy.org', cat: 'Enlaces Útiles', tipo: 'url' },
-    { nombre: 'Plataforma Aprendo en Casa', desc: 'Recursos educativos complementarios aprobados por el Ministerio de Educación.', url: 'https://www.aprendoencasa.pe', cat: 'Enlaces Útiles', tipo: 'url' },
-
-    // Plantillas
-    { nombre: 'Plantilla de Monografía en APA 7', desc: 'Formato preestablecido en Word para la redacción de informes académicos con citas APA 7.', url: 'https://templates.sanagustin.edu.pe/monografia_apa7.docx', cat: 'Plantillas', tipo: 'word' },
-    { nombre: 'Ficha de Análisis Literario', desc: 'Plantilla de lectura guiada para analizar personajes, temas y argumento de obras.', url: 'https://templates.sanagustin.edu.pe/analisis_literario.docx', cat: 'Plantillas', tipo: 'word' },
-
-    // Institucional
-    { nombre: 'Reglamento Interno 2026', desc: 'Manual de convivencia, derechos, deberes y normas institucionales de San Agustín.', url: 'https://sanagustin.edu.pe/institucional/reglamento2026.pdf', cat: 'Institucional', tipo: 'pdf' },
-    { nombre: 'Calendario de Efemérides', desc: 'Fechas cívicas y festividades institucionales celebradas a lo largo del año escolar.', url: 'https://sanagustin.edu.pe/institucional/calendario_civico.pdf', cat: 'Institucional', tipo: 'pdf' },
-
-    // Apoyo Académico
-    { nombre: 'Guía de Hábitos de Estudio', desc: 'Consejos prácticos y técnicas de organización del tiempo para mejorar tu concentración.', url: 'https://support.sanagustin.edu.pe/habitos_estudio.pdf', cat: 'Apoyo Académico', tipo: 'pdf' },
-    { nombre: 'Talleres de Reforzamiento Semanal', desc: 'Horarios de asesorías y tutorías presenciales con los profesores del colegio.', url: 'https://support.sanagustin.edu.pe/talleres.pdf', cat: 'Apoyo Académico', tipo: 'pdf' },
-
-    // Multimedia
-    { nombre: 'Canal Educativo de Ciencias', desc: 'Videos explicativos animados de física, química y biología para experimentos caseros.', url: 'https://youtube.com/c/cienciadivertida', cat: 'Multimedia', tipo: 'youtube' },
-    { nombre: 'Audiolibros de Literatura Peruana', desc: 'Colección de audios con las principales leyendas y tradiciones de Ricardo Palma.', url: 'https://audiolibros.pe/tradiciones_peruanas', cat: 'Multimedia', tipo: 'video' },
-
-    // Comunidad
-    { nombre: 'Club de Ciencias San Agustín', desc: 'Inscríbete y participa en proyectos de robótica, informática y ferias de ciencias.', url: 'https://comunidad.sanagustin.edu.pe/club_ciencias', cat: 'Comunidad', tipo: 'url' },
-    { nombre: 'Boletín Estudiantil "Agustino"', desc: 'Publicaciones bimestrales redactadas por alumnos para el taller de Periodismo.', url: 'https://comunidad.sanagustin.edu.pe/boletin.pdf', cat: 'Comunidad', tipo: 'pdf' },
-  ];
+  listadoRecursos: any[] = [];
 
   recursosFiltrados = computed(() => {
     const q = this.busquedaRecurso().toLowerCase().trim();
@@ -517,9 +478,9 @@ export class PortalAlumno implements OnInit {
     const token = this.auth.getToken();
     if (!token) { this.router.navigate(['/']); return; }
 
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.ws.connect();
 
-    this.http.get<CursoApi[]>(this.API, { headers }).subscribe({
+    this.alumnoService.getCursos().subscribe({
       next: (data) => {
         if (data.length > 0) this.periodo.set(data[0].periodo);
         const mappedCursos = data.map(d => ({
@@ -537,7 +498,8 @@ export class PortalAlumno implements OnInit {
         this.cargando.set(false);
 
         // Cargar los datos adicionales una vez tenemos los cursos
-        this.cargarDatosConsolidados(mappedCursos, headers);
+        this.cargarDatosConsolidados(mappedCursos);
+        this.cargarRecursos();
       },
       error: () => {
         this.errorCarga.set('No se pudieron cargar los cursos. Intenta de nuevo.');
@@ -546,12 +508,12 @@ export class PortalAlumno implements OnInit {
     });
   }
 
-  private cargarDatosConsolidados(cursos: Curso[], headers: HttpHeaders) {
+  private cargarDatosConsolidados(cursos: Curso[]) {
     if (cursos.length === 0) return;
 
     // Tareas
     const tareasReqs = cursos.map(c =>
-      this.http.get<TareaAlumno[]>(`http://localhost:8080/api/portal/alumno/cursos/${c.idAulaCurso}/tareas`, { headers })
+      this.alumnoService.getTareas(c.idAulaCurso)
         .pipe(
           map(ts => ts.map(t => ({ ...t, idAulaCurso: c.idAulaCurso, cursoNombre: c.nombre } as TareaAlumnoExt))),
           catchError(() => of([] as TareaAlumnoExt[]))
@@ -567,7 +529,7 @@ export class PortalAlumno implements OnInit {
 
     // Actividades/Exámenes
     const actividadesReqs = cursos.map(c =>
-      this.http.get<ActividadAlumno[]>(`http://localhost:8080/api/portal/alumno/cursos/${c.idAulaCurso}/actividades`, { headers })
+      this.alumnoService.getActividades(c.idAulaCurso)
         .pipe(
           map(as => as.map(a => ({ ...a, idAulaCurso: c.idAulaCurso, cursoNombre: c.nombre } as ActividadAlumnoExt))),
           catchError(() => of([] as ActividadAlumnoExt[]))
@@ -583,7 +545,7 @@ export class PortalAlumno implements OnInit {
 
     // Materiales
     const materialesReqs = cursos.map(c =>
-      this.http.get<MaterialAlumno[]>(`http://localhost:8080/api/portal/alumno/cursos/${c.idAulaCurso}/contenido`, { headers })
+      this.alumnoService.getMateriales(c.idAulaCurso)
         .pipe(
           map(ms => ms.map(m => ({ ...m, idAulaCurso: c.idAulaCurso, cursoNombre: c.nombre } as MaterialAlumnoExt))),
           catchError(() => of([] as MaterialAlumnoExt[]))
@@ -596,6 +558,8 @@ export class PortalAlumno implements OnInit {
         this.materialesTotal.set(flat);
       }
     });
+
+    this.cargarHorarioSemanal();
   }
 
   setSeccion(id: Seccion) {
@@ -611,11 +575,8 @@ export class PortalAlumno implements OnInit {
   }
 
   cargarCalificacionesGlobales() {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.cargandoCalificaciones.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<CalificacionGlobal[]>('http://localhost:8080/api/portal/alumno/calificaciones-globales', { headers }).subscribe({
+    this.alumnoService.getCalificacionesGlobales().subscribe({
       next: (data) => {
         this.calificacionesGlobales.set(data);
         this.cargandoCalificaciones.set(false);
@@ -625,11 +586,8 @@ export class PortalAlumno implements OnInit {
   }
 
   cargarAsistenciasGlobales() {
-    const token = this.auth.getToken();
-    if (!token) return;
     this.cargandoAsistencias.set(true);
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.get<AsistenciaGlobal[]>('http://localhost:8080/api/portal/alumno/asistencia-global', { headers }).subscribe({
+    this.alumnoService.getAsistenciaGlobal().subscribe({
       next: (data) => {
         this.asistenciasGlobales.set(data);
         this.cargandoAsistencias.set(false);
@@ -646,10 +604,7 @@ export class PortalAlumno implements OnInit {
   }
 
   entregarTarea(t: TareaAlumnoExt) {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.post(`http://localhost:8080/api/portal/alumno/cursos/${t.idAulaCurso}/tareas/${t.idTarea}/entregar`, {}, { headers })
+    this.alumnoService.entregarTarea(t.idAulaCurso, t.idTarea)
       .subscribe({
         next: () => {
           this.ngOnInit();
@@ -661,10 +616,7 @@ export class PortalAlumno implements OnInit {
   }
 
   anularEntrega(t: TareaAlumnoExt) {
-    const token = this.auth.getToken();
-    if (!token) return;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    this.http.post(`http://localhost:8080/api/portal/alumno/cursos/${t.idAulaCurso}/tareas/${t.idTarea}/anular`, {}, { headers })
+    this.alumnoService.anularTarea(t.idAulaCurso, t.idTarea)
       .subscribe({
         next: () => {
           this.ngOnInit();
@@ -734,7 +686,7 @@ export class PortalAlumno implements OnInit {
     this.cursoActivo.set(null);
   }
 
-  pendientes = () => this.actividades.filter(a => a.estado === 'pendiente').length;
+  pendientes = computed(() => this.actividades().filter(a => a.estado === 'pendiente').length);
 
   @HostListener('document:click', ['$event'])
   onDocClick(e: MouseEvent) {
@@ -774,5 +726,83 @@ export class PortalAlumno implements OnInit {
       pdf: '📄', word: '📝', url: '🔗', video: '🎬', youtube: '▶️',
     };
     return icons[tipo] ?? '📎';
+  }
+
+  private formatDateReadable(dateStr: string): string {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}`;
+    }
+    return dateStr;
+  }
+
+  private cargarHorarioSemanal() {
+    this.alumnoService.getHorario().subscribe({
+      next: (data) => {
+        const slots = [
+          { hora: '07:30 - 09:00', lunes: '', martes: '', miercoles: '', jueves: '', viernes: '' },
+          { hora: '09:00 - 10:30', lunes: '', martes: '', miercoles: '', jueves: '', viernes: '' },
+          { hora: '10:30 - 11:00', lunes: 'Recreo', martes: 'Recreo', miercoles: 'Recreo', jueves: 'Recreo', viernes: 'Recreo' },
+          { hora: '11:00 - 12:30', lunes: '', martes: '', miercoles: '', jueves: '', viernes: '' },
+          { hora: '12:30 - 14:00', lunes: '', martes: '', miercoles: '', jueves: '', viernes: '' }
+        ];
+
+        const mapDiaSemana: Record<number, string> = {
+          1: 'lunes',
+          2: 'martes',
+          3: 'miercoles',
+          4: 'jueves',
+          5: 'viernes'
+        };
+
+        data.forEach(block => {
+          const key = mapDiaSemana[block.dia];
+          if (!key) return;
+
+          let slotIndex = -1;
+          if (block.horaInicio === '07:30') slotIndex = 0;
+          else if (block.horaInicio === '09:00') slotIndex = 1;
+          else if (block.horaInicio === '11:00') slotIndex = 3;
+          else if (block.horaInicio === '12:30') slotIndex = 4;
+          else {
+            const startHour = parseInt(block.horaInicio.split(':')[0], 10);
+            if (startHour < 9) slotIndex = 0;
+            else if (startHour < 11) slotIndex = 1;
+            else if (startHour < 12) slotIndex = 3;
+            else slotIndex = 4;
+          }
+
+          if (slotIndex !== -1) {
+            (slots[slotIndex] as any)[key] = block.curso;
+          }
+        });
+
+        this.horarioSemanal = slots;
+      },
+      error: (err) => {
+        console.error('Error al cargar horario del alumno', err);
+      }
+    });
+  }
+
+  cargarRecursos() {
+    this.alumnoService.getRecursos().subscribe({
+      next: (data) => {
+        this.listadoRecursos = data.map(r => ({
+          nombre: r.nombre,
+          desc: r.descripcion,
+          url: r.url,
+          cat: r.categoria,
+          tipo: r.tipo
+        }));
+      },
+      error: (err) => {
+        console.error('Error al cargar recursos de la biblioteca', err);
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.ws.disconnect();
   }
 }

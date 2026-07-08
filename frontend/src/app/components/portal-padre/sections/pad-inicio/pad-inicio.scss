@@ -1,0 +1,604 @@
+// =====================================================
+// PadInicio — Estilos de la sección Inicio / Dashboard
+// =====================================================
+
+:host { display: block; }
+
+$rojo:       #c1121f;
+$azul:       #0d1b2a;
+$azul-med:   #003566;
+$blanco:     #ffffff;
+$gris-fondo: #f0f2f5;
+$gris-borde: #e2e8f0;
+$gris-texto: #64748b;
+$verde:      #22c55e;
+$amarillo:   #eab308;
+
+// ─── Shared page title / subtitle ────────────────────
+.page-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: $azul;
+  margin: 0 0 0.25rem;
+}
+
+.page-subtitle {
+  font-size: 0.88rem;
+  color: $gris-texto;
+  margin: 0 0 1.5rem;
+}
+
+// ─── Loading / Error ──────────────────────────────────
+.pp-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: $gris-texto;
+  font-size: 0.9rem;
+
+  &::before {
+    content: '';
+    width: 20px; height: 20px;
+    border: 2px solid $gris-borde;
+    border-top-color: $azul-med;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+}
+
+.pp-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid $gris-borde;
+  border-top-color: $azul-med;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.pp-error {
+  background: #fff0f0;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 0.85rem 1.25rem;
+  color: $rojo;
+  font-size: 0.88rem;
+  margin-bottom: 1rem;
+}
+
+// ─── Alerta riesgo ────────────────────────────────────
+.alerta-riesgo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: #fff0f0;
+  border: 1.5px solid #fca5a5;
+  border-left: 4px solid $rojo;
+  border-radius: 10px;
+  padding: 0.9rem 1.25rem;
+  margin-bottom: 1.5rem;
+
+  strong { font-size: 0.88rem; color: $rojo; display: block; }
+  p      { font-size: 0.82rem; color: #9a3412; margin: 0.1rem 0 0; }
+}
+
+// ─── Sección inicio ───────────────────────────────────
+.seccion-inicio {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+// ─── Grid de tarjetas de hijos ───────────────────────
+.hijos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+// ─── Tarjeta de hijo ─────────────────────────────────
+.hijo-card {
+  background: $blanco;
+  border-radius: 14px;
+  border: 1.5px solid $gris-borde;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  transition: box-shadow .2s, border-color .2s;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+
+  &.estado-riesgo      { border-left: 4px solid $rojo; }
+  &.estado-observacion { border-left: 4px solid $amarillo; }
+  &.estado-bueno       { border-left: 4px solid $verde; }
+}
+
+.hijo-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.hijo-avatar {
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  background: #e8eef7;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.hijo-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.hijo-nombre {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: $azul;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hijo-grado {
+  font-size: 0.78rem;
+  color: $gris-texto;
+}
+
+// ─── Badge de estado ─────────────────────────────────
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &.badge-bueno       { background: #dcfce7; color: #15803d; }
+  &.badge-observacion { background: #fef9c3; color: #854d0e; }
+  &.badge-riesgo      { background: #fee2e2; color: $rojo; }
+
+  &.badge-lg { font-size: 0.82rem; padding: 0.3rem 0.9rem; }
+}
+
+// ─── Métricas de hijo ────────────────────────────────
+.hijo-metricas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.metrica {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  background: $gris-fondo;
+  border-radius: 8px;
+  padding: 0.5rem 0.25rem;
+}
+
+.metrica-val {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: $azul;
+
+  &.val-riesgo { color: $rojo; }
+}
+
+.metrica-lbl {
+  font-size: 0.68rem;
+  color: $gris-texto;
+  text-align: center;
+}
+
+// ─── Cursos a monitorear ──────────────────────────────
+.cursos-monitor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cursos-monitor-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: $gris-texto;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.curso-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.curso-bar-nombre {
+  font-size: 0.78rem;
+  color: $azul;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.curso-bar-track {
+  flex: 1;
+  height: 5px;
+  background: $gris-borde;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.curso-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .4s;
+}
+
+.curso-bar-pct {
+  font-size: 0.72rem;
+  color: $gris-texto;
+  white-space: nowrap;
+  width: 30px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+// ─── Botón de detalles ───────────────────────────────
+.btn-detalles {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.9rem;
+  background: $azul-med;
+  color: $blanco;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  justify-content: center;
+  transition: opacity .2s;
+
+  &:hover { opacity: 0.85; }
+}
+
+// ─── Leyenda ─────────────────────────────────────────
+.leyenda {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: $blanco;
+  border: 1px solid $gris-borde;
+  border-radius: 10px;
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.82rem;
+  color: $azul;
+  flex-wrap: wrap;
+
+  strong { font-weight: 600; margin-right: 0.5rem; }
+}
+
+.leyenda-items {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+
+  &-verde    { background: $verde; }
+  &-amarillo { background: $amarillo; }
+  &-rojo     { background: $rojo; }
+}
+
+// ═══════════════════════════════════════════════════════
+// VISTA DETALLE HIJO
+// ═══════════════════════════════════════════════════════
+
+.seccion-detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.btn-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  background: transparent;
+  border: 1.5px solid $gris-borde;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: $gris-texto;
+  cursor: pointer;
+  transition: all .2s;
+  align-self: flex-start;
+
+  &:hover { background: $gris-fondo; color: $azul; border-color: $azul-med; }
+}
+
+.detalle-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: $blanco;
+  border-radius: 12px;
+  border: 1.5px solid $gris-borde;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+
+.detalle-avatar {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: #e8eef7;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.detalle-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.detalle-nombre {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: $azul;
+  margin: 0;
+}
+
+.detalle-meta {
+  font-size: 0.82rem;
+  color: $gris-texto;
+}
+
+// ─── Métricas bar ────────────────────────────────────
+.detalle-metricas-bar {
+  display: flex;
+  gap: 1rem;
+  background: $blanco;
+  border-radius: 12px;
+  border: 1.5px solid $gris-borde;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  flex-wrap: wrap;
+}
+
+.dmetrica {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 80px;
+  border-right: 1px solid $gris-borde;
+  padding: 0 1rem;
+  text-align: center;
+
+  &:last-child { border-right: none; }
+}
+
+.dmetrica-val {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: $azul;
+
+  &.val-riesgo { color: $rojo; }
+}
+
+.dmetrica-lbl {
+  font-size: 0.75rem;
+  color: $gris-texto;
+}
+
+.dmetrica-sub {
+  font-size: 0.72rem;
+  color: $azul-med;
+  font-weight: 500;
+}
+
+// ─── Descripción ─────────────────────────────────────
+.detalle-descripcion {
+  background: $blanco;
+  border-radius: 10px;
+  border: 1px solid $gris-borde;
+  padding: 0.85rem 1.25rem;
+
+  p { font-size: 0.85rem; color: $gris-texto; margin: 0; }
+}
+
+// ─── Detalle grid ─────────────────────────────────────
+.detalle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+}
+
+.detalle-eventos,
+.detalle-horario {
+  background: $blanco;
+  border-radius: 12px;
+  border: 1.5px solid $gris-borde;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+
+.detalle-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: $azul;
+  margin: 0 0 0.75rem;
+
+  &.mt-lg { margin-top: 2rem; }
+}
+
+// ─── Cursos detalle grid ──────────────────────────────
+.cursos-detalle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.curso-detalle-card {
+  background: $blanco;
+  border-radius: 10px;
+  border: 1.5px solid $gris-borde;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cdc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.cdc-nombre {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: $azul;
+  flex: 1;
+}
+
+.cdc-pct {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: $azul-med;
+  margin-left: 0.5rem;
+}
+
+.cdc-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  align-self: flex-start;
+
+  &-excelente { background: #dcfce7; color: #15803d; }
+  &-regular   { background: #fef9c3; color: #854d0e; }
+  &-riesgo    { background: #fee2e2; color: $rojo; }
+}
+
+.cdc-bar-track {
+  height: 5px;
+  background: $gris-borde;
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 0.25rem 0;
+}
+
+.cdc-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .4s;
+}
+
+.cdc-footer {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.cdc-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+}
+
+.cdc-stat-lbl {
+  font-size: 0.65rem;
+  color: $gris-texto;
+}
+
+.cdc-stat-val {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $azul;
+
+  &.val-verde { color: $verde; }
+}
+
+// ─── CTA mensaje ─────────────────────────────────────
+.cta-mensaje {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, #e8eef7, #dbeafe);
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,53,102,.07);
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.cta-icon {
+  width: 46px; height: 46px;
+  background: $blanco;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+  flex-shrink: 0;
+}
+
+.cta-text {
+  flex: 1;
+
+  strong { font-size: 0.92rem; color: $azul; display: block; margin-bottom: 0.2rem; }
+  p { font-size: 0.82rem; color: $gris-texto; margin: 0; }
+}
+
+.btn-enviar-mensaje {
+  padding: 0.5rem 1.25rem;
+  background: $azul-med;
+  color: $blanco;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity .2s;
+  flex-shrink: 0;
+
+  &:hover { opacity: 0.85; }
+}
+
+// ─── val-verde helper ─────────────────────────────────
+.val-verde { color: $verde; }

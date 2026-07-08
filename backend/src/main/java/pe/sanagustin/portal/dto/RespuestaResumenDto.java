@@ -14,5 +14,8 @@ public record RespuestaResumenDto(
         String cuerpo,
         String fecha,
         String nombreAutor,
-        boolean esMaestro
+        boolean esMaestro,
+        String transcripcion,
+        String sentimiento,
+        String analisisCausa
 ) {}

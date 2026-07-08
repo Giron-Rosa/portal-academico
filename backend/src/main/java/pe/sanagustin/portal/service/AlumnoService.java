@@ -446,4 +446,46 @@ public class AlumnoService {
             );
         }).toList();
     }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Horario semanal del alumno
+    // ──────────────────────────────────────────────────────────────────
+    public List<HorarioAlumnoDto> getHorario(String codigo) {
+        String[] DIAS = { "", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes" };
+
+        String sql = """
+                SELECT
+                    h.dia_semana,
+                    TO_CHAR(h.hora_inicio, 'HH24:MI') AS hora_inicio,
+                    TO_CHAR(h.hora_fin,    'HH24:MI') AS hora_fin,
+                    c.nombre   AS curso,
+                    COALESCE(m.nombre || ' ' || m.apellido, 'Sin docente') AS docente,
+                    ac.id_aula_curso
+                FROM horarios h
+                JOIN aula_cursos ac ON ac.id_aula_curso = h.id_aula_curso
+                JOIN cursos c ON c.id_curso = ac.id_curso
+                JOIN matriculas mat ON mat.id_aula = ac.id_aula AND mat.estado = 'activa'
+                JOIN alumnos al ON al.id_alumno = mat.id_alumno
+                JOIN usuarios u ON u.id_usuario = al.id_usuario
+                LEFT JOIN docente_asignaciones da ON da.id_aula_curso = ac.id_aula_curso AND da.activo = TRUE
+                LEFT JOIN maestros m ON m.id_maestro = da.id_maestro
+                WHERE u.codigo = :codigo
+                ORDER BY h.dia_semana, h.hora_inicio
+                """;
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery(sql)
+                .setParameter("codigo", codigo)
+                .getResultList();
+
+        return rows.stream().map(r -> new HorarioAlumnoDto(
+                ((Number) r[0]).intValue(),
+                DIAS[((Number) r[0]).intValue()],
+                (String) r[1],
+                (String) r[2],
+                (String) r[3],
+                (String) r[4],
+                ((Number) r[5]).longValue()
+        )).toList();
+    }
 }

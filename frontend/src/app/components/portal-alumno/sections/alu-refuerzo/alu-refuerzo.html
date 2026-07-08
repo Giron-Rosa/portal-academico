@@ -1,0 +1,122 @@
+<div class="pa-refuerzo-view animate-fade-in" style="padding: 24px;">
+  <div class="pa-view-header" style="margin-bottom: 24px;">
+    <div class="pa-header-info">
+      <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Refuerzo Académico (RN-10.2)</h2>
+      <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Materiales sugeridos de recuperación para cursos con promedio en riesgo (&lt; 11) y recursos semanales</p>
+    </div>
+  </div>
+
+  <!-- Alerta de Cursos en Riesgo (RN-10.2) -->
+  @if (tieneCursosEnRiesgo) {
+    <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; color: #856404;">
+      <span style="font-size: 1.5rem;">⚠️</span>
+      <div>
+        <strong style="display: block; font-size: 0.95rem; margin-bottom: 2px;">Cursos con Promedio en Riesgo (&lt; 11):</strong>
+        <span style="font-size: 0.85rem;">Tienes asignaturas con notas bajas. Te recomendamos revisar el material de reforzamiento de cada semana: 
+          @for (c of cursosConRiesgo; track c.idAulaCurso; let isLast = $last) {
+            <strong>{{ c.nombre }} (Promedio: {{ c.promedio }})</strong>{{ isLast ? '' : ', ' }}
+          }
+        </span>
+      </div>
+    </div>
+  } @else {
+    <div style="background: #e6f4ea; border: 1px solid #c3e6cb; border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; color: #155724;">
+      <span style="font-size: 1.5rem;">✅</span>
+      <div>
+        <strong style="display: block; font-size: 0.95rem; margin-bottom: 2px;">¡Buen rendimiento!</strong>
+        <span style="font-size: 0.85rem;">No tienes cursos con promedios en riesgo actualmente. Sigue revisando el material semanal para mantener tu nivel.</span>
+      </div>
+    </div>
+  }
+
+  <!-- Selector de Semanas -->
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 1rem; font-weight: 700; color: #1f2937; margin-bottom: 12px;">Selecciona la Semana de Estudio</h3>
+    <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 8px;">
+      @for (sem of semanasLista; track sem) {
+        <button 
+          (click)="setSemanaRefuerzo.emit(sem)"
+          [style.background]="semanaRefuerzoSeleccionada === sem ? '#1b3a5c' : 'white'"
+          [style.color]="semanaRefuerzoSeleccionada === sem ? 'white' : '#1b3a5c'"
+          [style.border]="semanaRefuerzoSeleccionada === sem ? '1px solid #1b3a5c' : '1px solid #cbd5e1'"
+          style="min-width: 48px; height: 36px; padding: 0 12px; font-size: 0.85rem; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
+          Sem {{ sem }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Contenido de Refuerzo de la Semana Seleccionada -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+    
+    <!-- Bloque 1: Videos Explicativos -->
+    <div style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: #1b3a5c; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        🎬 Videos Explicativos
+      </h3>
+      @if (videosExplicativos.length === 0) {
+        <p style="font-size: 0.85rem; color: #9ca3af; text-align: center; padding: 24px 0;">No hay videos explicativos para esta semana.</p>
+      } @else {
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          @for (vid of videosExplicativos; track vid.idMaterial) {
+            <div style="display: flex; gap: 12px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; align-items: center;">
+              <span style="font-size: 1.5rem; background: #fee2e2; color: #dc2626; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">▶️</span>
+              <div style="flex: 1; min-width: 0;">
+                <h4 style="font-size: 0.85rem; font-weight: 700; color: #111827; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ vid.titulo }}</h4>
+                <span style="font-size: 0.75rem; color: #6b7280;">Curso: {{ vid.cursoNombre }}</span>
+              </div>
+              <a [href]="vid.url" target="_blank" style="background: #1b3a5c; color: white; padding: 6px 12px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; text-decoration: none; transition: background 0.2s;">Ver Video</a>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Bloque 2: Libros de Referencia y Lecturas -->
+    <div style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: #1b3a5c; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        📚 Libros y Lecturas de Apoyo
+      </h3>
+      @if (librosReferencia.length === 0) {
+        <p style="font-size: 0.85rem; color: #9ca3af; text-align: center; padding: 24px 0;">No hay libros de referencia disponibles para esta semana.</p>
+      } @else {
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          @for (lib of librosReferencia; track lib.idMaterial) {
+            <div style="display: flex; gap: 12px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; align-items: center;">
+              <span style="font-size: 1.5rem; background: #e0f2fe; color: #0284c7; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">📄</span>
+              <div style="flex: 1; min-width: 0;">
+                <h4 style="font-size: 0.85rem; font-weight: 700; color: #111827; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ lib.titulo }}</h4>
+                <span style="font-size: 0.75rem; color: #6b7280;">Curso: {{ lib.cursoNombre }}</span>
+              </div>
+              <a [href]="lib.url" target="_blank" style="background: #1b3a5c; color: white; padding: 6px 12px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; text-decoration: none; transition: background 0.2s;">Leer</a>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Bloque 3: Fichas de Práctica y Ejercicios -->
+    <div style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: #1b3a5c; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        📝 Fichas y Ejercicios de Práctica
+      </h3>
+      @if (fichasPractica.length === 0) {
+        <p style="font-size: 0.85rem; color: #9ca3af; text-align: center; padding: 24px 0;">No hay fichas de práctica disponibles para esta semana.</p>
+      } @else {
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          @for (fic of fichasPractica; track fic.idMaterial) {
+            <div style="display: flex; gap: 12px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; align-items: center;">
+              <span style="font-size: 1.5rem; background: #e2f0d9; color: #385723; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">📝</span>
+              <div style="flex: 1; min-width: 0;">
+                <h4 style="font-size: 0.85rem; font-weight: 700; color: #111827; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ fic.titulo }}</h4>
+                <span style="font-size: 0.75rem; color: #6b7280;">Curso: {{ fic.cursoNombre }}</span>
+              </div>
+              <a [href]="fic.url" target="_blank" style="background: #1b3a5c; color: white; padding: 6px 12px; font-size: 0.78rem; font-weight: 600; border-radius: 6px; text-decoration: none; transition: background 0.2s;">Descargar</a>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+  </div>
+</div>

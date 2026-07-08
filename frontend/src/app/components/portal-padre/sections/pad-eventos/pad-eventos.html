@@ -1,0 +1,61 @@
+<div class="eventos-layout">
+  <!-- Selector de hijo -->
+  @if (hijos.length > 1) {
+    <div class="hijo-tabs">
+      @for (h of hijos; track h.codigo; let i = $index) {
+        <button class="hijo-tab" [class.hijo-tab--active]="hijoIdx === i" (click)="cambiarHijo.emit(i)">
+          <span class="hijo-tab-avatar">{{ h.nombre[0] }}</span>
+          <span>{{ h.nombre }}</span>
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Estado de carga / error -->
+  @if (cargandoEventos) {
+    <div class="cursos-loading">
+      <div class="curso-spinner"></div>
+      <span>Cargando eventos y comunicados...</span>
+    </div>
+  } @else if (errorEventos) {
+    <div class="cursos-error">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c1121f" stroke-width="1.8">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <p>{{ errorEventos }}</p>
+      <button class="btn-retry" (click)="retryCargarEventos.emit(hijoActual?.codigo ?? '')">Reintentar</button>
+    </div>
+  } @else if (eventosHijo.length === 0) {
+    <div class="cursos-empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.2">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+      </svg>
+      <p>No hay eventos o comunicados vigentes para el aula de este estudiante.</p>
+    </div>
+  } @else {
+    <div class="eventos-timeline">
+      @for (ev of eventosHijo; track ev.id) {
+        <div class="evento-card" [class]="'evento-card--' + ev.tipo.toLowerCase()">
+          <div class="evento-icon-wrap">
+            <span class="evento-emoji">{{ getBadgeEventoIcon(ev.tipo) }}</span>
+          </div>
+          <div class="evento-body">
+            <div class="evento-meta-row">
+              <span class="evento-tipo-badge" [class]="'et-badge--' + ev.tipo.toLowerCase()">
+                {{ getBadgeEventoLabel(ev.tipo) }}
+              </span>
+              @if (ev.fechaEvento) {
+                <span class="evento-fecha-val">📅 {{ ev.fechaEvento }} @if(ev.horaEvento){ · {{ ev.horaEvento }} }</span>
+              }
+              <span class="evento-docente-val">👤 {{ ev.docente }}</span>
+            </div>
+            <h3 class="evento-titulo-h3">{{ ev.titulo }}</h3>
+            <p class="evento-descripcion-p">{{ ev.descripcion }}</p>
+            <span class="evento-creacion-val">Publicado: {{ ev.fechaCreacion }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

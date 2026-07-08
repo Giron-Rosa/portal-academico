@@ -1,0 +1,88 @@
+<div class="pa-recursos-view animate-fade-in" style="padding: 24px;">
+  <div class="pa-view-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div class="pa-header-info">
+      <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Biblioteca de Recursos</h2>
+      <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Buscador de recursos, herramientas digitales y material complementario externo</p>
+    </div>
+
+    <!-- Buscador Textual -->
+    <div style="position: relative; width: 100%; max-width: 320px;">
+      <input 
+        type="text" 
+        placeholder="Buscar recursos (ej. GeoGebra)..." 
+        [value]="busquedaRecurso"
+        (input)="onInputSearch($event)"
+        style="width: 100%; padding: 10px 16px 10px 40px; border-radius: 30px; border: 1px solid #cbd5e1; font-size: 0.88rem; font-weight: 500; outline: none; transition: border-color 0.2s;"
+        onfocus="this.style.borderColor='#1b3a5c'"
+        onblur="this.style.borderColor='#cbd5e1'" />
+      <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 1.1rem;">🔍</span>
+    </div>
+  </div>
+
+  <!-- Cuadrados de Categorías -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 32px;">
+    @for (cat of categoriasRecursos; track cat.id) {
+      <div 
+        (click)="setCategoria.emit(cat.id)"
+        [style.background]="categoriaRecursoActiva === cat.id && busquedaRecurso === '' ? '#1b3a5c' : cat.color"
+        [style.color]="categoriaRecursoActiva === cat.id && busquedaRecurso === '' ? 'white' : '#1e293b'"
+        [style.border-color]="categoriaRecursoActiva === cat.id && busquedaRecurso === '' ? '#1b3a5c' : cat.border"
+        style="border: 1px solid; border-radius: 12px; padding: 1.25rem 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s; min-height: 100px;">
+        <span style="font-size: 2rem;">{{ cat.icon }}</span>
+        <span style="font-size: 0.82rem; font-weight: 700; line-height: 1.2;">{{ cat.id }}</span>
+      </div>
+    }
+  </div>
+
+  <!-- Cabecera de Listado -->
+  <div style="border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+    <h3 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin: 0;">
+      @if (busquedaRecurso !== '') {
+        Resultados de búsqueda para "{{ busquedaRecurso }}"
+      } @else {
+        Recursos en "{{ categoriaRecursoActiva }}"
+      }
+    </h3>
+    <span style="font-size: 0.82rem; color: #64748b; font-weight: 600;">{{ recursosFiltrados.length }} recursos encontrados</span>
+  </div>
+
+  <!-- Listado de Recursos Filtrados (Recuadros Abajo) -->
+  @if (recursosFiltrados.length === 0) {
+    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 48px; text-align: center;">
+      <span style="font-size: 3rem; display: block; margin-bottom: 12px;">📂</span>
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: #475569; margin: 0 0 6px 0;">No se encontraron recursos</h3>
+      <p style="font-size: 0.85rem; color: #94a3b8; margin: 0;">Intenta con otro término o selecciona otra categoría arriba.</p>
+    </div>
+  } @else {
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem;">
+      @for (rec of recursosFiltrados; track rec.nombre) {
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.01); transition: transform 0.2s;"
+             onmouseover="this.style.transform='translateY(-2px)'"
+             onmouseout="this.style.transform='none'">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+              <span style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 20px;">
+                {{ rec.cat }}
+              </span>
+              <span style="font-size: 1.25rem;">{{ tipoIcon(rec.tipo) }}</span>
+            </div>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0 0 8px 0; line-height: 1.3;">
+              {{ rec.nombre }}
+            </h4>
+            <p style="font-size: 0.82rem; color: #64748b; margin: 0 0 16px 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 52px;">
+              {{ rec.desc }}
+            </p>
+          </div>
+          <a 
+            [href]="rec.url" 
+            target="_blank" 
+            style="display: block; width: 100%; background: #1b3a5c; color: white; text-align: center; padding: 8px 0; font-size: 0.82rem; font-weight: 700; border-radius: 8px; text-decoration: none; transition: background 0.2s;"
+            onmouseover="this.style.background='#0d1b2a'"
+            onmouseout="this.style.background='#1b3a5c'">
+            Acceder
+          </a>
+        </div>
+      }
+    </div>
+  }
+</div>

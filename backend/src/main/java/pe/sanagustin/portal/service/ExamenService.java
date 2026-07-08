@@ -18,6 +18,7 @@ import java.util.List;
 public class ExamenService {
 
     private final EntityManager em;
+    private final NotificacionWsService notificacionWsService;
 
     // ────────────────────────────────────────────────────────
     // Listar exámenes de un aula_curso con estadísticas
@@ -120,6 +121,22 @@ public class ExamenService {
                 .executeUpdate();
 
         long id = newId.longValue();
+
+        try {
+            String cNombre = (String) em.createNativeQuery("SELECT c.nombre FROM aula_cursos ac JOIN cursos c ON c.id_curso = ac.id_curso WHERE ac.id_aula_curso = :iac")
+                    .setParameter("iac", idAulaCurso)
+                    .getSingleResult();
+            notificacionWsService.notificarAulaCurso(
+                    idAulaCurso,
+                    "NUEVO_EXAMEN",
+                    req.getTitulo().trim(),
+                    req.getDescripcion() != null ? req.getDescripcion() : "Se ha programado una nueva evaluación.",
+                    cNombre
+            );
+        } catch (Exception e) {
+            // Ignore
+        }
+
         return getExamenes(idAulaCurso, codigoDocente).stream()
                 .filter(e -> e.id() == id)
                 .findFirst()
@@ -223,6 +240,34 @@ public class ExamenService {
         if (req.getAsistio() != null) q.setParameter("asi",  req.getAsistio());
         if (req.getNota()    != null) q.setParameter("nota", req.getNota());
         q.executeUpdate();
+
+        if (req.getNota() != null) {
+            try {
+                Object[] info = (Object[]) em.createNativeQuery("""
+                        SELECT ne.id_alumno, e.titulo, c.nombre
+                        FROM notas_examen ne
+                        JOIN examenes_curso e ON e.id_examen = ne.id_examen
+                        JOIN aula_cursos ac ON ac.id_aula_curso = e.id_aula_curso
+                        JOIN cursos c ON c.id_curso = ac.id_curso
+                        WHERE ne.id_nota_examen = :id
+                        """)
+                        .setParameter("id", idNotaExamen)
+                        .getSingleResult();
+                long idAlumno = ((Number) info[0]).longValue();
+                String eTitulo = (String) info[1];
+                String cNombre = (String) info[2];
+
+                notificacionWsService.notificarAlumno(
+                        idAlumno,
+                        "NUEVA_NOTA",
+                        "Calificación de Examen",
+                        "Se ha registrado la nota " + req.getNota() + " para el examen '" + eTitulo + "'.",
+                        cNombre
+                );
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
 
         String fetchSql = """
                 SELECT ne.id_nota_examen, a.id_alumno, u.codigo,
