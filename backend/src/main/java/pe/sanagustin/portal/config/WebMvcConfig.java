@@ -19,5 +19,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
         String uploadPath = audiosDir.getAbsolutePath();
         registry.addResourceHandler("/uploads/audios/**")
                 .addResourceLocations("file:" + uploadPath + "/");
+
+        // Carpeta local para materiales de clase
+        File materialesDir = new File("uploads/materiales");
+        if (!materialesDir.exists()) {
+            materialesDir.mkdirs();
+        }
+        String materialesPath = materialesDir.getAbsolutePath();
+        registry.addResourceHandler("/uploads/materiales/**")
+                .addResourceLocations("file:" + materialesPath + "/");
     }
 }

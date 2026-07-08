@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter, signal, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, inject, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer } from '@angular/platform-browser';
 import type {
   CursoDocente as Curso,
   UnidadDocente as Unidad,
@@ -28,8 +29,38 @@ import type {
   templateUrl: './doc-curso-detalle.html',
   styleUrl: './doc-curso-detalle.scss'
 })
-export class DocCursoDetalle {
+export class DocCursoDetalle implements OnChanges {
+  private sanitizer = inject(DomSanitizer);
+
+  // ── Previsualización de Materiales ─────────────────────────────────
+  materialSeleccionadoParaVer = signal<Material | null>(null);
+  safeUrl = computed(() => {
+    const mat = this.materialSeleccionadoParaVer();
+    if (!mat || !mat.url) return null;
+    let url = mat.url;
+    if (mat.tipo === 'youtube' && url.includes('youtube.com/watch?v=')) {
+      const videoId = url.split('v=')[1]?.split('&')[0];
+      if (videoId) {
+        url = `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  });
+
+  // ── Drag and Drop de archivos ──────────────────────────────────────
+  isDragging = signal(false);
+  selectedFile = signal<File | null>(null);
+
   @Input({ required: true }) cursoActivo!: Curso;
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['materiales']) {
+      this.modalMaterial.set(false);
+      this.enviandoMat.set(false);
+      this.selectedFile.set(null);
+      this.isDragging.set(false);
+    }
+  }
   @Input({ required: true }) unidades: Unidad[] = [];
   @Input({ required: true }) cargandoTemario = false;
   @Input({ required: true }) materiales: Material[] = [];
@@ -117,7 +148,7 @@ export class DocCursoDetalle {
 
   // Formularios locales
   formUnidad = signal<FormUnidad>({ numero: 1, titulo: '', bimestre: 'Bimestre I', semanas: '', objetivos: '', indicadores: '', contenidos: '', estado: 'pendiente' });
-  formMaterial = signal<FormMaterial>({ semana: 1, clase: 1, titulo: '', tipo: 'pdf', url: '' });
+  formMaterial = signal<FormMaterial>({ semana: 1, clase: 1, titulo: '', tipo: 'pdf', url: '', file: null });
   formTarea = signal<FormTarea>({ semana: 1, clase: 1, numeroTarea: 1, titulo: '', descripcion: '', tipoEntregable: '', fechaEntrega: '', notaMaxima: 20, intentos: 1, url: '' });
   formExamen = signal<FormExamen>({ semana: 1, clase: 1, numeroExamen: 1, titulo: '', descripcion: '', tipo: 'escrito', fechaExamen: '', duracionMinutos: 90, notaMaxima: 20, url: '' });
   formReporte = signal<FormReporte>({ idAlumno: null, tipo: 'anotacion', titulo: '', descripcion: '', fecha: '', visiblePadre: false });
@@ -295,8 +326,10 @@ export class DocCursoDetalle {
 
   toggleModalMaterial(abrir: boolean) {
     if (abrir) {
-      this.formMaterial.set({ semana: 1, clase: 1, titulo: '', tipo: 'pdf', url: '' });
+      this.formMaterial.set({ semana: 1, clase: 1, titulo: '', tipo: 'pdf', url: '', file: null });
       this.enviandoMat.set(false);
+      this.selectedFile.set(null);
+      this.isDragging.set(false);
     }
     this.modalMaterial.set(abrir);
   }
@@ -426,5 +459,69 @@ export class DocCursoDetalle {
     if (isNaN(val)) return;
     this.guardarNotaExamen.emit({ idNotaExamen, idExamen, nota: val });
     this.cancelarEditNotaEx(idNotaExamen);
+  }
+
+  abrirMaterial(mat: Material) {
+    this.materialSeleccionadoParaVer.set(mat);
+  }
+
+  cerrarMaterial() {
+    this.materialSeleccionadoParaVer.set(null);
+  }
+
+  tipoIcon(tipo: string): string {
+    const icons: Record<string, string> = {
+      pdf: '📄', word: '📝', url: '🔗', video: '🎬', youtube: '▶️',
+    };
+    return icons[tipo] ?? '📎';
+  }
+
+  // ── Eventos Drag and Drop / Selección ──────────────────────────────
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  onFileDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+    
+    if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+      const file = event.dataTransfer.files[0];
+      this.handleFile(file);
+    }
+  }
+
+  onFileSelected(event: Event) {
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      const file = target.files[0];
+      this.handleFile(file);
+    }
+  }
+
+  private handleFile(file: File) {
+    this.selectedFile.set(file);
+    const currentForm = this.formMaterial();
+    if (!currentForm.titulo.trim()) {
+      const titleWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+      const cleanTitle = titleWithoutExt.replace(/[-_]/g, ' ');
+      this.setFormMat('titulo', cleanTitle);
+    }
+    
+    this.formMaterial.update(f => ({
+      ...f,
+      file: file,
+      // Dejar la URL local de fallback para visualización previa
+      url: `http://localhost:8080/material/${file.name}`
+    }));
   }
 }

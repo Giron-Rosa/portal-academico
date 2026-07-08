@@ -10,3 +10,6 @@ frontend/.angular/
 *.class
 *.log
 portal-academico/
+
+# Agents Context
+.agents/context/

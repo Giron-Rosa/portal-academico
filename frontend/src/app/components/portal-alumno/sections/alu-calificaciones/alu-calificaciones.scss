@@ -1,68 +1,247 @@
-$azul:      #0d1b2a;
-$azul-med:  #1b3a5c;
-$rojo:      #c1121f;
-$blanco:    #ffffff;
-$fondo:     #e8f0fb;
+$slate-50:   #f8fafc;
+$slate-100:  #f1f5f9;
+$slate-200:  #e2e8f0;
+$slate-300:  #cbd5e1;
+$slate-400:  #94a3b8;
+$slate-500:  #64748b;
+$slate-600:  #475569;
+$slate-700:  #334155;
+$slate-800:  #1e293b;
+$slate-900:  #0f172a;
+
+$blue-50:    #eff6ff;
+$blue-100:   #dbeafe;
+$blue-500:   #3b82f6;
+$blue-600:   #2563eb;
+$blue-700:   #1d4ed8;
+
+$emerald-50: #ecfdf5;
+$emerald-100:#d1fae5;
+$emerald-600:#059669;
+$emerald-700:#047857;
+
+$rose-50:    #fff1f2;
+$rose-100:   #ffe4e6;
+$rose-600:   #e11d48;
+$rose-700:   #be123c;
+
+$white:      #ffffff;
+$ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 
 :host {
   display: block;
   width: 100%;
 }
 
+.pa-qual-view {
+  padding: 0.5rem 0;
+}
+
+.pa-view-header {
+  margin-bottom: 2rem;
+}
+
+.pa-view-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: $slate-900;
+  letter-spacing: -0.5px;
+}
+
+.pa-view-subtitle {
+  font-size: 0.88rem;
+  color: $slate-500;
+  margin-top: 0.25rem;
+}
+
+// ── KPI Cards ────────────────────────────────────────────────
+.pa-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.pa-kpi-card {
+  background: $white;
+  border: 1px solid $slate-200;
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+  transition: transform 200ms $ease-out-strong, box-shadow 200ms $ease-out-strong;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.pa-kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  
+  .kpi-promedio & {
+    background: $blue-50;
+    color: $blue-600;
+  }
+  .kpi-aprobados & {
+    background: $emerald-50;
+    color: $emerald-600;
+  }
+  .kpi-recuperar & {
+    background: $rose-50;
+    color: $rose-600;
+  }
+}
+
+.pa-kpi-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pa-kpi-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: $slate-500;
+}
+
+.pa-kpi-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+  
+  &.value-promedio { color: $blue-600; }
+  &.value-aprobados { color: $emerald-600; }
+  &.value-recuperar { color: $rose-600; }
+}
+
+// ── Table Card ───────────────────────────────────────────────
+.pa-table-card {
+  background: $white;
+  border: 1px solid $slate-200;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+}
+
+.pa-notes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  text-align: left;
+
+  thead {
+    tr {
+      background: $slate-50;
+      border-bottom: 1px solid $slate-200;
+    }
+    th {
+      padding: 1rem 1.25rem;
+      font-weight: 700;
+      color: $slate-700;
+      letter-spacing: -0.1px;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid $slate-100;
+      transition: background-color 150ms $ease-out-strong;
+      
+      &:hover {
+        background-color: $slate-50;
+      }
+      
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+    
+    td {
+      padding: 1.1rem 1.25rem;
+      color: $slate-800;
+      
+      &.course-name {
+        font-weight: 700;
+        color: $slate-900;
+      }
+      
+      &.score-cell {
+        font-weight: 600;
+        
+        &.passed { color: $emerald-600; }
+        &.failed { color: $rose-600; }
+        
+        &.final-score {
+          font-weight: 800;
+        }
+      }
+    }
+  }
+}
+
+.text-center { text-align: center; }
+
+// Status badges
+.status-badge {
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  display: inline-block;
+
+  &.passed {
+    background: $emerald-100;
+    color: $emerald-700;
+  }
+  &.failed {
+    background: $rose-100;
+    color: $rose-700;
+  }
+  &.pending {
+    background: $slate-100;
+    color: $slate-600;
+  }
+}
+
+// ── Loading ──────────────────────────────────────────────────
+.pa-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 0;
+  color: $slate-500;
+  font-size: 0.9rem;
+}
+
+.pa-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3.5px solid $slate-200;
+  border-top-color: $blue-500;
+  border-radius: 50%;
+  animation: paSpin 0.75s linear infinite;
+}
+
+@keyframes paSpin { to { transform: rotate(360deg); } }
+
 .animate-fade-in {
-  animation: fadeIn 0.4s ease-out;
+  animation: fadeIn 350ms $ease-out-strong;
 }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-.pa-view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.pa-view-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: $azul;
-}
-
-.pa-view-subtitle {
-  font-size: 0.85rem;
-  color: #64748b;
-  margin-top: 0.15rem;
-}
-
-.pa-calendar-view {
-  background: $blanco;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-  border: 1px solid rgba(27,58,92,0.08);
-}
-
-.pa-loading {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1.5rem 0;
-  color: #64748b;
-  font-size: 0.88rem;
-}
-
-.pa-spinner {
-  width: 22px;
-  height: 22px;
-  border: 3px solid #e2e8f0;
-  border-top-color: $azul;
-  border-radius: 50%;
-  animation: paSpin 0.7s linear infinite;
-}
-
-@keyframes paSpin { to { transform: rotate(360deg); } }

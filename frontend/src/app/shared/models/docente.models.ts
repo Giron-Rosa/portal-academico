@@ -199,6 +199,7 @@ export interface FormMaterial {
   titulo:  string;
   tipo:    string;   // 'pdf' | 'word' | 'video' | 'url' | 'youtube'
   url:     string;
+  file?:   File | null;
 }
 
 /** Tarea con estadísticas de entrega */

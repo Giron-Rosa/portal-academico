@@ -31,13 +31,24 @@ public class MaterialController {
     }
 
     /** POST /api/portal/docente/cursos/{idAulaCurso}/materiales */
-    @PostMapping("/{idAulaCurso}/materiales")
+    @PostMapping(value = "/{idAulaCurso}/materiales", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public MaterialDto crear(
             @PathVariable long idAulaCurso,
-            @RequestBody NuevoMaterialRequest req,
+            @RequestParam("semana") int semana,
+            @RequestParam("clase") int clase,
+            @RequestParam("titulo") String titulo,
+            @RequestParam("tipo") String tipo,
+            @RequestParam(value = "url", required = false) String url,
+            @RequestParam(value = "file", required = false) org.springframework.web.multipart.MultipartFile file,
             @AuthenticationPrincipal UserDetails user) {
-        return materialService.crearMaterial(idAulaCurso, req, user.getUsername());
+        NuevoMaterialRequest req = new NuevoMaterialRequest();
+        req.setSemana(semana);
+        req.setClase(clase);
+        req.setTitulo(titulo);
+        req.setTipo(tipo);
+        req.setUrl(url);
+        return materialService.crearMaterial(idAulaCurso, req, file, user.getUsername());
     }
 
     /** DELETE /api/portal/docente/cursos/materiales/{idMaterial} */

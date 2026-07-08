@@ -124,7 +124,7 @@ export class DocenteService {
     return this.http.get<any[]>(`${this.API_BASE}/cursos/${idAulaCurso}/materiales`, { headers: this.getHeaders() });
   }
 
-  crearMaterial(idAulaCurso: number, body: any): Observable<any> {
+  crearMaterial(idAulaCurso: number, body: FormData): Observable<any> {
     return this.http.post<any>(`${this.API_BASE}/cursos/${idAulaCurso}/materiales`, body, { headers: this.getHeaders() });
   }
 

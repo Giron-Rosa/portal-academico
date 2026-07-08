@@ -5,6 +5,7 @@ import {
 import { Observable } from 'rxjs';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer } from '@angular/platform-browser';
 import { AuthService } from '../../../services/auth.service';
 import { AlumnoService } from '../../../services/alumno.service';
 import type { CursoAlumno as Curso } from '../../../shared/models/alumno.models';
@@ -40,6 +41,22 @@ export class CursoDetalle implements OnInit {
 
   private alumnoService = inject(AlumnoService);
   private auth = inject(AuthService);
+  private sanitizer = inject(DomSanitizer);
+
+  // ── Previsualización de Materiales ─────────────────────────────────
+  materialSeleccionadoParaVer = signal<MaterialAlumno | null>(null);
+  safeUrl = computed(() => {
+    const mat = this.materialSeleccionadoParaVer();
+    if (!mat || !mat.url) return null;
+    let url = mat.url;
+    if (mat.tipo === 'youtube' && url.includes('youtube.com/watch?v=')) {
+      const videoId = url.split('v=')[1]?.split('&')[0];
+      if (videoId) {
+        url = `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  });
 
   // ── Estado de UI ──────────────────────────────────────────────────
   tabActiva = signal<Tab>('temario');
@@ -265,6 +282,14 @@ export class CursoDetalle implements OnInit {
   asistenciaOffset(pct: number): number {
     const circumference = 2 * Math.PI * 44;   // radio = 44
     return circumference - (pct / 100) * circumference;
+  }
+
+  abrirMaterial(mat: MaterialAlumno) {
+    this.materialSeleccionadoParaVer.set(mat);
+  }
+
+  cerrarMaterial() {
+    this.materialSeleccionadoParaVer.set(null);
   }
 
   // ── Chat de IA ────────────────────────────────────────────────────

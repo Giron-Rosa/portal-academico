@@ -4,13 +4,46 @@
 
 :host { display: block; height: 100%; }
 
-$rojo:       #c1121f;
-$azul:       #0d1b2a;
-$azul-med:   #003566;
-$blanco:     #ffffff;
-$gris-fondo: #f0f2f5;
-$gris-borde: #e2e8f0;
-$gris-texto: #64748b;
+// Institutional color palette
+$navy-900:   #090d16;
+$navy-800:   #0d1b2a; // Deep Institutional Navy
+$navy-700:   #1b2a4a;
+$navy-600:   #1b3a5c; // Medium Institutional Navy
+
+$slate-50:   #f8fafc;
+$slate-100:  #f1f5f9;
+$slate-200:  #e2e8f0;
+$slate-300:  #cbd5e1;
+$slate-400:  #94a3b8;
+$slate-500:  #64748b;
+$slate-600:  #475569;
+$slate-700:  #334155;
+$slate-800:  #1e293b;
+
+$red-500:    #c1121f; // Crimson Red
+$red-600:    #a8101b;
+$rose-50:    #fff1f2;
+$rose-100:   #ffe4e6;
+$rose-600:   #e11d48;
+$rose-700:   #be123c;
+
+$gold-400:   #fbc02d; // Golden / Amber for achievements
+$gold-500:   #eab308;
+$gold-600:   #d97706;
+
+$emerald-50: #ecfdf5;
+$emerald-100:#d1fae5;
+$emerald-500:#22c55e;
+$emerald-600:#16a34a;
+$emerald-700:#047857;
+
+$blue-100:   #dbeafe;
+$blue-500:   #3b82f6;
+$blue-600:   #2563eb;
+
+$white:      #ffffff;
+$ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+
 $verde-wa:   #00a884;
 
 // ─── Layout dos columnas ─────────────────────────────
@@ -18,66 +51,74 @@ $verde-wa:   #00a884;
   display: grid;
   grid-template-columns: 320px 1fr;
   height: calc(100vh - 60px - 3.5rem); // viewport - navbar - content padding
-  background: $blanco;
-  border-radius: 12px;
-  border: 1.5px solid $gris-borde;
+  background: $white;
+  border-radius: 16px;
+  border: 1px solid $slate-200;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 // ─── Sidebar de mensajes ──────────────────────────────
 .msg-sidebar {
   display: flex;
   flex-direction: column;
-  border-right: 1px solid $gris-borde;
+  border-right: 1px solid $slate-200;
   overflow: hidden;
+  background: $white;
 }
 
 .msg-sidebar-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.9rem 1rem;
-  border-bottom: 1px solid $gris-borde;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid $slate-200;
   flex-shrink: 0;
-  background: $blanco;
+  background: $white;
 }
 
 .msg-sidebar-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: $azul;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: $navy-800;
   flex: 1;
   margin: 0;
+  letter-spacing: -0.3px;
 }
 
 .msg-badge {
-  background: $rojo;
-  color: $blanco;
-  font-size: 0.7rem;
+  background: $red-500;
+  color: $white;
+  font-size: 0.72rem;
   font-weight: 700;
   border-radius: 10px;
-  padding: 0.1rem 0.45rem;
-  min-width: 18px;
+  padding: 2px 7px;
+  min-width: 20px;
   text-align: center;
+  box-shadow: 0 2px 4px rgba(193, 18, 31, 0.2);
 }
 
 .btn-nuevo-msg {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.35rem 0.75rem;
-  background: $azul-med;
-  color: $blanco;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  background: linear-gradient(135deg, $navy-800, $navy-700);
+  color: $white;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity .2s;
+  transition: transform 150ms $ease-out-strong, background-color 150ms $ease-out-strong;
 
-  &:hover { opacity: 0.85; }
+  &:hover { background: $navy-900; }
+  &:active { transform: scale(0.96); }
 }
 
 // ─── Loading / Error / Empty ──────────────────────────
@@ -92,8 +133,8 @@ $verde-wa:   #00a884;
 
 .msg-spinner {
   width: 28px; height: 28px;
-  border: 3px solid $gris-borde;
-  border-top-color: $azul-med;
+  border: 3px solid $slate-200;
+  border-top-color: $navy-600;
   border-radius: 50%;
   animation: spin .8s linear infinite;
 
@@ -106,9 +147,10 @@ $verde-wa:   #00a884;
 
 .msg-error {
   padding: 1rem;
-  color: $rojo;
+  color: $red-500;
   font-size: 0.85rem;
   text-align: center;
+  font-weight: 600;
 }
 
 .msg-empty {
@@ -119,10 +161,10 @@ $verde-wa:   #00a884;
   gap: 0.75rem;
   flex: 1;
   padding: 2rem;
-  color: $gris-texto;
+  color: $slate-500;
   text-align: center;
 
-  p { font-size: 0.85rem; margin: 0; line-height: 1.5; }
+  p { font-size: 0.85rem; margin: 0; line-height: 1.5; font-weight: 500; }
 }
 
 // ─── Lista de conversaciones ──────────────────────────
@@ -138,32 +180,33 @@ $verde-wa:   #00a884;
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid $gris-borde;
+  padding: 1rem;
+  border-bottom: 1px solid $slate-100;
   cursor: pointer;
-  transition: background .15s;
+  transition: background-color 150ms $ease-out-strong;
   position: relative;
 
-  &:hover { background: #f8fafc; }
+  &:hover { background: $slate-50; }
 
-  &--active { background: #e8eef7; }
+  &--active { background: #eff6ff; }
 
   &--unread {
-    background: #f0f7ff;
-    .msg-item-asunto { font-weight: 700; color: $azul; }
+    background: #eff6ff;
+    .msg-item-asunto { font-weight: 700; color: $navy-800; }
   }
 }
 
 .msg-item-avatar {
   width: 38px; height: 38px;
-  border-radius: 50%;
-  background: $azul-med;
-  color: $blanco;
+  border-radius: 10px;
+  background: $navy-700;
+  color: $white;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 800;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   text-transform: uppercase;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .msg-item-body {
@@ -182,25 +225,26 @@ $verde-wa:   #00a884;
 }
 
 .msg-item-docente {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: $azul;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: $navy-800;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .msg-item-time {
-  font-size: 0.7rem;
-  color: $gris-texto;
+  font-size: 0.72rem;
+  color: $slate-400;
   white-space: nowrap;
   flex-shrink: 0;
+  font-weight: 600;
 }
 
 .msg-item-asunto {
   font-size: 0.82rem;
-  font-weight: 500;
-  color: #334155;
+  font-weight: 600;
+  color: $slate-700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -208,12 +252,13 @@ $verde-wa:   #00a884;
 
 .msg-item-alumno {
   font-size: 0.75rem;
-  color: $azul-med;
+  color: $navy-600;
+  font-weight: 600;
 }
 
 .msg-item-preview {
   font-size: 0.78rem;
-  color: $gris-texto;
+  color: $slate-500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -221,11 +266,12 @@ $verde-wa:   #00a884;
 }
 
 .msg-item-dot {
-  width: 9px; height: 9px;
+  width: 8px; height: 8px;
   border-radius: 50%;
-  background: $azul-med;
+  background: $blue-500;
   flex-shrink: 0;
   align-self: center;
+  box-shadow: 0 0 6px $blue-500;
 }
 
 // ─── Chat panel ───────────────────────────────────────
@@ -233,10 +279,12 @@ $verde-wa:   #00a884;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: $slate-50;
 
   &--empty {
     align-items: center;
     justify-content: center;
+    background: $white;
   }
 }
 
@@ -249,25 +297,26 @@ $verde-wa:   #00a884;
   gap: 0.85rem;
   padding: 3rem;
   text-align: center;
-  color: $gris-texto;
+  color: $slate-500;
 
-  h3 { font-size: 1rem; font-weight: 600; color: $azul; margin: 0; }
-  p  { font-size: 0.85rem; margin: 0; }
+  h3 { font-size: 1.15rem; font-weight: 800; color: $navy-800; margin: 0; letter-spacing: -0.2px; }
+  p  { font-size: 0.88rem; margin: 0; font-weight: 500; }
 }
 
 .btn-nuevo-msg-center {
-  padding: 0.5rem 1.25rem;
-  background: $azul-med;
-  color: $blanco;
+  padding: 0.6rem 1.5rem;
+  background: linear-gradient(135deg, $navy-800, $navy-700);
+  color: $white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   margin-top: 0.5rem;
-  transition: opacity .2s;
+  transition: transform 150ms $ease-out-strong, background-color 150ms $ease-out-strong;
 
-  &:hover { opacity: 0.85; }
+  &:hover { background: $navy-900; }
+  &:active { transform: scale(0.96); }
 }
 
 // ─── Cabecera del chat ────────────────────────────────
@@ -275,10 +324,11 @@ $verde-wa:   #00a884;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid $gris-borde;
-  background: $blanco;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid $slate-200;
+  background: $white;
   flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.01);
 }
 
 .chat-header-info {
@@ -290,20 +340,20 @@ $verde-wa:   #00a884;
 
 .chat-avatar {
   width: 36px; height: 36px;
-  border-radius: 50%;
-  background: $azul-med;
-  color: $blanco;
+  border-radius: 8px;
+  background: $navy-700;
+  color: $white;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 800;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   text-transform: uppercase;
 }
 
 .chat-title {
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: $azul;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: $navy-800;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -312,21 +362,22 @@ $verde-wa:   #00a884;
 
 .chat-meta {
   font-size: 0.75rem;
-  color: $gris-texto;
+  color: $slate-500;
+  font-weight: 500;
 }
 
 .chat-close {
   background: transparent;
   border: none;
-  font-size: 1rem;
-  color: $gris-texto;
+  font-size: 1.1rem;
+  color: $slate-500;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  transition: background .15s;
+  border-radius: 8px;
+  transition: background-color 150ms $ease-out-strong, color 150ms $ease-out-strong;
   flex-shrink: 0;
 
-  &:hover { background: $gris-fondo; color: $azul; }
+  &:hover { background: $slate-100; color: $navy-800; }
 }
 
 // ─── "Cargar más" ─────────────────────────────────────
@@ -339,17 +390,18 @@ $verde-wa:   #00a884;
 }
 
 .btn-load-more {
-  padding: 0.3rem 1rem;
-  background: #e8eef7;
-  color: $azul-med;
+  padding: 0.35rem 1.1rem;
+  background: #eff6ff;
+  color: $blue-600;
   border: none;
   border-radius: 20px;
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background .2s;
+  transition: transform 150ms $ease-out-strong, background-color 150ms $ease-out-strong;
 
-  &:hover { background: #d1dff5; }
+  &:hover { background: $blue-100; }
+  &:active { transform: scale(0.96); }
 }
 
 // ─── Área de mensajes ────────────────────────────────
@@ -360,47 +412,51 @@ $verde-wa:   #00a884;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  // Fondo estilo WhatsApp (inline en HTML)
 }
 
 // ─── Burbujas ────────────────────────────────────────
 .bubble {
   max-width: 65%;
-  padding: 0.55rem 0.8rem 0.4rem;
-  border-radius: 12px;
-  font-size: 0.86rem;
+  padding: 0.6rem 0.9rem 0.45rem;
+  border-radius: 16px;
+  font-size: 0.88rem;
   line-height: 1.45;
   position: relative;
-  box-shadow: 0 1px 1px rgba(0,0,0,.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
+  font-weight: 500;
 
   &--padre {
     align-self: flex-end;
-    background: #d9fdd3;
-    border-bottom-right-radius: 3px;
+    background: #e1f5fe;
+    color: $navy-800;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 2px 4px rgba(3, 169, 244, 0.05);
   }
 
   &--docente {
     align-self: flex-start;
-    background: $blanco;
-    border-bottom-left-radius: 3px;
+    background: $white;
+    color: $slate-800;
+    border-bottom-left-radius: 4px;
+    border: 1px solid $slate-100;
   }
 }
 
 // ─── Botón de icono de respuesta ─────────────────────
 .msg-reply-icon-btn {
   padding: 8px;
-  color: #54656f;
+  color: $slate-500;
   background: none;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   border-radius: 50%;
-  transition: background .15s;
+  transition: background-color 150ms $ease-out-strong, color 150ms $ease-out-strong;
 
-  &:hover { background: rgba(0,0,0,.05); }
+  &:hover { background: $slate-100; color: $navy-800; }
 }
 
 .msg-reply-send {
@@ -411,22 +467,32 @@ $verde-wa:   #00a884;
   cursor: pointer;
   display: flex;
   align-items: center;
+  transition: transform 100ms;
+
+  &:hover {
+    transform: scale(1.1);
+  }
 }
 
 // ─── Input de chat ─────────────────────────────────
 .chat-reply-input {
   flex-grow: 1;
-  border: none;
+  border: 1px solid $slate-200;
   outline: none;
-  padding: 9px 12px;
-  border-radius: 8px;
-  background: $blanco;
+  padding: 9px 14px;
+  border-radius: 12px;
+  background: $white;
   font-family: inherit;
   font-size: 14px;
-  min-height: 20px;
+  min-height: 38px;
   max-height: 120px;
   resize: none;
-  color: #111b21;
+  color: $slate-800;
+  transition: border-color 150ms $ease-out-strong;
+
+  &:focus {
+    border-color: $navy-600;
+  }
 }
 
 // ─── Grabador y Dictador WhatsApp-style ────────────
@@ -440,7 +506,7 @@ $verde-wa:   #00a884;
 .pulsing-mic-icon {
   width: 8px;
   height: 8px;
-  background: #ef4444;
+  background: $red-500;
   border-radius: 50%;
   animation: pulse-mic-pad 1s infinite alternate;
 }
@@ -453,29 +519,29 @@ $verde-wa:   #00a884;
 .pulsing-mic-icon--blue {
   width: 8px;
   height: 8px;
-  background: #3b82f6;
+  background: $blue-500;
   border-radius: 50%;
   animation: pulse-mic-pad 1s infinite alternate;
 }
 
 .audio-recording-wave.dictating {
-  color: #1d4ed8;
+  color: $blue-600;
 }
 
 .dictado-interim-preview {
   flex: 1;
   font-size: 0.82rem;
-  color: #64748b;
+  color: $slate-500;
   font-style: italic;
-  background: rgba(59, 130, 246, 0.06);
-  border: 1px dashed #93c5fd;
-  border-radius: 6px;
-  padding: 4px 10px;
+  background: #eff6ff;
+  border: 1px dashed $blue-100;
+  border-radius: 8px;
+  padding: 4px 12px;
   max-width: 320px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  animation: fadeInPad 0.2s ease;
+  animation: fadeInPad 0.2s $ease-out-strong;
 }
 
 @keyframes fadeInPad {
@@ -489,17 +555,17 @@ $verde-wa:   #00a884;
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: #ea4335;
+  color: $red-500;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
   flex-shrink: 0;
 
   &:hover {
-    background: #fde8e8;
-    color: #c53030;
+    background: $rose-50;
+    color: $red-600;
   }
 }
 
@@ -515,7 +581,7 @@ $verde-wa:   #00a884;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #ef4444;
+  background-color: $red-500;
   animation: wa-pulse-dot-pad 1s infinite alternate;
 }
 
@@ -526,8 +592,8 @@ $verde-wa:   #00a884;
 
 .wa-mic-timer {
   font-size: 0.9rem;
-  font-weight: 600;
-  color: #54656f;
+  font-weight: 700;
+  color: $slate-600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -545,7 +611,7 @@ $verde-wa:   #00a884;
 
 .wa-mic-wave-bar {
   width: 3px;
-  background-color: #8696a0;
+  background-color: $slate-400;
   border-radius: 1.5px;
   min-height: 4px;
   transition: height 0.08s ease;
@@ -556,14 +622,14 @@ $verde-wa:   #00a884;
   height: 38px;
   border-radius: 50%;
   border: none;
-  background-color: #00a884;
-  color: #ffffff;
+  background-color: $verde-wa;
+  color: $white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s, transform 0.1s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 4px rgba(0, 168, 132, 0.25);
   flex-shrink: 0;
 
   &:hover {
@@ -580,7 +646,8 @@ $verde-wa:   #00a884;
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.45);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -589,71 +656,83 @@ $verde-wa:   #00a884;
 }
 
 .modal-nuevo-chat {
-  background: $blanco;
-  border-radius: 14px;
+  background: $white;
+  border-radius: 16px;
   width: 100%;
   max-width: 520px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
   max-height: 90vh;
   overflow: hidden;
+  
+  // Pop-in entry animation
+  opacity: 0;
+  transform: scale(0.96);
+  animation: modalPopIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes modalPopIn {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid $gris-borde;
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid $slate-200;
   flex-shrink: 0;
 
-  h3 { font-size: 1rem; font-weight: 700; color: $azul; margin: 0; }
+  h3 { font-size: 1.05rem; font-weight: 800; color: $navy-800; margin: 0; letter-spacing: -0.2px; }
 }
 
 .modal-close {
   background: transparent;
   border: none;
   font-size: 1.1rem;
-  color: $gris-texto;
+  color: $slate-400;
   cursor: pointer;
   padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  transition: background .15s;
+  border-radius: 8px;
+  transition: background-color 150ms $ease-out-strong;
 
-  &:hover { background: $gris-fondo; }
+  &:hover { background: $slate-100; }
 }
 
 .modal-body {
-  padding: 1.25rem;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 1rem;
   overflow-y: auto;
   flex: 1;
 }
 
 .modal-label {
   display: block;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: $azul;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: $navy-800;
   margin-bottom: 0.4rem;
 }
 
 .modal-input,
 .modal-textarea {
   width: 100%;
-  padding: 0.6rem 0.85rem;
-  border: 1.5px solid $gris-borde;
-  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  border: 1px solid $slate-200;
+  border-radius: 10px;
   font-size: 0.88rem;
-  color: $azul;
+  color: $navy-800;
   outline: none;
   font-family: inherit;
-  transition: border-color .2s;
+  transition: border-color 150ms $ease-out-strong;
 
-  &:focus { border-color: $azul-med; }
+  &:focus { border-color: $navy-600; }
 }
 
 .modal-textarea {
@@ -674,27 +753,27 @@ $verde-wa:   #00a884;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.6rem 0.85rem;
-  border: 1.5px solid $gris-borde;
-  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  border: 1px solid $slate-200;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all .2s;
+  transition: all 150ms $ease-out-strong;
 
-  &:hover { border-color: $azul-med; background: #f0f7ff; }
+  &:hover { border-color: $navy-600; background: #eff6ff; }
 
   &--sel {
-    border-color: $azul-med;
-    background: #e8eef7;
+    border-color: $navy-600;
+    background: #eff6ff;
   }
 }
 
 .docente-avatar {
   width: 32px; height: 32px;
-  border-radius: 50%;
-  background: $azul-med;
-  color: $blanco;
+  border-radius: 8px;
+  background: $navy-700;
+  color: $white;
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 800;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   text-transform: uppercase;
@@ -702,15 +781,16 @@ $verde-wa:   #00a884;
 
 .docente-name {
   display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: $azul;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: $navy-800;
 }
 
 .docente-sub {
   display: block;
   font-size: 0.75rem;
-  color: $gris-texto;
+  color: $slate-500;
+  font-weight: 500;
 }
 
 // ─── Modal footer ────────────────────────────────────
@@ -718,35 +798,38 @@ $verde-wa:   #00a884;
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  padding: 0.85rem 1.25rem;
-  border-top: 1px solid $gris-borde;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid $slate-200;
   flex-shrink: 0;
 }
 
 .btn-modal-cancel {
-  padding: 0.5rem 1.25rem;
+  padding: 0.6rem 1.25rem;
   background: transparent;
-  border: 1.5px solid $gris-borde;
-  border-radius: 8px;
+  border: 1px solid $slate-200;
+  border-radius: 10px;
   font-size: 0.85rem;
-  color: $gris-texto;
+  color: $slate-500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all .2s;
+  transition: all 150ms $ease-out-strong;
 
-  &:hover { border-color: $azul-med; color: $azul; }
+  &:hover { border-color: $slate-400; color: $navy-800; }
+  &:active { transform: scale(0.97); }
 }
 
 .btn-modal-send {
-  padding: 0.5rem 1.25rem;
-  background: $azul-med;
-  color: $blanco;
+  padding: 0.6rem 1.25rem;
+  background: linear-gradient(135deg, $navy-800, $navy-700);
+  color: $white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: opacity .2s;
+  transition: opacity 150ms $ease-out-strong, transform 150ms $ease-out-strong;
 
-  &:hover { opacity: 0.85; }
+  &:hover { background: $navy-900; }
+  &:active { transform: scale(0.97); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }

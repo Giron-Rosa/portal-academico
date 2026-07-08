@@ -37,6 +37,9 @@ public class SecurityConfig {
                 // Habilitar CORS usando nuestra configuración de bean
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
+                // Deshabilitar cabecera X-Frame-Options para permitir la visualización de PDFs en iframes
+                .headers(headers -> headers.frameOptions(org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig::disable))
+
                 // Sin estado de sesión: cada request debe traer su JWT
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
@@ -60,6 +63,12 @@ public class SecurityConfig {
 
                         // Carpeta de audios públicos subidos
                         .requestMatchers("/uploads/audios/**").permitAll()
+
+                        // Carpeta de materiales de clase subidos
+                        .requestMatchers("/uploads/materiales/**").permitAll()
+
+                        // Materiales de clase públicos para previsualización y descarga
+                        .requestMatchers("/material/**").permitAll()
 
                         .requestMatchers("/api/portal/docente/**").hasAnyAuthority("ROLE_MAESTRO", "MAESTRO", "ROLE_DOCENTE", "DOCENTE", "ROLE_PROFESOR", "PROFESOR")
                         .requestMatchers("/api/portal/alumno/**").hasRole("ALUMNO")
