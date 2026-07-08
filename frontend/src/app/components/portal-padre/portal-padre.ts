@@ -1,7 +1,10 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnDestroy, NgZone } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { WebSocketService } from '../../services/websocket.service';
 
 type Seccion = 'inicio' | 'cursos' | 'asistencia' | 'mensajes' | 'eventos' | 'pagos';
 type Vista   = 'dashboard' | 'detalle';
@@ -14,6 +17,7 @@ interface CursoDetalle {
   totalTareas: number;
   puntualidad: number;
   docente?: string;
+  promedioCurso: number;
 }
 
 interface Hijo {
@@ -26,10 +30,24 @@ interface Hijo {
   asistencia: number;
   cursosRiesgo: number;
   entregaTareas: number;
+  cuotasPendientes: number;
   descripcion: string;
   cursosMonitor: { nombre: string; progreso: number }[];
   cursos: CursoDetalle[];
   eventos: string[];
+  parentesco?: string;
+}
+
+interface CursoDetalleApi {
+  nombre: string;
+  area: string;
+  horasSemana: number;
+  docente: string;
+  progreso: number;
+  tareasEntregadas: number;
+  totalTareas: number;
+  promedioCurso: number;
+  asistenciaCurso: number;
 }
 
 interface HijoApi {
@@ -41,19 +59,164 @@ interface HijoApi {
   turno: string;
   periodo: string;
   parentesco: string;
-  cursos: { nombre: string; area: string; horasSemana: number; docente: string }[];
+  promedio: number;
+  asistencia: number;
+  cursosRiesgo: number;
+  entregaTareas: number;
+  estado: Estado;
+  cuotasPendientes: number;
+  cursos: CursoDetalleApi[];
+}
+
+export interface MensajeResumen {
+  id: number;
+  asunto: string;
+  tipo: string;
+  leido: boolean;
+  fechaEnvio: string;
+  nombrePadre: string; // docente en el portal de padres
+  nombreAlumno: string;
+  idAlumno: number;
+  grado: string;
+  seccion: string;
+  curso: string;
+  cantRespuestas: number;
+  ultimaRespuesta: string;
+}
+
+export interface RespuestaResumen {
+  id: number;
+  cuerpo: string;
+  fecha: string;
+  autor: string;
+  esMaestro: boolean;
+  isPlaying?: boolean;
+  audioProgress?: number;
+  currentTime?: number;
+  duration?: number;
+}
+
+export interface MensajeDetalle {
+  id: number;
+  asunto: string;
+  tipo: string;
+  leido: boolean;
+  fechaEnvio: string;
+  nombrePadre: string; // docente en el portal de padres
+  nombreAlumno: string;
+  idAlumno: number;
+  grado: string;
+  seccion: string;
+  curso: string;
+  cuerpo: string;
+  respuestas: RespuestaResumen[];
+  iniciadoPorDocente: boolean;
+  isPlaying?: boolean;
+  audioProgress?: number;
+  currentTime?: number;
+  duration?: number;
+}
+
+export interface DocenteDisponible {
+  idMaestro: number;
+  nombreMaestro: string;
+  curso: string;
+  nombreAlumno: string;
+  idAlumno: number;
+  idAulaCurso: number;
+}
+
+/* ── Fase 2: Cursos ── */
+export interface TareaHijo {
+  idTarea: number;
+  titulo: string;
+  fechaEntrega: string;
+  entregado: boolean;
+  nota: number | null;
+  notaMaxima: number;
+}
+
+export interface ExamenHijo {
+  idExamen: number;
+  titulo: string;
+  tipo: string;
+  fechaExamen: string;
+  asistio: boolean;
+  nota: number | null;
+  notaMaxima: number;
+}
+
+export interface CursoDetalleCompleto {
+  nombre: string;
+  area: string;
+  docente: string;
+  progreso: number;
+  tareasEntregadas: number;
+  totalTareas: number;
+  promedioCurso: number;
+  asistenciaCurso: number;
+  tareas: TareaHijo[];
+  examenes: ExamenHijo[];
+}
+
+/* ── Fase 3: Asistencia ── */
+export interface AsistenciaRegistro {
+  fecha: string;
+  estado: string;
+  curso: string;
+  justificante: string;
+}
+
+export interface AsistenciaDetalleCompleto {
+  historial: AsistenciaRegistro[];
+  total: number;
+  presente: number;
+  tardanza: number;
+  falta: number;
+  justificado: number;
+  porcentaje: number;
+}
+
+/* ── Fase 4: Eventos y Pagos ── */
+export interface EventoHijo {
+  id: number;
+  titulo: string;
+  descripcion: string;
+  tipo: string;
+  fechaEvento: string;
+  horaEvento: string;
+  fechaCreacion: string;
+  docente: string;
+}
+
+export interface PagoHijo {
+  concepto: string;
+  monto: number;
+  fechaVencimiento: string;
+  estado: string; // 'PAGADO', 'PENDIENTE', 'VENCIDO'
+  fechaPago: string | null;
+  documento: string | null;
 }
 
 @Component({
   selector: 'app-portal-padre',
-  imports: [],
+  imports: [CommonModule, FormsModule],
   templateUrl: './portal-padre.html',
   styleUrl: './portal-padre.scss',
 })
-export class PortalPadre {
+export class PortalPadre implements OnDestroy {
   private auth   = inject(AuthService);
   private router = inject(Router);
   private http   = inject(HttpClient);
+  readonly ws    = inject(WebSocketService);
+  private zone   = inject(NgZone);
+
+  // Variables para notas de voz (audio)
+  grabando = signal(false);
+  duracionGrabacion = signal(0);
+  mediaRecorder: any = null;
+  audioChunks: Blob[] = [];
+  recordingInterval: any = null;
 
   seccionActiva  = signal<Seccion>('inicio');
   vista          = signal<Vista>('dashboard');
@@ -61,6 +224,58 @@ export class PortalPadre {
   menuUsuario    = signal(false);
   cargando       = signal(false);
   errorCarga     = signal('');
+
+  /* ── Signals para la sección de Mensajes ── */
+  mensajes              = signal<MensajeResumen[]>([]);
+  mensajeActivo         = signal<MensajeDetalle | null>(null);
+  respuestasActivas     = signal<RespuestaResumen[]>([]);
+  replyText             = signal<string>('');
+  cargandoMensajes      = signal<boolean>(false);
+  errorMensajes         = signal<string>('');
+  cargandoDetalleChat   = signal<boolean>(false);
+  enviandoReply         = signal<boolean>(false);
+  refinandoConIA        = signal<boolean>(false);
+
+  // Paginación de respuestas (Infinite scroll hacia arriba)
+  currentPage           = signal<number>(0);
+  hasMorePages          = signal<boolean>(true);
+  cargandoMasRespuestas = signal<boolean>(false);
+
+  // Nuevo chat modal
+  modalNuevoChat        = signal<boolean>(false);
+  docentesDisponibles   = signal<DocenteDisponible[]>([]);
+  nuevoChatAlumnoSel    = signal<Hijo | null>(null);
+  nuevoChatDocenteSel   = signal<DocenteDisponible | null>(null);
+  nuevoChatAsunto       = signal<string>('');
+  nuevoChatMensaje      = signal<string>('');
+  enviandoNuevoChat     = signal<boolean>(false);
+
+  /* ── Fase 2: Señales de Cursos ── */
+  cursosHijo            = signal<CursoDetalleCompleto[]>([]);
+  cargandoCursos        = signal<boolean>(false);
+  errorCursos           = signal<string>('');
+  cursoExpandido        = signal<number>(-1); // índice del curso expandido (-1 = ninguno)
+  tabCurso              = signal<'tareas' | 'examenes'>('tareas'); // tab activa en el detalle
+
+  /* ── Fase 3: Señales de Asistencia ── */
+  asistenciaHijo        = signal<AsistenciaDetalleCompleto | null>(null);
+  cargandoAsistencia    = signal<boolean>(false);
+  errorAsistencia       = signal<string>('');
+
+  /* ── Fase 4: Señales de Eventos ── */
+  eventosHijo           = signal<EventoHijo[]>([]);
+  cargandoEventos       = signal<boolean>(false);
+  errorEventos          = signal<string>('');
+
+  horarioHijo           = signal<any[]>([]);
+  cargandoHorario       = signal<boolean>(false);
+  errorHorario          = signal<string>('');
+
+  /* ── Fase 4: Señales de Pagos ── */
+  pagosHijo             = signal<PagoHijo[]>([]);
+  cargandoPagos         = signal<boolean>(false);
+  errorPagos            = signal<string>('');
+  modalProximamentePago = signal<boolean>(false);
 
   nombrePadre    = this.auth.getNombre() ?? 'Padre';
   codigoPadre    = this.auth.getCodigo() ?? '';
@@ -86,6 +301,12 @@ export class PortalPadre {
 
   constructor() {
     this.cargarResumen();
+    // Conectar WebSocket para notificaciones de mensajes en tiempo real
+    this.ws.connect();
+  }
+
+  ngOnDestroy(): void {
+    this.ws.disconnect();
   }
 
   private cargarResumen() {
@@ -111,11 +332,12 @@ export class PortalPadre {
   private mapHijo(h: HijoApi, idx: number): Hijo {
     const cursos: CursoDetalle[] = h.cursos.map(c => ({
       nombre:           c.nombre,
-      progreso:         0,
-      tareasEntregadas: 0,
-      totalTareas:      0,
-      puntualidad:      0,
+      progreso:         c.progreso,
+      tareasEntregadas: c.tareasEntregadas,
+      totalTareas:      c.totalTareas,
+      puntualidad:      c.asistenciaCurso,
       docente:          c.docente,
+      promedioCurso:    c.promedioCurso,
     }));
 
     return {
@@ -123,30 +345,244 @@ export class PortalPadre {
       nombre:        `${h.nombre} ${h.apellido}`,
       grado:         `${h.grado} · Sec. ${h.seccion}`,
       codigo:        h.codigo,
-      estado:        'observacion',
-      promedio:      0,
-      asistencia:    0,
-      cursosRiesgo:  0,
-      entregaTareas: 0,
-      descripcion:   `Período ${h.periodo} · Turno ${h.turno}. Datos académicos próximamente.`,
-      cursosMonitor: cursos.slice(0, 3).map(c => ({ nombre: c.nombre, progreso: 0 })),
+      estado:        h.estado,
+      promedio:      h.promedio,
+      asistencia:    h.asistencia,
+      cursosRiesgo:  h.cursosRiesgo,
+      entregaTareas: h.entregaTareas,
+      cuotasPendientes: h.cuotasPendientes,
+      descripcion:   `Período ${h.periodo} · Turno ${h.turno}.`,
+      cursosMonitor: cursos.slice(0, 3).map(c => ({ nombre: c.nombre, progreso: c.progreso })),
       cursos,
       eventos:       [],
+      parentesco:    h.parentesco,
     };
   }
 
   setSeccion(s: Seccion) {
     this.seccionActiva.set(s);
     if (s !== 'inicio') this.vista.set('dashboard');
+    if (s === 'mensajes') {
+      this.cargarMensajes();
+      this.ws.marcarLeidas();
+    } else {
+      this.ws.unsubscribeFromChat();
+    }
+    if (s === 'cursos') {
+      const hijo = this.hijoActual();
+      if (hijo) this.cargarCursos(hijo.codigo);
+    }
+    if (s === 'asistencia') {
+      const hijo = this.hijoActual();
+      if (hijo) this.cargarAsistencia(hijo.codigo);
+    }
+    if (s === 'eventos') {
+      const hijo = this.hijoActual();
+      if (hijo) this.cargarEventos(hijo.codigo);
+    }
+    if (s === 'pagos') {
+      const hijo = this.hijoActual();
+      if (hijo) this.cargarPagos(hijo.codigo);
+    }
   }
 
   verDetalle(idx: number) {
     this.hijoIdx.set(idx);
+    const hijo = this.hijos()[idx];
+    if (hijo) {
+      this.cargarEventos(hijo.codigo);
+      this.cargarHorarioHijo(hijo.codigo);
+    }
     this.vista.set('detalle');
+  }
+
+  cargarHorarioHijo(codigoAlumno: string): void {
+    this.cargandoHorario.set(true);
+    this.errorHorario.set('');
+    this.http.get<any[]>(
+      `http://localhost:8080/api/portal/padre/horario/${codigoAlumno}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.horarioHijo.set(data);
+        this.cargandoHorario.set(false);
+      },
+      error: () => {
+        this.errorHorario.set('No se pudo cargar el horario del estudiante.');
+        this.cargandoHorario.set(false);
+      }
+    });
   }
 
   volverDashboard() {
     this.vista.set('dashboard');
+  }
+
+  /* ════════════════════════════════════════════════
+     FASE 2 — Cursos del hijo
+  ════════════════════════════════════════════════ */
+
+  cargarCursos(codigoAlumno: string): void {
+    this.cargandoCursos.set(true);
+    this.errorCursos.set('');
+    this.cursoExpandido.set(-1);
+    this.http.get<CursoDetalleCompleto[]>(
+      `http://localhost:8080/api/portal/padre/cursos/${codigoAlumno}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.cursosHijo.set(data);
+        this.cargandoCursos.set(false);
+      },
+      error: () => {
+        this.errorCursos.set('No se pudieron cargar los cursos.');
+        this.cargandoCursos.set(false);
+      },
+    });
+  }
+
+  toggleCursoExpandido(idx: number): void {
+    this.cursoExpandido.update(prev => prev === idx ? -1 : idx);
+    this.tabCurso.set('tareas');
+  }
+
+  cambiarHijoCursos(idx: number): void {
+    this.hijoIdx.set(idx);
+    const hijo = this.hijos()[idx];
+    if (hijo) this.cargarCursos(hijo.codigo);
+  }
+
+  /* ════════════════════════════════════════════════
+     FASE 3 — Asistencia del hijo
+  ════════════════════════════════════════════════ */
+
+  cargarAsistencia(codigoAlumno: string): void {
+    this.cargandoAsistencia.set(true);
+    this.errorAsistencia.set('');
+    this.http.get<AsistenciaDetalleCompleto>(
+      `http://localhost:8080/api/portal/padre/asistencia/${codigoAlumno}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.asistenciaHijo.set(data);
+        this.cargandoAsistencia.set(false);
+      },
+      error: () => {
+        this.errorAsistencia.set('No se pudo cargar el historial de asistencia.');
+        this.cargandoAsistencia.set(false);
+      },
+    });
+  }
+
+  cambiarHijoAsistencia(idx: number): void {
+    this.hijoIdx.set(idx);
+    const hijo = this.hijos()[idx];
+    if (hijo) this.cargarAsistencia(hijo.codigo);
+  }
+
+  getEstadoAsistenciaLabel(est: string): string {
+    const e = est.toLowerCase();
+    if (e === 'presente') return 'Presente';
+    if (e === 'tardanza') return 'Tardanza';
+    if (e === 'falta' || e === 'falto') return 'Inasistencia';
+    if (e === 'justificado') return 'Justificado';
+    return est;
+  }
+
+  /* ════════════════════════════════════════════════
+     FASE 4 — Eventos y Pagos del hijo
+  ════════════════════════════════════════════════ */
+
+  cargarEventos(codigoAlumno: string): void {
+    this.cargandoEventos.set(true);
+    this.errorEventos.set('');
+    this.http.get<EventoHijo[]>(
+      `http://localhost:8080/api/portal/padre/eventos/${codigoAlumno}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.eventosHijo.set(data);
+        this.cargandoEventos.set(false);
+      },
+      error: () => {
+        this.errorEventos.set('No se pudieron cargar los eventos del aula.');
+        this.cargandoEventos.set(false);
+      },
+    });
+  }
+
+  cambiarHijoEventos(idx: number): void {
+    this.hijoIdx.set(idx);
+    const hijo = this.hijos()[idx];
+    if (hijo) this.cargarEventos(hijo.codigo);
+  }
+
+  cargarPagos(codigoAlumno: string): void {
+    this.cargandoPagos.set(true);
+    this.errorPagos.set('');
+    this.http.get<PagoHijo[]>(
+      `http://localhost:8080/api/portal/padre/pagos/${codigoAlumno}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.pagosHijo.set(data);
+        this.cargandoPagos.set(false);
+      },
+      error: () => {
+        this.errorPagos.set('No se pudo cargar el estado de pensiones.');
+        this.cargandoPagos.set(false);
+      },
+    });
+  }
+
+  cambiarHijoPagos(idx: number): void {
+    this.hijoIdx.set(idx);
+    const hijo = this.hijos()[idx];
+    if (hijo) this.cargarPagos(hijo.codigo);
+  }
+
+  pagandoConcepto = signal<string | null>(null);
+
+  simularPago(pago: PagoHijo): void {
+    this.abrirModalProximamentePago();
+  }
+
+  abrirModalProximamentePago(): void {
+    this.modalProximamentePago.set(true);
+  }
+
+  cerrarModalProximamentePago(): void {
+    this.modalProximamentePago.set(false);
+  }
+
+  getBadgeEventoIcon(tipo: string): string {
+    const t = tipo.toLowerCase();
+    if (t === 'examen') return '📝';
+    if (t === 'actividad') return '🏆';
+    if (t === 'reunion_padres') return '👥';
+    if (t === 'paseo') return '🚌';
+    if (t === 'dia_festivo') return '🎉';
+    return '📢';
+  }
+
+  getBadgeEventoLabel(tipo: string): string {
+    const t = tipo.toLowerCase();
+    if (t === 'examen') return 'Examen';
+    if (t === 'actividad') return 'Actividad';
+    if (t === 'reunion_padres') return 'Reunión';
+    if (t === 'paseo') return 'Paseo';
+    if (t === 'dia_festivo') return 'Festivo';
+    return 'General';
+  }
+
+
+
+  getNotaColor(nota: number | null, max: number): string {
+    if (nota === null) return '#94a3b8';
+    const pct = (nota / max) * 100;
+    if (pct >= 80) return '#22c55e';
+    if (pct >= 60) return '#eab308';
+    return '#c1121f';
   }
 
   getBarColor(p: number): string {
@@ -165,10 +601,433 @@ export class PortalPadre {
     return 'Necesita mejorar';
   }
 
+  getClase(dia: number, hora: string): any {
+    return this.horarioHijo().find(h => h.dia === dia && h.horaInicio === hora);
+  }
+
   toggleMenuUsuario() { this.menuUsuario.update(v => !v); }
 
   logout() {
     this.auth.logout();
     this.router.navigate(['/']);
+  }
+
+  /* ════════════════════════════════════════════════
+     MENSAJES — Sección completa del portal del padre
+  ════════════════════════════════════════════════ */
+
+  private headers(): HttpHeaders {
+    return new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken() ?? ''}` });
+  }
+
+  cargarMensajes(): void {
+    this.cargandoMensajes.set(true);
+    this.errorMensajes.set('');
+    this.http.get<MensajeResumen[]>(
+      'http://localhost:8080/api/portal/padre/mensajes',
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => { this.mensajes.set(data); this.cargandoMensajes.set(false); },
+      error: () => { this.errorMensajes.set('No se pudieron cargar los mensajes.'); this.cargandoMensajes.set(false); },
+    });
+  }
+
+  noLeidosPadre = () => this.mensajes().filter(m => !m.leido).length;
+
+  abrirChat(id: number): void {
+    // Resetear estado de paginación y respuestas
+    this.mensajeActivo.set(null);
+    this.respuestasActivas.set([]);
+    this.currentPage.set(0);
+    this.hasMorePages.set(true);
+    this.cargandoDetalleChat.set(true);
+
+    this.http.get<MensajeDetalle>(
+      `http://localhost:8080/api/portal/padre/mensajes/${id}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.mensajeActivo.set(data);
+        // Cargar las respuestas de la primera página (10 más recientes)
+        this.cargarPaginaRespuestas(id, 0, true);
+        // Suscribir al chat room de WebSocket
+        this.ws.subscribeToChat(id, (resp: RespuestaResumen) => {
+          this.zone.run(() => {
+            this.respuestasActivas.update(rs => {
+              if (rs.some(r => r.id === resp.id)) return rs;
+              const filtrado = rs.filter(r => r.id > 0 && r.cuerpo !== resp.cuerpo);
+              return [...filtrado, resp];
+            });
+            this.scrollToBottom();
+          });
+        });
+        // Marcar como leído en la lista local
+        this.mensajes.update(ms =>
+          ms.map(m => m.id === id ? { ...m, leido: true } : m)
+        );
+        this.cargandoDetalleChat.set(false);
+      },
+      error: () => { this.cargandoDetalleChat.set(false); },
+    });
+  }
+
+  private cargarPaginaRespuestas(idMensaje: number, page: number, reset = false): void {
+    if (reset) { this.cargandoDetalleChat.set(true); }
+    else        { this.cargandoMasRespuestas.set(true); }
+
+    this.http.get<RespuestaResumen[]>(
+      `http://localhost:8080/api/portal/padre/mensajes/${idMensaje}/respuestas-paginadas`,
+      { headers: this.headers(), params: { page: page.toString(), size: '10' } }
+    ).subscribe({
+      next: (data) => {
+        if (reset) {
+          this.respuestasActivas.set(data);
+        } else {
+          // Anteponer mensajes más antiguos en la parte superior
+          this.respuestasActivas.update(rs => [...data, ...rs]);
+        }
+        this.hasMorePages.set(data.length === 10);
+        this.currentPage.set(page);
+        this.cargandoDetalleChat.set(false);
+        this.cargandoMasRespuestas.set(false);
+      },
+      error: () => {
+        this.cargandoDetalleChat.set(false);
+        this.cargandoMasRespuestas.set(false);
+      },
+    });
+  }
+
+  cargarMasRespuestas(): void {
+    const activo = this.mensajeActivo();
+    if (!activo || !this.hasMorePages() || this.cargandoMasRespuestas()) return;
+    this.cargarPaginaRespuestas(activo.id, this.currentPage() + 1, false);
+  }
+
+  cerrarChat(): void {
+    this.ws.unsubscribeFromChat();
+    this.mensajeActivo.set(null);
+    this.respuestasActivas.set([]);
+    this.replyText.set('');
+  }
+
+  scrollToBottom() {
+    setTimeout(() => {
+      const container = document.getElementById('chat-scroll');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 50);
+  }
+
+  // Audio Playback Helpers
+  playingAudio: any = null;
+  activeAudioRespuesta: any = null;
+
+  toggleAudioPlay(r: any) {
+    const audioUrl = 'http://localhost:8080' + r.cuerpo.replace('[AUDIO]', '').trim();
+    
+    if (this.playingAudio && this.activeAudioRespuesta === r) {
+      if (r.isPlaying) {
+        this.playingAudio.pause();
+        r.isPlaying = false;
+      } else {
+        this.playingAudio.play();
+        r.isPlaying = true;
+      }
+      return;
+    }
+
+    if (this.playingAudio) {
+      this.playingAudio.pause();
+      if (this.activeAudioRespuesta) {
+        this.activeAudioRespuesta.isPlaying = false;
+      }
+    }
+
+    const audio = new Audio(audioUrl);
+    this.playingAudio = audio;
+    this.activeAudioRespuesta = r;
+    r.isPlaying = true;
+    r.currentTime = 0;
+    r.audioProgress = 0;
+
+    audio.addEventListener('timeupdate', () => {
+      this.zone.run(() => {
+        r.currentTime = audio.currentTime;
+        r.duration = audio.duration || 0;
+        r.audioProgress = (audio.currentTime / (audio.duration || 1)) * 100;
+      });
+    });
+
+    audio.addEventListener('ended', () => {
+      this.zone.run(() => {
+        r.isPlaying = false;
+        r.audioProgress = 0;
+        r.currentTime = 0;
+        this.playingAudio = null;
+        this.activeAudioRespuesta = null;
+      });
+    });
+
+    audio.play();
+  }
+
+  seekAudio(event: MouseEvent, r: any) {
+    if (!this.playingAudio || this.activeAudioRespuesta !== r) return;
+    const bar = event.currentTarget as HTMLElement;
+    const rect = bar.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    const duration = this.playingAudio.duration || 0;
+    this.playingAudio.currentTime = percentage * duration;
+  }
+
+  formatAudioTime(seconds: number): string {
+    if (isNaN(seconds) || seconds === Infinity) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+  // Audio Recording Methods
+  iniciarGrabacion() {
+    if (this.grabando()) return;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      this.audioChunks = [];
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      this.mediaRecorder = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        this.enviarAudio(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      this.grabando.set(true);
+      this.duracionGrabacion.set(0);
+      mediaRecorder.start();
+
+      this.recordingInterval = setInterval(() => {
+        this.duracionGrabacion.update(d => d + 1);
+      }, 1000);
+    }).catch(err => {
+      console.error('No se pudo acceder al micrófono:', err);
+      alert('Por favor, concede permisos de micrófono para grabar audios.');
+    });
+  }
+
+  detenerGrabacion() {
+    if (!this.grabando() || !this.mediaRecorder) return;
+    this.mediaRecorder.stop();
+    this.grabando.set(false);
+    if (this.recordingInterval) {
+      clearInterval(this.recordingInterval);
+      this.recordingInterval = null;
+    }
+  }
+
+  cancelarGrabacion() {
+    if (!this.grabando() || !this.mediaRecorder) return;
+    this.mediaRecorder.onstop = () => {
+      this.mediaRecorder = null;
+      this.audioChunks = [];
+    };
+    this.mediaRecorder.stop();
+    this.grabando.set(false);
+    if (this.recordingInterval) {
+      clearInterval(this.recordingInterval);
+      this.recordingInterval = null;
+    }
+  }
+
+  enviarAudio(audioBlob: Blob) {
+    const activo = this.mensajeActivo();
+    if (!activo) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+
+    // Agregar mensaje optimista temporal
+    const tempId = -Date.now();
+    const tempResp: any = {
+      id: tempId,
+      cuerpo: '[AUDIO] /uploads/audios/temp.webm',
+      fecha: 'Enviando...',
+      autor: 'Yo',
+      esMaestro: false,
+      isPlaying: false,
+      audioProgress: 0,
+      currentTime: 0
+    };
+
+    this.respuestasActivas.update(rs => [...rs, tempResp]);
+    this.scrollToBottom();
+
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'audio.webm');
+
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.post(`http://localhost:8080/api/portal/padre/mensajes/${activo.id}/responder-audio`,
+      formData, { headers })
+      .subscribe({
+        next: () => {
+          // El WebSocket se encargará de remover el temporal y poner el real.
+        },
+        error: () => {
+          // Remover el temporal si falla
+          this.respuestasActivas.update(rs => rs.filter(r => r.id !== tempId));
+          alert('Error al enviar nota de voz.');
+        }
+      });
+  }
+
+  enviarRespuesta(): void {
+    const activo = this.mensajeActivo();
+    const texto  = this.replyText().trim();
+    if (!activo || !texto || this.enviandoReply()) return;
+
+    // Agregar de forma optimista localmente de inmediato
+    const tempId = -Date.now();
+    const tempResp: RespuestaResumen = {
+      id: tempId,
+      cuerpo: texto,
+      fecha: new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) + ' 🕒',
+      autor: 'Yo',
+      esMaestro: false
+    };
+
+    this.respuestasActivas.update(rs => [...rs, tempResp]);
+    this.scrollToBottom();
+    this.replyText.set('');
+
+    this.enviandoReply.set(true);
+    this.http.post<void>(
+      `http://localhost:8080/api/portal/padre/mensajes/${activo.id}/responder`,
+      { cuerpo: texto },
+      { headers: this.headers() }
+    ).subscribe({
+      next: () => {
+        this.enviandoReply.set(false);
+      },
+      error: () => {
+        this.enviandoReply.set(false);
+        this.respuestasActivas.update(rs => rs.filter(r => r.id !== tempId));
+        alert('No se pudo enviar el mensaje.');
+      },
+    });
+  }
+
+  refinarMensajeConIA(tipo: 'respuesta' | 'nuevo'): void {
+    const texto = tipo === 'respuesta' ? this.replyText().trim() : this.nuevoChatMensaje().trim();
+    if (!texto || this.refinandoConIA()) return;
+
+    this.refinandoConIA.set(true);
+    const token = this.auth.getToken();
+    if (!token) {
+      this.refinandoConIA.set(false);
+      return;
+    }
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    let nombreAlumno = 'mi hijo(a)';
+    let nombreDestinatario = 'Profesor(a)';
+    let relacion = 'Apoderado';
+
+    const hijo = this.hijoActual();
+    if (hijo) {
+      nombreAlumno = hijo.nombre || 'mi hijo(a)';
+      relacion = hijo.parentesco || 'Apoderado';
+    }
+
+    if (tipo === 'respuesta') {
+      const activo = this.mensajeActivo();
+      if (activo) {
+        nombreAlumno = activo.nombreAlumno || nombreAlumno;
+        nombreDestinatario = activo.nombrePadre || 'Profesor(a)'; // nombrePadre es el nombre del profesor en la bandeja del padre
+      }
+    } else {
+      const sel = this.nuevoChatDocenteSel();
+      if (sel) {
+        nombreAlumno = sel.nombreAlumno || nombreAlumno;
+        nombreDestinatario = sel.nombreMaestro || 'Profesor(a)';
+      }
+    }
+
+    this.http.post<{ resultado: string }>(
+      'http://localhost:8080/api/portal/padre/mensajes/ia-redactar',
+      { 
+        texto,
+        nombreAlumno,
+        nombreDestinatario,
+        relacion
+      },
+      { headers }
+    ).subscribe({
+      next: (res) => {
+        if (tipo === 'respuesta') {
+          this.replyText.set(res.resultado);
+        } else {
+          this.nuevoChatMensaje.set(res.resultado);
+        }
+        this.refinandoConIA.set(false);
+      },
+      error: () => {
+        this.refinandoConIA.set(false);
+        alert('No se pudo refinar el mensaje con IA. Por favor, inténtalo más tarde.');
+      }
+    });
+  }
+
+
+  abrirNuevoChat(): void {
+    this.http.get<DocenteDisponible[]>(
+      'http://localhost:8080/api/portal/padre/mensajes/docentes-disponibles',
+      { headers: this.headers() }
+    ).subscribe({
+      next: (data) => {
+        this.docentesDisponibles.set(data);
+        this.nuevoChatAsunto.set('');
+        this.nuevoChatMensaje.set('');
+        this.nuevoChatDocenteSel.set(null);
+        this.modalNuevoChat.set(true);
+      },
+    });
+  }
+
+  cerrarNuevoChat(): void { this.modalNuevoChat.set(false); }
+
+  enviarNuevoChat(): void {
+    const docente = this.nuevoChatDocenteSel();
+    const asunto  = this.nuevoChatAsunto().trim();
+    const cuerpo  = this.nuevoChatMensaje().trim();
+    if (!docente || !asunto || !cuerpo || this.enviandoNuevoChat()) return;
+
+    this.enviandoNuevoChat.set(true);
+    this.http.post<{ id: number }>(
+      'http://localhost:8080/api/portal/padre/mensajes/iniciar',
+      {
+        idAlumno:    docente.idAlumno,
+        idPadre:     0, // el backend lo infiere del token
+        idAulaCurso: docente.idAulaCurso,
+        asunto,
+        cuerpo,
+      },
+      { headers: this.headers() }
+    ).subscribe({
+      next: (resp) => {
+        this.enviandoNuevoChat.set(false);
+        this.modalNuevoChat.set(false);
+        this.cargarMensajes();
+        // Abrir el chat recién creado
+        this.abrirChat(resp.id);
+      },
+      error: () => { this.enviandoNuevoChat.set(false); },
+    });
   }
 }

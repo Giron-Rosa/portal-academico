@@ -35,10 +35,10 @@ public class PendienteService {
                        s.nombre                             AS seccion,
                        c.nombre                             AS curso,
                        t.titulo,
-                       COUNT(nt.id_nota_tarea)
+                       COUNT(nt.id_nota)
                            FILTER (WHERE nt.entregado = true AND nt.nota IS NULL)
                                                             AS sin_calificar,
-                       COUNT(nt.id_nota_tarea)              AS total_alumnos
+                       COUNT(nt.id_nota)                    AS total_alumnos
                 FROM tareas_curso t
                 JOIN aula_cursos          ac ON ac.id_aula_curso = t.id_aula_curso
                 JOIN aulas                a  ON a.id_aula        = ac.id_aula
@@ -52,7 +52,7 @@ public class PendienteService {
                 WHERE u.codigo = :codigo AND da.activo = true
                 GROUP BY ac.id_aula_curso, g.nombre, s.nombre,
                          c.nombre, t.id_tarea, t.titulo
-                HAVING COUNT(nt.id_nota_tarea)
+                HAVING COUNT(nt.id_nota)
                        FILTER (WHERE nt.entregado = true AND nt.nota IS NULL) > 0
                 ORDER BY g.nombre, s.nombre, t.titulo
                 """;

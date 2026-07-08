@@ -8,7 +8,27 @@ import type { TareaAlumno, ActividadAlumno, MaterialAlumno } from './curso-detal
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
-type Seccion = 'inicio' | 'calendario' | 'kanban' | 'refuerzo' | 'recursos';
+type Seccion = 'inicio' | 'calificaciones' | 'asistencias' | 'calendario' | 'kanban' | 'refuerzo' | 'recursos';
+
+interface CalificacionGlobal {
+  idAulaCurso: number;
+  curso: string;
+  bim1: number | null;
+  bim2: number | null;
+  bim3: number | null;
+  bim4: number | null;
+}
+
+interface AsistenciaGlobal {
+  idAulaCurso: number;
+  curso: string;
+  total: number;
+  presente: number;
+  tardanza: number;
+  falta: number;
+  justificado: number;
+  porcentaje: number;
+}
 
 interface CursoApi {
   idAulaCurso: number;
@@ -77,6 +97,85 @@ export class PortalAlumno implements OnInit {
   errorCarga = signal('');
   cursos = signal<Curso[]>([]);
 
+  // ── Global metrics signals ──
+  calificacionesGlobales = signal<CalificacionGlobal[]>([]);
+  asistenciasGlobales = signal<AsistenciaGlobal[]>([]);
+  cargandoCalificaciones = signal(false);
+  cargandoAsistencias = signal(false);
+
+  // Calificaciones KPIs
+  promedioGeneral = computed(() => {
+    const cg = this.calificacionesGlobales();
+    if (cg.length === 0) return 0;
+    let sum = 0;
+    let count = 0;
+    cg.forEach(c => {
+      const grades = [c.bim1, c.bim2, c.bim3, c.bim4].filter(g => g !== null) as number[];
+      if (grades.length > 0) {
+        sum += grades.reduce((acc, val) => acc + val, 0) / grades.length;
+        count++;
+      }
+    });
+    return count === 0 ? 0 : Math.round((sum / count) * 10) / 10;
+  });
+
+  cursosAprobados = computed(() => {
+    const cg = this.calificacionesGlobales();
+    return cg.filter(c => {
+      const grades = [c.bim1, c.bim2, c.bim3, c.bim4].filter(g => g !== null) as number[];
+      if (grades.length === 0) return false;
+      const avg = grades.reduce((acc, val) => acc + val, 0) / grades.length;
+      return avg >= 11;
+    }).length;
+  });
+
+  cursosPorRecuperar = computed(() => {
+    const cg = this.calificacionesGlobales();
+    return cg.filter(c => {
+      const grades = [c.bim1, c.bim2, c.bim3, c.bim4].filter(g => g !== null) as number[];
+      if (grades.length === 0) return false;
+      const avg = grades.reduce((acc, val) => acc + val, 0) / grades.length;
+      return avg < 11;
+    }).length;
+  });
+
+  // Asistencias KPIs
+  totalClasesAsistencia = computed(() => {
+    return this.asistenciasGlobales().reduce((acc, c) => acc + c.total, 0);
+  });
+  totalPresenteAsistencia = computed(() => {
+    return this.asistenciasGlobales().reduce((acc, c) => acc + c.presente, 0);
+  });
+  totalTardanzaAsistencia = computed(() => {
+    return this.asistenciasGlobales().reduce((acc, c) => acc + c.tardanza, 0);
+  });
+  totalFaltaAsistencia = computed(() => {
+    return this.asistenciasGlobales().reduce((acc, c) => acc + c.falta, 0);
+  });
+  totalJustificadoAsistencia = computed(() => {
+    return this.asistenciasGlobales().reduce((acc, c) => acc + c.justificado, 0);
+  });
+  porcentajeGlobalAsistencia = computed(() => {
+    const total = this.totalClasesAsistencia();
+    if (total === 0) return 100.0;
+    const pres = this.totalPresenteAsistencia();
+    const tard = this.totalTardanzaAsistencia();
+    const just = this.totalJustificadoAsistencia();
+    return Math.round((pres + tard + just) * 1000 / total) / 10;
+  });
+
+  // Calendario Subsección
+  subSeccionCalendario = signal<'mensual' | 'horario'>('mensual');
+
+  // Horario Semanal Estático para 5to Sec B
+  horarioSemanal = [
+    { hora: '07:30 - 09:00', lunes: 'Matemática', martes: 'Comunicación', miercoles: 'Matemática', jueves: 'Comunicación', viernes: 'Ciencia y Tecnología' },
+    { hora: '09:00 - 10:30', lunes: 'Ciencia y Tecnología', martes: 'Inglés', miercoles: 'Comunicación', jueves: 'Inglés', viernes: 'Matemática' },
+    { hora: '10:30 - 11:00', lunes: 'Recreo', martes: 'Recreo', miercoles: 'Recreo', jueves: 'Recreo', viernes: 'Recreo' },
+    { hora: '11:00 - 12:30', lunes: 'Historia', martes: 'Religión', miercoles: 'Historia', jueves: 'Educación Física', viernes: 'Arte y Cultura' },
+    { hora: '12:30 - 14:00', lunes: 'Arte y Cultura', martes: 'Educación Física', miercoles: 'Tutoría', jueves: 'Religión', viernes: 'Historia' },
+  ];
+
   /** Curso activo para la vista de detalle (null = mostrar grid) */
   cursoActivo = signal<Curso | null>(null);
 
@@ -86,6 +185,8 @@ export class PortalAlumno implements OnInit {
 
   navItems: { id: Seccion; label: string; icon: string }[] = [
     { id: 'inicio', label: 'Inicio', icon: 'home' },
+    { id: 'calificaciones', label: 'Calificaciones', icon: 'award' },
+    { id: 'asistencias', label: 'Asistencia Global', icon: 'check-circle' },
     { id: 'calendario', label: 'Calendario', icon: 'calendar' },
     { id: 'kanban', label: 'Tablero Kanban', icon: 'kanban' },
     { id: 'refuerzo', label: 'Refuerzo', icon: 'refuerzo' },
@@ -196,11 +297,34 @@ export class PortalAlumno implements OnInit {
       });
     }
 
-    // Unir con tareas y exámenes
+    // Unir con tareas, exámenes y horario
     const tareas = this.tareasTotal();
     const actividades = this.actividadesTotal();
+    const mapDiaSemana: Record<number, string> = {
+      1: 'lunes',
+      2: 'martes',
+      3: 'miercoles',
+      4: 'jueves',
+      5: 'viernes'
+    };
 
     dias.forEach(dia => {
+      // Add scheduled courses for the weekday (Mon-Fri)
+      const dayOfWeek = dia.fecha.getDay();
+      const weekdayKey = mapDiaSemana[dayOfWeek];
+      if (weekdayKey) {
+        this.horarioSemanal.forEach(row => {
+          const subject = (row as any)[weekdayKey];
+          if (subject && subject !== 'Recreo' && subject !== 'Tutoría') {
+            dia.eventos.push({
+              titulo: `${row.hora}: ${subject}`,
+              tipo: 'clase',
+              curso: subject
+            });
+          }
+        });
+      }
+
       tareas.forEach(t => {
         if (t.fechaEntrega === dia.fechaStr) {
           dia.eventos.push({
@@ -229,6 +353,39 @@ export class PortalAlumno implements OnInit {
   tareasEntregadas = computed(() => this.tareasTotal().filter(t => t.entregado && t.nota === null));
   tareasCalificadas = computed(() => this.tareasTotal().filter(t => t.entregado && t.nota !== null));
 
+  /** IDs de tareas cuya entrega está en proceso (para feedback visual) */
+  kanbanEntregando = signal<Set<number>>(new Set());
+
+  // Drag & Drop State
+  draggedTarea: TareaAlumnoExt | null = null;
+  activeDragOverCol = signal<string | null>(null);
+
+  /** Marca una tarea pendiente como entregada llamando al endpoint del alumno */
+  marcarComoEntregada(tarea: TareaAlumnoExt) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    // Marcar como procesando
+    this.kanbanEntregando.update(s => { const n = new Set(s); n.add(tarea.idTarea); return n; });
+    this.http.post(
+      `http://localhost:8080/api/portal/alumno/cursos/${tarea.idAulaCurso}/tareas/${tarea.idTarea}/entregar`,
+      {},
+      { headers }
+    ).subscribe({
+      next: () => {
+        // Actualizar la tarea localmente (optimistic update)
+        this.tareasTotal.update(list =>
+          list.map(t => t.idTarea === tarea.idTarea ? { ...t, entregado: true } : t)
+        );
+        this.kanbanEntregando.update(s => { const n = new Set(s); n.delete(tarea.idTarea); return n; });
+      },
+      error: () => {
+        this.kanbanEntregando.update(s => { const n = new Set(s); n.delete(tarea.idTarea); return n; });
+        alert('No se pudo marcar como entregada. Por favor inténtalo de nuevo.');
+      }
+    });
+  }
+
   // ── Refuerzo Computados (RN-10.2: promedio_curso < 11) ────────────────────────
   cursosConRiesgo = computed(() => {
     const cursosList = this.cursos();
@@ -256,6 +413,106 @@ export class PortalAlumno implements OnInit {
 
   tieneCursosEnRiesgo = computed(() => this.cursosConRiesgo().length > 0);
 
+  // Refuerzo Académico: Selección de Semana y Filtros
+  semanaRefuerzoSeleccionada = signal<number>(1);
+  semanasLista = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
+
+  materialesRefuerzoFiltrados = computed(() => {
+    const sem = this.semanaRefuerzoSeleccionada();
+    const mats = this.materialesTotal();
+    return mats.filter(m => m.semana === sem);
+  });
+
+  videosExplicativos = computed(() => {
+    return this.materialesRefuerzoFiltrados().filter(m => 
+      m.tipo === 'youtube' || m.tipo === 'video' || m.titulo.toLowerCase().includes('video') || m.titulo.toLowerCase().includes('tutorial')
+    );
+  });
+
+  librosReferencia = computed(() => {
+    return this.materialesRefuerzoFiltrados().filter(m => 
+      m.titulo.toLowerCase().includes('libro') || m.titulo.toLowerCase().includes('guía') || m.titulo.toLowerCase().includes('lectura') || m.titulo.toLowerCase().includes('referencia')
+    );
+  });
+
+  fichasPractica = computed(() => {
+    const vids = this.videosExplicativos();
+    const libs = this.librosReferencia();
+    return this.materialesRefuerzoFiltrados().filter(m => 
+      !vids.includes(m) && !libs.includes(m)
+    );
+  });
+  // Recursos Biblioteca Digital
+  busquedaRecurso = signal('');
+  categoriaRecursoActiva = signal<string>('Biblioteca Digital');
+
+  categoriasRecursos = [
+    { id: 'Biblioteca Digital', icon: '📖', color: '#eff6ff', border: '#bfdbfe' },
+    { id: 'Herramientas', icon: '🛠️', color: '#ecfdf5', border: '#a7f3d0' },
+    { id: 'Enlaces Útiles', icon: '🔗', color: '#fffbeb', border: '#fde68a' },
+    { id: 'Plantillas', icon: '📄', color: '#fdf2f8', border: '#fbcfe8' },
+    { id: 'Institucional', icon: '🏢', color: '#faf5ff', border: '#e9d5ff' },
+    { id: 'Apoyo Académico', icon: '🎓', color: '#f0fdf4', border: '#bbf7d0' },
+    { id: 'Multimedia', icon: '🎬', color: '#fff1f2', border: '#fecdd3' },
+    { id: 'Comunidad', icon: '👥', color: '#f8fafc', border: '#e2e8f0' },
+  ];
+
+  listadoRecursos = [
+    // Biblioteca Digital
+    { nombre: 'Biblioteca Virtual San Agustín', desc: 'Accede a miles de libros, enciclopedias y lecturas digitalizadas recomendadas para secundaria.', url: 'https://biblioteca.sanagustin.edu.pe', cat: 'Biblioteca Digital', tipo: 'pdf' },
+    { nombre: 'Colección de Obras Literarias', desc: 'Lecturas clásicas y contemporáneas en formato PDF para el curso de Comunicación.', url: 'https://bibliotecadigital.pe/obras_clasicas', cat: 'Biblioteca Digital', tipo: 'pdf' },
+    { nombre: 'Enciclopedia Histórica del Perú', desc: 'Compendio histórico interactivo sobre el patrimonio cultural y sucesos históricos peruanos.', url: 'https://historiaperu.pe', cat: 'Biblioteca Digital', tipo: 'url' },
+
+    // Herramientas
+    { nombre: 'GeoGebra Clásico', desc: 'Herramienta interactiva para geometría, álgebra, cálculo y gráficos matemáticos en tiempo real.', url: 'https://www.geogebra.org/classic', cat: 'Herramientas', tipo: 'url' },
+    { nombre: 'Calculadora Desmos', desc: 'Calculadora gráfica y científica en línea, ideal para graficar funciones complejas.', url: 'https://www.desmos.com/calculator', cat: 'Herramientas', tipo: 'url' },
+    { nombre: 'Diccionario RAE', desc: 'Consulta de dudas, significados y ortografía oficial de la Real Academia Española.', url: 'https://dle.rae.es', cat: 'Herramientas', tipo: 'word' },
+
+    // Enlaces Útiles
+    { nombre: 'Khan Academy en Español', desc: 'Lecciones interactivas gratuitas de matemáticas, ciencia y más para todos los niveles.', url: 'https://es.khanacademy.org', cat: 'Enlaces Útiles', tipo: 'url' },
+    { nombre: 'Plataforma Aprendo en Casa', desc: 'Recursos educativos complementarios aprobados por el Ministerio de Educación.', url: 'https://www.aprendoencasa.pe', cat: 'Enlaces Útiles', tipo: 'url' },
+
+    // Plantillas
+    { nombre: 'Plantilla de Monografía en APA 7', desc: 'Formato preestablecido en Word para la redacción de informes académicos con citas APA 7.', url: 'https://templates.sanagustin.edu.pe/monografia_apa7.docx', cat: 'Plantillas', tipo: 'word' },
+    { nombre: 'Ficha de Análisis Literario', desc: 'Plantilla de lectura guiada para analizar personajes, temas y argumento de obras.', url: 'https://templates.sanagustin.edu.pe/analisis_literario.docx', cat: 'Plantillas', tipo: 'word' },
+
+    // Institucional
+    { nombre: 'Reglamento Interno 2026', desc: 'Manual de convivencia, derechos, deberes y normas institucionales de San Agustín.', url: 'https://sanagustin.edu.pe/institucional/reglamento2026.pdf', cat: 'Institucional', tipo: 'pdf' },
+    { nombre: 'Calendario de Efemérides', desc: 'Fechas cívicas y festividades institucionales celebradas a lo largo del año escolar.', url: 'https://sanagustin.edu.pe/institucional/calendario_civico.pdf', cat: 'Institucional', tipo: 'pdf' },
+
+    // Apoyo Académico
+    { nombre: 'Guía de Hábitos de Estudio', desc: 'Consejos prácticos y técnicas de organización del tiempo para mejorar tu concentración.', url: 'https://support.sanagustin.edu.pe/habitos_estudio.pdf', cat: 'Apoyo Académico', tipo: 'pdf' },
+    { nombre: 'Talleres de Reforzamiento Semanal', desc: 'Horarios de asesorías y tutorías presenciales con los profesores del colegio.', url: 'https://support.sanagustin.edu.pe/talleres.pdf', cat: 'Apoyo Académico', tipo: 'pdf' },
+
+    // Multimedia
+    { nombre: 'Canal Educativo de Ciencias', desc: 'Videos explicativos animados de física, química y biología para experimentos caseros.', url: 'https://youtube.com/c/cienciadivertida', cat: 'Multimedia', tipo: 'youtube' },
+    { nombre: 'Audiolibros de Literatura Peruana', desc: 'Colección de audios con las principales leyendas y tradiciones de Ricardo Palma.', url: 'https://audiolibros.pe/tradiciones_peruanas', cat: 'Multimedia', tipo: 'video' },
+
+    // Comunidad
+    { nombre: 'Club de Ciencias San Agustín', desc: 'Inscríbete y participa en proyectos de robótica, informática y ferias de ciencias.', url: 'https://comunidad.sanagustin.edu.pe/club_ciencias', cat: 'Comunidad', tipo: 'url' },
+    { nombre: 'Boletín Estudiantil "Agustino"', desc: 'Publicaciones bimestrales redactadas por alumnos para el taller de Periodismo.', url: 'https://comunidad.sanagustin.edu.pe/boletin.pdf', cat: 'Comunidad', tipo: 'pdf' },
+  ];
+
+  recursosFiltrados = computed(() => {
+    const q = this.busquedaRecurso().toLowerCase().trim();
+    const cat = this.categoriaRecursoActiva();
+    
+    if (q === '') {
+      return this.listadoRecursos.filter(r => r.cat === cat);
+    } else {
+      return this.listadoRecursos.filter(r => 
+        r.nombre.toLowerCase().includes(q) || 
+        r.desc.toLowerCase().includes(q) || 
+        r.cat.toLowerCase().includes(q)
+      );
+    }
+  });
+
+  // Método para actualizar la búsqueda
+  actualizarBusqueda(e: Event) {
+    const input = e.target as HTMLInputElement;
+    this.busquedaRecurso.set(input.value);
+  }
   ngOnInit() {
     const token = this.auth.getToken();
     if (!token) { this.router.navigate(['/']); return; }
@@ -345,12 +602,131 @@ export class PortalAlumno implements OnInit {
     this.seccionActiva.set(id);
     this.cursoActivo.set(null);   // cerrar cualquier detalle abierto
     this.dropdownOpen.set(false);
+
+    if (id === 'calificaciones') {
+      this.cargarCalificacionesGlobales();
+    } else if (id === 'asistencias') {
+      this.cargarAsistenciasGlobales();
+    }
   }
+
+  cargarCalificacionesGlobales() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoCalificaciones.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<CalificacionGlobal[]>('http://localhost:8080/api/portal/alumno/calificaciones-globales', { headers }).subscribe({
+      next: (data) => {
+        this.calificacionesGlobales.set(data);
+        this.cargandoCalificaciones.set(false);
+      },
+      error: () => this.cargandoCalificaciones.set(false)
+    });
+  }
+
+  cargarAsistenciasGlobales() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoAsistencias.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<AsistenciaGlobal[]>('http://localhost:8080/api/portal/alumno/asistencia-global', { headers }).subscribe({
+      next: (data) => {
+        this.asistenciasGlobales.set(data);
+        this.cargandoAsistencias.set(false);
+      },
+      error: () => this.cargandoAsistencias.set(false)
+    });
+  }
+
   toggleDropdown() { this.dropdownOpen.update(v => !v); }
 
   /** Abre la vista de detalle para el curso seleccionado */
   abrirDetalleCurso(curso: Curso) {
     this.cursoActivo.set(curso);
+  }
+
+  entregarTarea(t: TareaAlumnoExt) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.post(`http://localhost:8080/api/portal/alumno/cursos/${t.idAulaCurso}/tareas/${t.idTarea}/entregar`, {}, { headers })
+      .subscribe({
+        next: () => {
+          this.ngOnInit();
+        },
+        error: () => {
+          alert('Error al entregar la tarea.');
+        }
+      });
+  }
+
+  anularEntrega(t: TareaAlumnoExt) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.post(`http://localhost:8080/api/portal/alumno/cursos/${t.idAulaCurso}/tareas/${t.idTarea}/anular`, {}, { headers })
+      .subscribe({
+        next: () => {
+          this.ngOnInit();
+        },
+        error: () => {
+          alert('Error al anular la entrega.');
+        }
+      });
+  }
+
+  // ── Kanban Drag & Drop Methods ────────────────────────
+  onDragStart(event: DragEvent, tarea: TareaAlumnoExt) {
+    this.draggedTarea = tarea;
+    if (event.dataTransfer) {
+      event.dataTransfer.setData('text/plain', String(tarea.idTarea));
+      event.dataTransfer.effectAllowed = 'move';
+    }
+    const target = event.target as HTMLElement;
+    target.classList.add('dragging');
+  }
+
+  onDragEnd(event: DragEvent) {
+    this.draggedTarea = null;
+    this.activeDragOverCol.set(null);
+    const target = event.target as HTMLElement;
+    target.classList.remove('dragging');
+  }
+
+  onDragOver(event: DragEvent, col: string) {
+    if (this.draggedTarea) {
+      event.preventDefault();
+      this.activeDragOverCol.set(col);
+    }
+  }
+
+  onDragLeave(event: DragEvent, col: string) {
+    if (this.activeDragOverCol() === col) {
+      this.activeDragOverCol.set(null);
+    }
+  }
+
+  onDrop(event: DragEvent, col: string) {
+    event.preventDefault();
+    this.activeDragOverCol.set(null);
+    if (!this.draggedTarea) return;
+
+    const t = this.draggedTarea;
+    this.draggedTarea = null;
+
+    if (col === 'pendiente') {
+      if (t.entregado) {
+        this.anularEntrega(t);
+      }
+    } else if (col === 'entregado') {
+      if (!t.entregado) {
+        this.entregarTarea(t);
+      } else if (t.nota !== null) {
+        alert('No se puede descalificar una tarea calificada directamente.');
+      }
+    } else if (col === 'calificado') {
+      alert('Las tareas solo pueden ser calificadas por el docente.');
+    }
   }
 
   /** Vuelve a la grid de cursos */

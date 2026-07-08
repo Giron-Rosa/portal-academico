@@ -20,3 +20,10 @@ spring:
 jwt:
   secret: cGFydGFsYWNhZGVtaWNvU2FuQWd1c3RpbkNhbXB1czIwMjVTZWN1cmVLZXk=
   expiration: 86400000
+
+openai:
+  api:
+    key: ${OPENAI_API_KEY:tu_clave_oculta_aqui}
+    url: "https://api.openai.com/v1/chat/completions"
+    model: "gpt-4o-mini"
+

@@ -103,4 +103,17 @@ public class MensajeController {
         long id = mensajeService.iniciarChat(request, userDetails.getUsername());
         return ResponseEntity.ok(Map.of("id", id));
     }
+
+    /**
+     * POST /api/portal/docente/mensajes/{id}/responder-audio
+     * Permite subir un archivo de audio grabado por el docente y enviarlo como respuesta.
+     */
+    @PostMapping("/{id}/responder-audio")
+    public ResponseEntity<Void> responderAudio(
+            @PathVariable long id,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        mensajeService.responderConAudio(id, file, userDetails.getUsername(), true);
+        return ResponseEntity.ok().build();
+    }
 }

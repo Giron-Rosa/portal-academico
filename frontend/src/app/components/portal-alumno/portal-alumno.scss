@@ -791,6 +791,12 @@ $sidebar-w: 210px;
     color: #6b21a8;
     .pa-event-dot { background: #8b5cf6; }
   }
+
+  &.event-clase {
+    background: #e2f0d9;
+    color: #385723;
+    .pa-event-dot { background: #70ad47; }
+  }
 }
 
 .pa-event-dot {
@@ -823,9 +829,15 @@ $sidebar-w: 210px;
   display: flex;
   flex-direction: column;
   padding: 1rem;
-  border: 1px solid rgba(27,58,92,0.06);
+  border: 2px dashed transparent;
   box-shadow: 0 4px 15px rgba(0,0,0,0.01);
   max-height: 100%;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+
+  &.drag-over {
+    background: rgba(27, 58, 92, 0.12) !important;
+    border-color: #1b3a5c !important;
+  }
 
   &.col-pendiente {
     .pa-kanban-col-header { border-bottom-color: #ef4444; }
@@ -880,7 +892,20 @@ $sidebar-w: 210px;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &.dragging {
+    opacity: 0.45;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    box-shadow: none;
+    transform: scale(0.98);
+  }
 
   &:hover {
     transform: translateY(-2px);

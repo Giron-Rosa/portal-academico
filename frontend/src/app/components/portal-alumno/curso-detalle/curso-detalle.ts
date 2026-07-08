@@ -73,8 +73,22 @@ export interface ReporteAlumno {
   fecha:       string;
 }
 
+export interface Unidad {
+  idUnidad: number;
+  idAulaCurso: number;
+  numero: number;
+  titulo: string;
+  bimestre: string;
+  semanas: string;
+  objetivos: string[];
+  indicadores: string[];
+  contenidos: string[];
+  estado: 'pendiente' | 'en_curso' | 'concluido';
+  fechaConclusion?: string;
+}
+
 // Tipos de tabs
-type Tab = 'asistencia' | 'contenido' | 'tareas' | 'actividades' | 'reportes';
+type Tab = 'temario' | 'asistencia' | 'contenido' | 'tareas' | 'actividades' | 'reportes';
 
 // Nodo del árbol de contenido
 interface ClaseNodo { clase: number; items: MaterialAlumno[]; }
@@ -99,11 +113,12 @@ export class CursoDetalle implements OnInit {
   private readonly BASE = 'http://localhost:8080/api/portal/alumno/cursos';
 
   // ── Estado de UI ──────────────────────────────────────────────────
-  tabActiva = signal<Tab>('asistencia');
+  tabActiva = signal<Tab>('temario');
   cargando  = signal(true);
   error     = signal('');
 
   tabs: { id: Tab; label: string; icono: string }[] = [
+    { id: 'temario',     label: 'Temario',      icono: 'book-open'     },
     { id: 'asistencia',  label: 'Asistencia',   icono: 'check-circle'  },
     { id: 'contenido',   label: 'Contenido',    icono: 'folder'        },
     { id: 'tareas',      label: 'Tareas',       icono: 'clipboard'     },
@@ -117,6 +132,29 @@ export class CursoDetalle implements OnInit {
   tareas       = signal<TareaAlumno[]>([]);
   actividades  = signal<ActividadAlumno[]>([]);
   reportes     = signal<ReporteAlumno[]>([]);
+
+  // ── Temario signals ───────────────────────────────────────────────
+  unidades = signal<Unidad[]>([]);
+  unidadesAbiertas = signal<Set<number>>(new Set([1]));
+
+  progresoTemario = computed(() => {
+    const list = this.unidades();
+    const total = list.length;
+    if (total === 0) return { concluido: 0, enCurso: 0, pendiente: 100, totalPct: 0 };
+    const concluidas = list.filter(u => u.estado === 'concluido').length;
+    const enCurso = list.filter(u => u.estado === 'en_curso').length;
+
+    const pctConcluido = (concluidas / total) * 100;
+    const pctEnCurso = (enCurso * 0.5 / total) * 100;
+    const pctPendiente = 100 - pctConcluido - pctEnCurso;
+
+    return {
+      concluido: Math.round(pctConcluido),
+      enCurso: Math.round(pctEnCurso),
+      pendiente: Math.round(pctPendiente),
+      totalPct: Math.round((concluidas + enCurso * 0.5) / total * 100)
+    };
+  });
 
   /** Árbol semana → clase → materiales */
   contenidoArbol = computed<SemanaNodo[]>(() => {
@@ -165,12 +203,13 @@ export class CursoDetalle implements OnInit {
   });
 
   ngOnInit() {
-    this.cargarTab('asistencia');
+    this.cargarTab('temario');
   }
 
   setTab(tab: Tab) {
     this.tabActiva.set(tab);
     this.error.set('');
+    if (tab === 'temario'     && !this.unidades().length)    this.cargarTab(tab);
     if (tab === 'asistencia'  && !this.asistencia())         this.cargarTab(tab);
     if (tab === 'contenido'   && !this.materiales().length)  this.cargarTab(tab);
     if (tab === 'tareas'      && !this.tareas().length)      this.cargarTab(tab);
@@ -188,6 +227,7 @@ export class CursoDetalle implements OnInit {
     const h  = this.headers();
 
     const urls: Record<Tab, string> = {
+      temario:     `http://localhost:8080/api/portal/alumno/cursos/${id}/temario`,
       asistencia:  `${this.BASE}/${id}/asistencia`,
       contenido:   `${this.BASE}/${id}/contenido`,
       tareas:      `${this.BASE}/${id}/tareas`,
@@ -197,6 +237,7 @@ export class CursoDetalle implements OnInit {
 
     this.http.get<any>(urls[tab], { headers: h }).subscribe({
       next: (data) => {
+        if (tab === 'temario')     this.unidades.set(data as Unidad[]);
         if (tab === 'asistencia')  this.asistencia.set(data as AsistenciaCurso);
         if (tab === 'contenido')   this.materiales.set(data as MaterialAlumno[]);
         if (tab === 'tareas')      this.tareas.set(data as TareaAlumno[]);
@@ -212,6 +253,14 @@ export class CursoDetalle implements OnInit {
   }
 
   // ── Helpers de UI ─────────────────────────────────────────────────
+
+  toggleUnidad(numero: number) {
+    this.unidadesAbiertas.update(s => {
+      const n = new Set(s);
+      n.has(numero) ? n.delete(numero) : n.add(numero);
+      return n;
+    });
+  }
 
   toggleSemana(semana: number) {
     this.semanasAbiertas.update(s => {

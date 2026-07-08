@@ -3,11 +3,13 @@ import { Home } from './components/home/home';
 import { PortalDocente } from './components/portal-docente/portal-docente';
 import { PortalPadre } from './components/portal-padre/portal-padre';
 import { PortalAlumno } from './components/portal-alumno/portal-alumno';
+import { PortalAdmin } from './components/portal-admin/portal-admin';
 
 export const routes: Routes = [
   { path: '',               component: Home          },
   { path: 'portal/docente', component: PortalDocente },
   { path: 'portal/padre',   component: PortalPadre  },
   { path: 'portal/alumno',  component: PortalAlumno },
+  { path: 'portal/admin',   component: PortalAdmin  },
   { path: '**',             redirectTo: ''           },
 ];

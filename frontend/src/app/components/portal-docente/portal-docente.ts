@@ -1,9 +1,10 @@
-import { Component, inject, signal, computed, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, HostListener, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { WebSocketService } from '../../services/websocket.service';
 import { PrediccionesDashboard } from './predicciones/predicciones-dashboard';
 
 export interface Curso {
@@ -55,6 +56,10 @@ export interface RespuestaResumen {
   fecha: string;
   nombreAutor: string;
   esMaestro: boolean;
+  isPlaying?: boolean;
+  audioProgress?: number;
+  currentTime?: number;
+  duration?: number;
 }
 
 /** Detalle completo de un mensaje (incluye cuerpo + hilo de respuestas) */
@@ -62,6 +67,10 @@ export interface MensajeDetalle extends MensajeResumen {
   cuerpo: string;
   respuestas: RespuestaResumen[];
   iniciadoPorDocente: boolean;
+  isPlaying?: boolean;
+  audioProgress?: number;
+  currentTime?: number;
+  duration?: number;
 }
 
 /** Contexto del alumno para el panel lateral en mensajes */
@@ -301,6 +310,34 @@ export interface FormExamen {
   url: string;
 }
 
+/* ── Interfaces de Temario ── */
+
+export interface Unidad {
+  idUnidad: number;
+  idAulaCurso: number;
+  numero: number;
+  titulo: string;
+  bimestre: string;
+  semanas: string;
+  objetivos: string[];
+  indicadores: string[];
+  contenidos: string[];
+  estado: 'pendiente' | 'en_curso' | 'concluido';
+  fechaConclusion?: string;
+}
+
+export interface FormUnidad {
+  idUnidad?: number;
+  numero: number;
+  titulo: string;
+  bimestre: string;
+  semanas: string;
+  objetivos: string;
+  indicadores: string;
+  contenidos: string;
+  estado: 'pendiente' | 'en_curso' | 'concluido';
+}
+
 /* ── Interfaces de Reportes ── */
 
 export interface Reporte {
@@ -428,13 +465,23 @@ const ICON_MAP: Record<string, string> = {
   templateUrl: './portal-docente.html',
   styleUrl: './portal-docente.scss',
 })
-export class PortalDocente {
+export class PortalDocente implements OnDestroy {
   private router = inject(Router);
   private auth   = inject(AuthService);
   private http   = inject(HttpClient);
+  readonly ws    = inject(WebSocketService);
+  private zone   = inject(NgZone);
+
+  // Variables para notas de voz (audio)
+  grabando = signal(false);
+  duracionGrabacion = signal(0);
+  mediaRecorder: any = null;
+  audioChunks: Blob[] = [];
+  recordingInterval: any = null;
 
   // Exponemos constantes usadas en el template
   calPxPorHora = CAL_PX_POR_HORA;
+  today = new Date().toISOString().substring(0, 10);
 
   /** Espacios que el backend autoriza para este docente */
   espaciosDisponibles = signal<EspacioReserva[]>([]);
@@ -450,7 +497,7 @@ export class PortalDocente {
   });
 
   activeSection = signal('inicio');
-  activeGrade   = signal('Clases de Hoy');
+  activeGrade   = signal('Todos los Cursos');
   selectedYear  = signal('2026');
   dropdownOpen  = signal(false);
   cargando      = signal(false);
@@ -473,6 +520,7 @@ export class PortalDocente {
   cursos       = signal<Curso[]>([]);
   pendientes       = signal<Pendiente[]>([]);
   alertasCriticas  = signal<AlertaCritica[]>([]);
+  alertaSeleccionada = signal<AlertaCritica | null>(null);
 
   /* ── Signals de mensajería ── */
 
@@ -487,6 +535,7 @@ export class PortalDocente {
   /** Texto que el docente está escribiendo como respuesta */
   replyText          = signal('');
   enviandoReply      = signal(false);
+  refinandoConIA     = signal(false);
   /** Panel contexto alumno: datos + estado de carga */
   contextoAlumno     = signal<AlumnoContexto | null>(null);
   cargandoContexto   = signal(false);
@@ -560,9 +609,10 @@ export class PortalDocente {
   /** Curso activo cuando el docente hace click en una card */
   cursoActivo      = signal<Curso | null>(null);
   /** Pestaña activa dentro del detalle del curso */
-  activeSubTab     = signal('contenido');  // 'asistencia' | 'contenido' | 'tareas' | 'examenes' | 'reportes'
+  activeSubTab     = signal('temario');  // 'temario' | 'asistencia' | 'contenido' | 'tareas' | 'examenes' | 'reportes'
 
   courseTabs = [
+    { id: 'temario',    label: 'Temario' },
     { id: 'asistencia', label: 'Asistencia' },
     { id: 'contenido',  label: 'Contenido' },
     { id: 'tareas',     label: 'Tareas' },
@@ -649,6 +699,33 @@ export class PortalDocente {
   formReporte = signal<FormReporte>({
     idAlumno: null, tipo: 'anotacion',
     titulo: '', descripcion: '', fecha: '', visiblePadre: true
+  });
+
+  /* ── Signals de Temario ── */
+
+  unidades = signal<Unidad[]>([]);
+  cargandoTemario = signal(false);
+  mostrarFormUnidad = signal(false);
+  formUnidad = signal<FormUnidad>({ numero: 1, titulo: '', bimestre: 'Bimestre I', semanas: '', objetivos: '', indicadores: '', contenidos: '', estado: 'pendiente' });
+  unidadesAbiertas = signal<Set<number>>(new Set([1]));
+
+  progresoTemario = computed(() => {
+    const list = this.unidades();
+    const total = list.length;
+    if (total === 0) return { concluido: 0, enCurso: 0, pendiente: 100, totalPct: 0 };
+    const concluidas = list.filter(u => u.estado === 'concluido').length;
+    const enCurso = list.filter(u => u.estado === 'en_curso').length;
+
+    const pctConcluido = (concluidas / total) * 100;
+    const pctEnCurso = (enCurso * 0.5 / total) * 100;
+    const pctPendiente = 100 - pctConcluido - pctEnCurso;
+
+    return {
+      concluido: Math.round(pctConcluido),
+      enCurso: Math.round(pctEnCurso),
+      pendiente: Math.round(pctPendiente),
+      totalPct: Math.round((concluidas + enCurso * 0.5) / total * 100)
+    };
   });
 
   /* ── Signals de Asistencia ── */
@@ -806,17 +883,27 @@ export class PortalDocente {
   });
 
   grades = computed(() => {
-    const base   = ['Clases de Hoy'];
+    const base   = ['Clases de Hoy', 'Todos los Cursos'];
     const unique = [...new Set(this.cursos().map(c => c.grado))];
     return [...base, ...unique];
   });
 
   filteredCursos = computed(() => {
     if (this.activeGrade() === 'Clases de Hoy') return this.clasesDeHoy();
+    if (this.activeGrade() === 'Todos los Cursos') return this.cursos();
     return this.cursos().filter(c => c.grado === this.activeGrade());
   });
 
   constructor() {
+    const token = this.auth.getToken();
+    const rol = this.auth.getRol();
+    if (!token || rol !== 'maestro') {
+      this.auth.logout();
+      this.router.navigate(['/']);
+      this.auth.openLogin();
+      return;
+    }
+
     this.cargarCursos();
     this.cargarHorario();
     this.cargarMensajes();
@@ -824,8 +911,15 @@ export class PortalDocente {
     this.cargarMisAulas();
     this.cargarTiposEvento();
     this.cargarPendientes();
+    this.cargarAlertasCriticas();
     this.cargarReservas();
     this.cargarEspaciosDisponibles();
+    // Conectar WebSocket para recibir notificaciones en tiempo real
+    this.ws.connect();
+  }
+
+  ngOnDestroy(): void {
+    this.ws.disconnect();
   }
 
   /* ══════════════════════════════════════════
@@ -1087,6 +1181,56 @@ export class PortalDocente {
     if (!f.espacio || !f.fecha || !f.horaInicio || !f.horaFin) return;
 
     this.errorDisponibilidad.set('');
+
+    const parseMin = (h: string) => {
+      const [hh, mm] = h.split(':').map(Number);
+      return hh * 60 + mm;
+    };
+
+    const startMin = parseMin(f.horaInicio);
+    const endMin = parseMin(f.horaFin);
+
+    if (endMin <= startMin) {
+      this.errorDisponibilidad.set('La hora de fin debe ser posterior a la hora de inicio.');
+      return;
+    }
+
+    // Validación 1: Horario permitido únicamente de 07:00 AM a 02:00 PM
+    if (startMin < 420 || endMin > 840) {
+      this.errorDisponibilidad.set('El horario de reserva permitido es únicamente de 07:00 AM a 02:00 PM.');
+      return;
+    }
+
+    // Formatear hoy en formato YYYY-MM-DD en la zona horaria local de Lima
+    const now = new Date();
+    // Obtener fecha local como YYYY-MM-DD
+    const localYear = now.getFullYear();
+    const localMonth = String(now.getMonth() + 1).padStart(2, '0');
+    const localDay = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${localYear}-${localMonth}-${localDay}`;
+
+    // Validación 2: No permitir fecha pasada
+    if (f.fecha < todayStr) {
+      this.errorDisponibilidad.set('No se permite reservar en una fecha pasada.');
+      return;
+    }
+
+    // Validación 3: No permitir hora pasada si es hoy
+    if (f.fecha === todayStr) {
+      const currentMin = now.getHours() * 60 + now.getMinutes();
+      if (startMin <= currentMin) {
+        this.errorDisponibilidad.set('No se permite reservar en una hora pasada.');
+        return;
+      }
+    }
+
+    // Validación 4: Días laborables únicamente (lunes a viernes)
+    const dayOfWeek = new Date(f.fecha + 'T00:00:00').getDay(); // 0=Domingo, 6=Sábado, 1=Lunes
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      this.errorDisponibilidad.set('Las reservas de espacios solo se permiten de lunes a viernes.');
+      return;
+    }
+
     if (this.tieneConflictoHorario()) {
       this.errorDisponibilidad.set('No puedes reservar en este horario porque tienes clase programada con otro grado/sección.');
       return;
@@ -1226,6 +1370,23 @@ export class PortalDocente {
           if (data.idAlumno) {
             this.cargarContextoAlumno(data.idAlumno);
           }
+
+          // Suscribirse al canal de WebSocket para este chat y recibir mensajes en tiempo real
+          this.ws.subscribeToChat(id, (resp: RespuestaResumen) => {
+            this.zone.run(() => {
+              this.mensajeActivo.update(curr => {
+                if (!curr) return null;
+                if (curr.respuestas.some(r => r.id === resp.id)) return curr;
+                // Filtrar temporales por ID negativo o si coincide el cuerpo
+                const filtrado = curr.respuestas.filter(r => r.id > 0 && r.cuerpo !== resp.cuerpo);
+                return {
+                  ...curr,
+                  respuestas: [...filtrado, resp]
+                };
+              });
+              this.scrollToBottom();
+            });
+          });
         },
       });
   }
@@ -1332,9 +1493,196 @@ export class PortalDocente {
     return Math.round((ctx.clasesPresente / ctx.totalClases) * 100);
   }
 
+  scrollToBottom() {
+    setTimeout(() => {
+      const container = document.querySelector('.msg-chat-thread');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 50);
+  }
+
+  // Audio Playback Helpers
+  playingAudio: any = null;
+  activeAudioRespuesta: any = null;
+
+  toggleAudioPlay(r: any) {
+    const audioUrl = 'http://localhost:8080' + r.cuerpo.replace('[AUDIO]', '').trim();
+    
+    if (this.playingAudio && this.activeAudioRespuesta === r) {
+      if (r.isPlaying) {
+        this.playingAudio.pause();
+        r.isPlaying = false;
+      } else {
+        this.playingAudio.play();
+        r.isPlaying = true;
+      }
+      return;
+    }
+
+    if (this.playingAudio) {
+      this.playingAudio.pause();
+      if (this.activeAudioRespuesta) {
+        this.activeAudioRespuesta.isPlaying = false;
+      }
+    }
+
+    const audio = new Audio(audioUrl);
+    this.playingAudio = audio;
+    this.activeAudioRespuesta = r;
+    r.isPlaying = true;
+    r.currentTime = 0;
+    r.audioProgress = 0;
+
+    audio.addEventListener('timeupdate', () => {
+      this.zone.run(() => {
+        r.currentTime = audio.currentTime;
+        r.duration = audio.duration || 0;
+        r.audioProgress = (audio.currentTime / (audio.duration || 1)) * 100;
+      });
+    });
+
+    audio.addEventListener('ended', () => {
+      this.zone.run(() => {
+        r.isPlaying = false;
+        r.audioProgress = 0;
+        r.currentTime = 0;
+        this.playingAudio = null;
+        this.activeAudioRespuesta = null;
+      });
+    });
+
+    audio.play();
+  }
+
+  seekAudio(event: MouseEvent, r: any) {
+    if (!this.playingAudio || this.activeAudioRespuesta !== r) return;
+    const bar = event.currentTarget as HTMLElement;
+    const rect = bar.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    const duration = this.playingAudio.duration || 0;
+    this.playingAudio.currentTime = percentage * duration;
+  }
+
+  formatAudioTime(seconds: number): string {
+    if (isNaN(seconds) || seconds === Infinity) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+  // Audio Recording Methods
+  iniciarGrabacion() {
+    if (this.grabando()) return;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      this.audioChunks = [];
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      this.mediaRecorder = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        this.enviarAudio(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      this.grabando.set(true);
+      this.duracionGrabacion.set(0);
+      mediaRecorder.start();
+
+      this.recordingInterval = setInterval(() => {
+        this.duracionGrabacion.update(d => d + 1);
+      }, 1000);
+    }).catch(err => {
+      console.error('No se pudo acceder al micrófono:', err);
+      alert('Por favor, concede permisos de micrófono para grabar audios.');
+    });
+  }
+
+  detenerGrabacion() {
+    if (!this.grabando() || !this.mediaRecorder) return;
+    this.mediaRecorder.stop();
+    this.grabando.set(false);
+    if (this.recordingInterval) {
+      clearInterval(this.recordingInterval);
+      this.recordingInterval = null;
+    }
+  }
+
+  cancelarGrabacion() {
+    if (!this.grabando() || !this.mediaRecorder) return;
+    this.mediaRecorder.onstop = () => {
+      this.mediaRecorder = null;
+      this.audioChunks = [];
+    };
+    this.mediaRecorder.stop();
+    this.grabando.set(false);
+    if (this.recordingInterval) {
+      clearInterval(this.recordingInterval);
+      this.recordingInterval = null;
+    }
+  }
+
+  enviarAudio(audioBlob: Blob) {
+    const activo = this.mensajeActivo();
+    if (!activo) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+
+    // Agregar mensaje optimista temporal
+    const tempId = -Date.now();
+    const tempResp: any = {
+      id: tempId,
+      cuerpo: '[AUDIO] /uploads/audios/temp.webm',
+      fecha: 'Enviando...',
+      nombreAutor: 'Yo',
+      esMaestro: true,
+      isPlaying: false,
+      audioProgress: 0,
+      currentTime: 0
+    };
+
+    this.mensajeActivo.update(curr => {
+      if (!curr) return null;
+      return {
+        ...curr,
+        respuestas: [...curr.respuestas, tempResp]
+      };
+    });
+    this.scrollToBottom();
+
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'audio.webm');
+
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.post(`http://localhost:8080/api/portal/docente/mensajes/${activo.id}/responder-audio`,
+      formData, { headers })
+      .subscribe({
+        next: () => {
+          // El WebSocket se encargará de remover el temporal y poner el real.
+        },
+        error: () => {
+          // Remover el temporal si falla
+          this.mensajeActivo.update(curr => {
+            if (!curr) return null;
+            return {
+              ...curr,
+              respuestas: curr.respuestas.filter(r => r.id !== tempId)
+            };
+          });
+          alert('Error al enviar nota de voz.');
+        }
+      });
+  }
+
   /**
-   * Envía la respuesta del docente al hilo activo.
-   * Tras el éxito, recarga el detalle para mostrar la nueva respuesta.
+   * Envía la respuesta del docente al hilo activo de forma optimista.
    */
   enviarRespuesta() {
     const activo = this.mensajeActivo();
@@ -1342,20 +1690,107 @@ export class PortalDocente {
     if (!activo || !texto) return;
     const token = this.auth.getToken();
     if (!token) return;
+
+    // Agregar de forma optimista localmente de inmediato
+    const tempId = -Date.now();
+    const tempResp: RespuestaResumen = {
+      id: tempId,
+      cuerpo: texto,
+      fecha: new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) + ' 🕒',
+      nombreAutor: 'Yo',
+      esMaestro: true
+    };
+
+    this.mensajeActivo.update(curr => {
+      if (!curr) return null;
+      return {
+        ...curr,
+        respuestas: [...curr.respuestas, tempResp]
+      };
+    });
+    this.scrollToBottom();
+    this.replyText.set('');
+
     this.enviandoReply.set(true);
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
     this.http.post(`http://localhost:8080/api/portal/docente/mensajes/${activo.id}/responder`,
       { cuerpo: texto }, { headers })
       .subscribe({
         next: () => {
-          this.replyText.set('');
           this.enviandoReply.set(false);
-          /* Recargar el detalle para mostrar la nueva respuesta en el hilo */
-          this.abrirMensaje(activo.id);
+          // Dejar que el websocket inserte el mensaje final y remueva el optimista
         },
-        error: () => { this.enviandoReply.set(false); },
+        error: () => {
+          this.enviandoReply.set(false);
+          // Remover el mensaje optimista en caso de fallo
+          this.mensajeActivo.update(curr => {
+            if (!curr) return null;
+            return {
+              ...curr,
+              respuestas: curr.respuestas.filter(r => r.id !== tempId)
+            };
+          });
+          alert('No se pudo enviar el mensaje.');
+        },
       });
   }
+
+  /**
+   * Refina el mensaje escrito usando IA (OpenAI).
+   */
+  refinarMensajeConIA(tipo: 'respuesta' | 'nuevo'): void {
+    const texto = tipo === 'respuesta' ? this.replyText().trim() : this.nuevoChatMensaje().trim();
+    if (!texto || this.refinandoConIA()) return;
+
+    this.refinandoConIA.set(true);
+    const token = this.auth.getToken();
+    if (!token) {
+      this.refinandoConIA.set(false);
+      return;
+    }
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    let nombreAlumno = 'el estudiante';
+    let nombreDestinatario = 'Apoderado';
+
+    if (tipo === 'respuesta') {
+      const activo = this.mensajeActivo();
+      if (activo) {
+        nombreAlumno = activo.nombreAlumno || 'el estudiante';
+        nombreDestinatario = activo.nombrePadre || 'Apoderado';
+      }
+    } else {
+      const sel = this.nuevoChatAlumnoSel();
+      if (sel) {
+        nombreAlumno = sel.nombreAlumno || 'el estudiante';
+        nombreDestinatario = sel.nombrePadre || 'Apoderado';
+      }
+    }
+
+    this.http.post<{ resultado: string }>(
+      'http://localhost:8080/api/portal/docente/mensajes/ia-redactar',
+      { 
+        texto,
+        nombreAlumno,
+        nombreDestinatario
+      },
+      { headers }
+    ).subscribe({
+      next: (res) => {
+        if (tipo === 'respuesta') {
+          this.replyText.set(res.resultado);
+        } else {
+          this.nuevoChatMensaje.set(res.resultado);
+        }
+        this.refinandoConIA.set(false);
+      },
+      error: () => {
+        this.refinandoConIA.set(false);
+        alert('No se pudo refinar el mensaje con IA. Por favor, inténtalo más tarde.');
+      }
+    });
+  }
+
 
   /**
    * Convierte una cadena "DD/MM/YYYY HH:MM" a tiempo relativo legible.
@@ -1565,21 +2000,35 @@ export class PortalDocente {
   abrirCurso(curso: Curso) {
     this.cursoActivo.set(curso);
     this.activeSection.set('curso-detalle');
-    this.activeSubTab.set('contenido');
+    this.activeSubTab.set('temario');
     this.semanasAbiertas.set(new Set([1]));
     this.clasesAbiertas.set(new Set(['1-1']));
+    this.cargarTemario(curso.idAulaCurso);
     this.cargarMateriales(curso.idAulaCurso);
     this.cargarTareas(curso.idAulaCurso);
     this.cargarExamenes(curso.idAulaCurso);
     this.cargarReportes(curso.idAulaCurso);
-    this.fechaAsistencia.set(this.hoy());
     this.cargarSesionAsistencia(curso.idAulaCurso);
     this.cargarFechasSesiones(curso.idAulaCurso);
+  }
+
+  abrirCursoDesdeCalendario(cursoNombre: string, grado: string, seccion: string) {
+    const curso = this.cursos().find(c =>
+      c.nombre.toLowerCase().trim() === cursoNombre.toLowerCase().trim() &&
+      c.grado.toLowerCase().trim() === grado.toLowerCase().trim() &&
+      c.seccion.toLowerCase().trim() === seccion.toLowerCase().trim()
+    );
+    if (curso) {
+      this.abrirCurso(curso);
+    }
   }
 
   /** Vuelve a la sección inicio y limpia el estado del curso activo */
   volverAlInicio() {
     this.cursoActivo.set(null);
+    this.unidades.set([]);
+    this.mostrarFormUnidad.set(false);
+    this.unidadesAbiertas.set(new Set([1]));
     this.materiales.set([]);
     this.tareas.set([]);
     this.tareasExpandidas.set(new Set());
@@ -1616,6 +2065,141 @@ export class PortalDocente {
       next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
+  }
+
+  /* ── Métodos de Temario ── */
+
+  cargarTemario(idAulaCurso: number) {
+    const token = this.auth.getToken();
+    if (!token) return;
+    this.cargandoTemario.set(true);
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<Unidad[]>(
+      `http://localhost:8080/api/portal/docente/cursos/${idAulaCurso}/temario`,
+      { headers }
+    ).subscribe({
+      next: data => {
+        this.unidades.set(data);
+        this.cargandoTemario.set(false);
+      },
+      error: () => this.cargandoTemario.set(false)
+    });
+  }
+
+  toggleUnidad(numero: number) {
+    this.unidadesAbiertas.update(set => {
+      const next = new Set(set);
+      next.has(numero) ? next.delete(numero) : next.add(numero);
+      return next;
+    });
+  }
+
+  actualizarEstadoUnidad(unidad: Unidad, nuevoEstado: 'pendiente' | 'en_curso' | 'concluido') {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      numero: unidad.numero,
+      titulo: unidad.titulo,
+      bimestre: unidad.bimestre,
+      semanas: unidad.semanas,
+      objetivos: unidad.objetivos,
+      indicadores: unidad.indicadores,
+      contenidos: unidad.contenidos,
+      estado: nuevoEstado
+    };
+
+    /* Optimistic update */
+    this.unidades.update(list =>
+      list.map(u => u.idUnidad === unidad.idUnidad ? { ...u, estado: nuevoEstado } : u)
+    );
+
+    this.http.put(
+      `http://localhost:8080/api/portal/docente/temario/${unidad.idUnidad}`,
+      body, { headers }
+    ).subscribe({
+      error: () => {
+        const curso = this.cursoActivo();
+        if (curso) this.cargarTemario(curso.idAulaCurso);
+      }
+    });
+  }
+
+  abrirNuevaUnidad() {
+    const nextNum = this.unidades().length + 1;
+    this.formUnidad.set({
+      numero: nextNum,
+      titulo: '',
+      bimestre: 'Bimestre I',
+      semanas: '',
+      objetivos: '',
+      indicadores: '',
+      contenidos: '',
+      estado: 'pendiente'
+    });
+    this.mostrarFormUnidad.set(true);
+  }
+
+  editarUnidad(unidad: Unidad) {
+    this.formUnidad.set({
+      idUnidad: unidad.idUnidad,
+      numero: unidad.numero,
+      titulo: unidad.titulo,
+      bimestre: unidad.bimestre,
+      semanas: unidad.semanas,
+      objetivos: unidad.objetivos.join('\n'),
+      indicadores: unidad.indicadores.join('\n'),
+      contenidos: unidad.contenidos.join('\n'),
+      estado: unidad.estado
+    });
+    this.mostrarFormUnidad.set(true);
+  }
+
+  guardarUnidad() {
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+    const f = this.formUnidad();
+    if (!f.titulo.trim()) return;
+
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+    const body = {
+      numero: f.numero,
+      titulo: f.titulo.trim(),
+      bimestre: f.bimestre,
+      semanas: f.semanas.trim(),
+      objetivos: f.objetivos.split('\n').map(x => x.trim()).filter(Boolean),
+      indicadores: f.indicadores.split('\n').map(x => x.trim()).filter(Boolean),
+      contenidos: f.contenidos.split('\n').map(x => x.trim()).filter(Boolean),
+      estado: f.estado
+    };
+
+    if (f.idUnidad) {
+      // Edit mode
+      this.http.put(
+        `http://localhost:8080/api/portal/docente/temario/${f.idUnidad}`,
+        body, { headers }
+      ).subscribe({
+        next: () => {
+          this.cargarTemario(curso.idAulaCurso);
+          this.mostrarFormUnidad.set(false);
+        },
+        error: () => alert('Error al actualizar la unidad didáctica.')
+      });
+    } else {
+      // Create mode
+      this.http.post(
+        `http://localhost:8080/api/portal/docente/cursos/${curso.idAulaCurso}/temario`,
+        body, { headers }
+      ).subscribe({
+        next: () => {
+          this.cargarTemario(curso.idAulaCurso);
+          this.mostrarFormUnidad.set(false);
+        },
+        error: () => alert('Error al crear la unidad didáctica.')
+      });
+    }
   }
 
   /** Carga los materiales del aula_curso dado */
@@ -2237,6 +2821,30 @@ export class PortalDocente {
     });
   }
 
+  exportarCurso(formato: 'excel' | 'pdf') {
+    const curso = this.cursoActivo();
+    if (!curso) return;
+    const token = this.auth.getToken();
+    if (!token) return;
+
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    const url = `http://localhost:8080/api/portal/docente/export/curso/${curso.idAulaCurso}/${formato}`;
+
+    this.http.get(url, { headers, responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const type = formato === 'excel'
+          ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          : 'application/pdf';
+        const file = new Blob([blob], { type });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(file);
+        link.download = `reporte_curso_${curso.nombre.toLowerCase().replace(/\s+/g, '_')}_${this.today}.${formato === 'excel' ? 'xlsx' : 'pdf'}`;
+        link.click();
+      },
+      error: () => alert('Error al descargar el reporte académico del curso.')
+    });
+  }
+
   /* ── Métodos de Asistencia ── */
 
   /** Obtiene la fecha actual en formato YYYY-MM-DD */
@@ -2453,6 +3061,67 @@ export class PortalDocente {
     ).subscribe({ next: data => this.pendientes.set(data) });
   }
 
+  cargarAlertasCriticas() {
+    const token = this.auth.getToken();
+    if (!token) return;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    this.http.get<any[]>(
+      'http://localhost:8080/api/portal/docente/predicciones',
+      { headers }
+    ).subscribe({
+      next: (data) => {
+        const alertas: AlertaCritica[] = [];
+        data.forEach(al => {
+          if (al.promedio > 0 && al.promedio < 11) {
+            alertas.push({
+              idAlumno: al.idAlumno,
+              nombre: `${al.nombre} ${al.apellido}`,
+              descripcion: `Promedio bajo en ${al.curso} (${al.promedio})`,
+              tipo: 'rendimiento',
+              inicial: al.nombre[0] + al.apellido[0],
+              color: '#ef476f'
+            });
+          }
+          if (al.totalClases > 0) {
+            const pct = (al.clasesPresente / al.totalClases) * 100;
+            if (pct < 85) {
+              alertas.push({
+                idAlumno: al.idAlumno,
+                nombre: `${al.nombre} ${al.apellido}`,
+                descripcion: `Baja asistencia en ${al.curso} (${Math.round(pct)}%)`,
+                tipo: 'asistencia',
+                inicial: al.nombre[0] + al.apellido[0],
+                color: '#f4a261'
+              });
+            }
+          }
+        });
+        this.alertasCriticas.set(alertas);
+      }
+    });
+  }
+
+  aplicarAccionRapida(tipo: 'citacion' | 'inasistencia' | 'rendimiento' | 'recuperacion') {
+    const ctx = this.contextoAlumno();
+    if (!ctx) return;
+
+    let msg = '';
+    const alumnoNombre = `${ctx.nombre} ${ctx.apellido}`;
+    
+    if (tipo === 'citacion') {
+      msg = `Estimado apoderado(a) de ${alumnoNombre}, solicito coordinar una citación formal para conversar detalladamente sobre su progreso académico en el curso de ${ctx.curso}. Quedo atento a su disponibilidad horaria. Atte. Prof. ${this.nombre}.`;
+    } else if (tipo === 'inasistencia') {
+      msg = `Estimado apoderado(a), le informo que su hijo(a) ${alumnoNombre} registró una inasistencia a la clase de ${ctx.curso} en la fecha de hoy. Agradeceré enviar la justificación correspondiente a la brevedad. Saludos cordiales.`;
+    } else if (tipo === 'rendimiento') {
+      msg = `Estimado apoderado(a), le escribo para notificarle que ${alumnoNombre} ha presentado notas por debajo del promedio regular en el curso de ${ctx.curso} (Promedio actual: ${ctx.promedio}). Le recomiendo revisar el material de Refuerzo Académico disponible en el portal del alumno.`;
+    } else if (tipo === 'recuperacion') {
+      msg = `Estimado apoderado(a), le informo que ${alumnoNombre} ha culminado con éxito las tareas y talleres de recuperación planificados para esta semana en ${ctx.curso}, mostrando una excelente actitud y mejora en su desempeño. ¡Felicitaciones!`;
+    }
+
+    this.replyText.set(msg);
+    this.enviarRespuesta();
+  }
+
   /**
    * Navega al curso correspondiente al pendiente y abre el tab correcto.
    * Si el curso aún no está cargado, espera a que cursos() tenga datos.
@@ -2469,6 +3138,43 @@ export class PortalDocente {
   setGrade(grado: string)  { this.activeGrade.set(grado);  }
   setYear(year: string)    { this.selectedYear.set(year);  }
   toggleDropdown()         { this.dropdownOpen.update(v => !v); }
+
+  iniciarComunicacionConPadre(idAlumno: number) {
+    this.setSection('mensajes');
+    this.modalNuevoChat.set(true);
+    this.nuevoChatGrado.set('');
+    this.nuevoChatSeccion.set('');
+    this.nuevoChatBusqueda.set('');
+    this.nuevoChatAlumnoSel.set(null);
+    this.nuevoChatAsunto.set('');
+    this.nuevoChatMensaje.set('');
+
+    const preselect = () => {
+      const alumno = this.alumnosDisponibles().find(a => a.idAlumno === idAlumno);
+      if (alumno) {
+        this.seleccionarAlumnoModal(alumno);
+      }
+    };
+
+    if (this.alumnosDisponibles().length === 0) {
+      const token = this.auth.getToken();
+      if (!token) return;
+      this.cargandoAlumnos.set(true);
+      const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+      this.http.get<AlumnoDisponible[]>(
+        'http://localhost:8080/api/portal/docente/mensajes/alumnos-disponibles', { headers }
+      ).subscribe({
+        next: data => {
+          this.alumnosDisponibles.set(data);
+          this.cargandoAlumnos.set(false);
+          preselect();
+        },
+        error: () => { this.cargandoAlumnos.set(false); }
+      });
+    } else {
+      preselect();
+    }
+  }
 
   @HostListener('document:click', ['$event'])
   onDocClick(e: MouseEvent) {

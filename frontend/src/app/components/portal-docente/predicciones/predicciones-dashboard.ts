@@ -2,6 +2,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../services/auth.service';
+import { PortalDocente } from '../portal-docente';
 
 /** Datos crudos que devuelve el endpoint /predicciones */
 interface AlumnoRaw {
@@ -35,6 +36,7 @@ export interface AlumnoRiesgo extends AlumnoRaw {
 export class PrediccionesDashboard implements OnInit {
   private http = inject(HttpClient);
   private auth = inject(AuthService);
+  private parent = inject(PortalDocente, { optional: true });
 
   private readonly API = 'http://localhost:8080/api/portal/docente/predicciones';
 
@@ -42,6 +44,220 @@ export class PrediccionesDashboard implements OnInit {
   errorMsg   = signal('');
   alumnos    = signal<AlumnoRiesgo[]>([]);
   filtroRiesgo = signal<'todos' | 'alto' | 'medio' | 'bajo'>('todos');
+
+  // ── IA Advisory Signals & Methods ──
+  consejoIA = signal<string | null>(null);
+  planIA = signal<any | null>(null);
+  planIAError = signal<string | null>(null);
+  cargandoIA = signal(false);
+  alumnoSeleccionado = signal<AlumnoRiesgo | null>(null);
+
+  // Persistence signals
+  checksState = signal<string>('0,0,0');
+  feedback1 = signal<string>('');
+  feedback2 = signal<string>('');
+  feedback3 = signal<string>('');
+  abrirPopoverFeedback = signal<{ index: number; accion: string } | null>(null);
+
+  esPlanCompletado = computed(() => this.checksState() === '1,1,1');
+
+  consultarIA(alumno: AlumnoRiesgo) {
+    this.alumnoSeleccionado.set(alumno);
+    this.cargandoIA.set(true);
+    this.consejoIA.set(null);
+    this.planIA.set(null);
+    this.planIAError.set(null);
+    this.checksState.set('0,0,0');
+    this.feedback1.set('');
+    this.feedback2.set('');
+    this.feedback3.set('');
+    this.abrirPopoverFeedback.set(null);
+
+    const token = this.auth.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    const url = `http://localhost:8080/api/portal/docente/predicciones/${alumno.idAlumno}/ia-advisory` +
+                `?asistencia=${alumno.porcentajeAsistencia}` +
+                `&promedio=${alumno.promedio}` +
+                `&causas=${encodeURIComponent(alumno.causas.join(', '))}`;
+
+    this.http.get<{ resultado: string, checksState: string, feedback_1?: string, feedback_2?: string, feedback_3?: string }>(url, { headers }).subscribe({
+      next: res => {
+        this.checksState.set(res.checksState || '0,0,0');
+        this.feedback1.set(res.feedback_1 || '');
+        this.feedback2.set(res.feedback_2 || '');
+        this.feedback3.set(res.feedback_3 || '');
+
+        try {
+          const data = JSON.parse(res.resultado);
+          if (data.error) {
+            this.planIAError.set(data.error);
+            this.planIA.set(null);
+          } else {
+            this.planIA.set(data);
+            this.planIAError.set(null);
+          }
+        } catch (e) {
+          this.consejoIA.set(res.resultado);
+          this.planIA.set(null);
+          this.planIAError.set(null);
+        }
+        this.cargandoIA.set(false);
+      },
+      error: () => {
+        this.planIAError.set('No se pudo obtener el consejo pedagógico de la IA en este momento. Revisa la conexión o intenta más tarde.');
+        this.planIA.set(null);
+        this.cargandoIA.set(false);
+      }
+    });
+  }
+
+  isCheckActive(index: number): boolean {
+    const states = this.checksState().split(',');
+    return states[index] === '1';
+  }
+
+  onCheckToggle(index: number, event: any) {
+    const isChecked = event.target.checked;
+    event.target.checked = this.isCheckActive(index);
+
+    if (isChecked) {
+      const acciones = this.planIA()?.checklist_pedagogico;
+      if (acciones && acciones[index]) {
+        this.abrirPopoverFeedback.set({ index, accion: acciones[index].accion });
+      }
+    }
+  }
+
+  cancelarFeedback() {
+    this.abrirPopoverFeedback.set(null);
+  }
+
+  guardarFeedback(index: number | undefined, comment: string) {
+    if (index === undefined || this.cargandoIA()) return;
+    this.cargandoIA.set(true);
+    this.abrirPopoverFeedback.set(null);
+
+    const token = this.auth.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http.post<any>('http://localhost:8080/api/portal/docente/predicciones/feedback-plan', {
+      idAlumno: this.alumnoSeleccionado()?.idAlumno,
+      checkIndex: index,
+      feedback: comment
+    }, { headers }).subscribe({
+      next: (res) => {
+        this.checksState.set(res.checksState);
+        this.feedback1.set(res.feedback_1 || '');
+        this.feedback2.set(res.feedback_2 || '');
+        this.feedback3.set(res.feedback_3 || '');
+
+        try {
+          const data = JSON.parse(res.resultado);
+          this.planIA.set(data);
+          this.planIAError.set(null);
+        } catch (e) {
+          this.consejoIA.set(res.resultado);
+          this.planIA.set(null);
+        }
+        this.cargandoIA.set(false);
+      },
+      error: () => {
+        alert('No se pudo registrar la bitácora en este momento.');
+        this.cargandoIA.set(false);
+      }
+    });
+  }
+
+  generarActaCompromiso() {
+    const idAlumno = this.alumnoSeleccionado()?.idAlumno;
+    if (idAlumno) {
+      window.open(`http://localhost:8080/api/portal/docente/predicciones/${idAlumno}/generar-acta`, '_blank');
+    }
+  }
+
+  copiarMensajePadres() {
+    const plan = this.planIA();
+    if (plan && plan.comunicacion_apoderado) {
+      const fullText = `Asunto: ${plan.comunicacion_apoderado.asunto}\n\n${plan.comunicacion_apoderado.cuerpo_mensaje}`;
+      navigator.clipboard.writeText(fullText).then(() => {
+        alert('¡Mensaje copiado al portapapeles con éxito!');
+      });
+    }
+  }
+
+  convertirMarkdownAHtml(md: string): string {
+    if (!md) return '';
+    let html = md;
+    // Escapar saltos de línea con <br>
+    html = html.replace(/\n/g, '<br>');
+    // Encabezados ###
+    html = html.replace(/### (.*?)(<br>|$)/g, '<h5 style="margin: 12px 0 6px 0; color: #1e3a8a; font-weight: 700; font-size: 13px;">$1</h5>');
+    // Encabezados ##
+    html = html.replace(/## (.*?)(<br>|$)/g, '<h4 style="margin: 16px 0 8px 0; color: #1e3a8a; font-weight: 800; font-size: 14px; text-transform: uppercase;">$1</h4>');
+    // Encabezados #
+    html = html.replace(/# (.*?)(<br>|$)/g, '<h3 style="margin: 18px 0 10px 0; color: #1e1b4b; font-weight: 900; font-size: 15px; text-transform: uppercase;">$1</h3>');
+    // Negrita
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Viñetas -
+    html = html.replace(/- (.*?)(<br>|$)/g, '<li style="margin-left: 15px; margin-bottom: 4px; list-style-type: disc;">$1</li>');
+    return html;
+  }
+
+  irAlChatConPadre() {
+    const parent = this.parent;
+    const alumno = this.alumnoSeleccionado();
+    const plan = this.planIA();
+    if (!parent || !alumno || !plan || !plan.comunicacion_apoderado) return;
+
+    const suggestedMessage = plan.comunicacion_apoderado.cuerpo_mensaje;
+
+    // 1. Cambiar la sección activa a 'mensajes'
+    parent.activeSection.set('mensajes');
+
+    // 2. Buscar conversación existente
+    const thread = parent.mensajes().find(m => m.idAlumno === alumno.idAlumno);
+    if (thread) {
+      parent.abrirMensaje(thread.id);
+      parent.replyText.set(suggestedMessage);
+    } else {
+      // Si no existe, crear la conversación en background
+      const token = this.auth.getToken();
+      const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' });
+
+      this.http.post<any>('http://localhost:8080/api/portal/docente/mensajes/iniciar', {
+        idAlumno: alumno.idAlumno,
+        idPadre: Number(plan.comunicacion_apoderado.id_apoderado_estudiante),
+        idAulaCurso: alumno.idAulaCurso,
+        asunto: plan.comunicacion_apoderado.asunto,
+        cuerpo: suggestedMessage
+      }, { headers }).subscribe({
+        next: (res) => {
+          parent.cargarMensajes();
+          setTimeout(() => parent.abrirMensaje(res.id), 400);
+        },
+        error: () => {
+          alert('No se pudo iniciar el chat con el apoderado en este momento.');
+        }
+      });
+    }
+
+    // Cerrar el modal de predicción
+    this.cerrarModalIA();
+  }
+
+  cerrarModalIA() {
+    this.consejoIA.set(null);
+    this.planIA.set(null);
+    this.planIAError.set(null);
+    this.checksState.set('0,0,0');
+    this.feedback1.set('');
+    this.feedback2.set('');
+    this.feedback3.set('');
+    this.abrirPopoverFeedback.set(null);
+    this.alumnoSeleccionado.set(null);
+  }
+
 
   // ── Estadísticas de resumen ──────────────────────────────────────────
   totalAlumnos = computed(() => this.alumnos().length);

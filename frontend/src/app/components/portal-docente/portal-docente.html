@@ -1,5 +1,18 @@
 <div class="pd-wrapper">
 
+  <!-- ═══════════════════ TOAST WEBSOCKET ═══════════════════ -->
+  @if (ws.toastVisible()) {
+    <div class="ws-toast" [class.ws-toast--visible]="ws.toastVisible()">
+      <div class="ws-toast-icon">💬</div>
+      <div class="ws-toast-content">
+        <span class="ws-toast-title">{{ ws.ultimaNotificacion()?.asunto }}</span>
+        <span class="ws-toast-from">de {{ ws.ultimaNotificacion()?.remitente }}</span>
+        <span class="ws-toast-preview">{{ ws.ultimaNotificacion()?.preview }}</span>
+      </div>
+      <button class="ws-toast-close" (click)="ws.cerrarToast()">✕</button>
+    </div>
+  }
+
   <!-- ═══════════════════ TOP NAVBAR ═══════════════════ -->
   <header class="pd-navbar">
     <div class="pd-navbar-left">
@@ -73,9 +86,13 @@
             }
           </span>
           <span class="pd-nav-label">{{ item.label }}</span>
-          <!-- Badge de mensajes no leídos (solo visible en la sección mensajes) -->
+          <!-- Badge de mensajes no leídos (DB) -->
           @if (item.id === 'mensajes' && noLeidos() > 0) {
             <span class="pd-nav-badge">{{ noLeidos() }}</span>
+          }
+          <!-- Badge de notificaciones en tiempo real (WebSocket) -->
+          @if (item.id === 'mensajes' && ws.contadorNoLeidas() > 0 && noLeidos() === 0) {
+            <span class="pd-nav-badge pd-nav-badge--ws">🔴</span>
           }
         </button>
       }
@@ -286,7 +303,7 @@
           }
 
           @for (alerta of alertasCriticas(); track alerta.idAlumno + alerta.tipo) {
-            <div class="pd-alerta-card">
+            <div class="pd-alerta-card" (click)="alertaSeleccionada.set(alerta)" style="cursor: pointer;">
               <div class="pd-alerta-avatar" [style.border-color]="alerta.color">
                 <span [style.color]="alerta.color">{{ alerta.inicial }}</span>
               </div>
@@ -303,6 +320,42 @@
                    fill="none" stroke="#9ca3af" stroke-width="2.5">
                 <polyline points="9 18 15 12 9 6"/>
               </svg>
+            </div>
+          }
+
+          @if (alertaSeleccionada(); as alerta) {
+            <div class="nc-overlay" (click)="alertaSeleccionada.set(null)"></div>
+            <div class="nc-modal" style="padding: 24px; max-width: 480px; box-sizing: border-box; overflow-y: auto;">
+              <div class="nc-header" style="border-bottom: none; padding: 0 0 16px 0; margin: 0;">
+                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #1b3a5c;">Detalle de Alerta Crítica</h3>
+                <button (click)="alertaSeleccionada.set(null)" style="background: none; border: none; cursor: pointer; color: #64748b; font-size: 1.5rem; line-height: 1;">&times;</button>
+              </div>
+              <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 20px;">
+                <div class="pd-alerta-avatar" [style.border-color]="alerta.color" style="width: 48px; height: 48px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid;">
+                  <span [style.color]="alerta.color" style="font-weight: 700;">{{ alerta.inicial }}</span>
+                </div>
+                <div>
+                  <h4 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: #1e293b;">{{ alerta.nombre }}</h4>
+                  <span class="pd-alerta-badge" 
+                        [class.pd-alerta-rendimiento]="alerta.tipo === 'rendimiento'" 
+                        [class.pd-alerta-asistencia]="alerta.tipo === 'asistencia'">
+                    {{ alerta.tipo === 'rendimiento' ? 'Rendimiento' : 'Asistencia' }}
+                  </span>
+                </div>
+              </div>
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+                <strong style="display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 6px;">Causa de la Alerta:</strong>
+                <p style="margin: 0; font-size: 0.95rem; color: #334155; line-height: 1.5;">{{ alerta.descripcion }}</p>
+              </div>
+              <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button (click)="alertaSeleccionada.set(null)" style="background: #f1f5f9; color: #475569; border: none; border-radius: 8px; padding: 8px 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">Cerrar</button>
+                <button (click)="iniciarComunicacionConPadre(alerta.idAlumno); alertaSeleccionada.set(null);" style="background: linear-gradient(135deg,#e67e22,#f39c12); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  Comunicar con Padre
+                </button>
+              </div>
             </div>
           }
         </div>
@@ -338,6 +391,124 @@
             </button>
           }
         </div>
+
+        <!-- ─── Tab: TEMARIO ─── -->
+        @if (activeSubTab() === 'temario') {
+          <div class="cd-section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <h3 class="cd-section-title">Temario y Avance Curricular</h3>
+            <button class="rp-btn-nuevo" (click)="abrirNuevaUnidad()">
+              + Nueva Unidad
+            </button>
+          </div>
+
+          <!-- Barra de Progreso Tricolor Premium -->
+          <div class="tm-progress-container" style="background: #f3f4f6; border-radius: 12px; padding: 16px; margin-bottom: 24px; border: 1px solid #e5e7eb;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #374151;">
+              <span>Progreso General Estimado</span>
+              <span style="color: #059669;">{{ progresoTemario().totalPct }}% completado</span>
+            </div>
+            <!-- Barra multicolor -->
+            <div class="tm-progress-bar-wrapper" style="height: 12px; display: flex; border-radius: 6px; overflow: hidden; background: #e5e7eb;">
+              <div [style.width.%]="progresoTemario().concluido" style="background: #059669; height: 100%; transition: width 0.3s;" title="Concluido: {{ progresoTemario().concluido }}%"></div>
+              <div [style.width.%]="progresoTemario().enCurso" style="background: #2563eb; height: 100%; transition: width 0.3s;" title="En Curso: {{ progresoTemario().enCurso }}%"></div>
+              <div [style.width.%]="progresoTemario().pendiente" style="background: #9ca3af; height: 100%; transition: width 0.3s;" title="Pendiente: {{ progresoTemario().pendiente }}%"></div>
+            </div>
+            <!-- Leyendas -->
+            <div style="display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: #6b7280;">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #059669; border-radius: 50%;"></span>
+                <span>Concluido</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #2563eb; border-radius: 50%;"></span>
+                <span>En Curso (cuenta al 50%)</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #9ca3af; border-radius: 50%;"></span>
+                <span>Pendiente</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Estado de carga -->
+          @if (cargandoTemario()) {
+            <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando temario...</span></div>
+          }
+
+          <!-- Lista de Unidades -->
+          @if (!cargandoTemario()) {
+            <div class="tm-unidad-list" style="display: flex; flex-direction: column; gap: 16px;">
+              @for (u of unidades(); track u.idUnidad) {
+                <div class="tm-unidad-card" style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                  
+                  <!-- Header de Unidad (Acordeón clickeable) -->
+                  <div (click)="toggleUnidad(u.numero)" style="display: flex; justify-content: space-between; align-items: center; padding: 16px; cursor: pointer; background: #f9fafb; border-bottom: 1px solid #e5e7eb; user-select: none;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <span style="font-weight: 700; color: #111827; background: #e5e7eb; padding: 4px 8px; border-radius: 6px;">U{{ u.numero }}</span>
+                      <h4 style="margin: 0; font-weight: 600; color: #1f2937; font-size: 15px;">{{ u.titulo }}</h4>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;" (click)="$event.stopPropagation()">
+                      <!-- Selector de estado -->
+                      <select [value]="u.estado" (change)="actualizarEstadoUnidad(u, $any($event.target).value)" 
+                              style="font-size: 12px; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-weight: 600;"
+                              [style.color]="u.estado === 'concluido' ? '#059669' : u.estado === 'en_curso' ? '#2563eb' : '#6b7280'">
+                        <option value="pendiente">Pendiente</option>
+                        <option value="en_curso">En Curso</option>
+                        <option value="concluido">Concluido</option>
+                      </select>
+
+                      <!-- Editar botón -->
+                      <button class="as-btn-outline" style="padding: 4px 8px; font-size: 12px;" (click)="editarUnidad(u)">
+                        Editar
+                      </button>
+
+                      <svg class="cd-chevron" [class.open]="unidadesAbiertas().has(u.numero)"
+                           width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition: transform 0.2s;">
+                        <polyline points="18 15 12 9 6 15"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Detalle de la Unidad (Abierto/Cerrado) -->
+                  @if (unidadesAbiertas().has(u.numero)) {
+                    <div style="padding: 16px; display: grid; grid-template-columns: 1fr 2fr; gap: 16px; background: white; border-top: 1px solid #f3f4f6;">
+                      <!-- Datos generales y contenidos -->
+                      <div>
+                        <div style="margin-bottom: 12px; font-size: 13px; color: #4b5563;">
+                          <strong>Bimestre:</strong> {{ u.bimestre }} <span style="margin: 0 8px;">•</span> <strong>Periodo estimado:</strong> {{ u.semanas }}
+                        </div>
+                        <h5 style="margin: 12px 0 6px 0; font-size: 13px; font-weight: 700; color: #374151;">Contenidos Temáticos</h5>
+                        <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #4b5563; line-height: 1.6;">
+                          @for (c of u.contenidos; track c) {
+                            <li>{{ c }}</li>
+                          }
+                        </ul>
+                      </div>
+                      
+                      <!-- Objetivos e Indicadores -->
+                      <div style="border-left: 1px solid #f3f4f6; padding-left: 16px;">
+                        <h5 style="margin: 0 0 6px 0; font-size: 13px; font-weight: 700; color: #374151;">Objetivos de Aprendizaje</h5>
+                        <ul style="margin: 0 0 16px 0; padding-left: 18px; font-size: 13px; color: #4b5563; line-height: 1.5;">
+                          @for (o of u.objetivos; track o) {
+                            <li>{{ o }}</li>
+                          }
+                        </ul>
+
+                        <h5 style="margin: 0 0 6px 0; font-size: 13px; font-weight: 700; color: #374151;">Indicadores de Logro</h5>
+                        <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #4b5563; line-height: 1.5;">
+                          @for (ind of u.indicadores; track ind) {
+                            <li>{{ ind }}</li>
+                          }
+                        </ul>
+                      </div>
+                    </div>
+                  }
+
+                </div>
+              }
+            </div>
+          }
+        }
 
         <!-- ─── Tab: CONTENIDO ─── -->
         @if (activeSubTab() === 'contenido') {
@@ -460,6 +631,17 @@
 
         <!-- ─── Tab: ASISTENCIA ─── -->
         @if (activeSubTab() === 'asistencia') {
+
+          <!-- ── Banner: curso no programado hoy ── -->
+          @if (cursoActivo() && !clasesDeHoy().some(c => c.idAulaCurso === cursoActivo()!.idAulaCurso)) {
+            <div style="display:flex;align-items:center;gap:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#92400e;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" style="flex-shrink:0">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span><strong>Este curso no está programado para hoy.</strong> Puedes seleccionar una fecha anterior para ver o modificar la asistencia registrada, o tomar asistencia para hoy si corresponde.</span>
+            </div>
+          }
 
           <!-- ── Barra de control de fecha ── -->
           <div class="as-control-bar">
@@ -792,6 +974,7 @@
                   <label class="cd-modal-label">Fecha de Entrega</label>
                   <input class="cd-modal-input" type="date"
                          [ngModel]="formTarea().fechaEntrega"
+                         [min]="today"
                          (ngModelChange)="setFormTarea('fechaEntrega', $event)"/>
                 </div>
 
@@ -1107,6 +1290,7 @@
                   <label class="cd-modal-label">Fecha del Examen</label>
                   <input class="cd-modal-input" type="date"
                          [ngModel]="formExamen().fechaExamen"
+                         [min]="today"
                          (ngModelChange)="setFormExamen('fechaExamen', $event)"/>
                 </div>
 
@@ -1397,11 +1581,29 @@
         @if (activeSubTab() === 'reportes') {
 
           <!-- Cabecera -->
-          <div class="cd-section-header">
-            <h3 class="cd-section-title">Libreta de Reportes</h3>
-            @if (!mostrarFormReporte()) {
-              <button class="rp-btn-nuevo" (click)="toggleFormReporte(true)">+ Nuevo Reporte</button>
-            }
+          <div class="cd-section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <h3 class="cd-section-title" style="margin: 0;">Libreta de Reportes</h3>
+              @if (!mostrarFormReporte()) {
+                <button class="rp-btn-nuevo" (click)="toggleFormReporte(true)">+ Nuevo Reporte</button>
+              }
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="as-btn-outline" (click)="exportarCurso('pdf')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                Exportar PDF
+              </button>
+              <button class="as-btn-outline" (click)="exportarCurso('excel')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="9" y1="3" x2="9" y2="21"/>
+                </svg>
+                Exportar Excel
+              </button>
+            </div>
           </div>
 
           <!-- Descripción informativa -->
@@ -1456,6 +1658,7 @@
                     <label class="cd-modal-label">Fecha</label>
                     <input class="cd-modal-input" type="date"
                            [ngModel]="formReporte().fecha"
+                           [min]="today"
                            (ngModelChange)="setFormReporte('fecha', $event)"/>
                   </div>
                 </div>
@@ -1636,6 +1839,80 @@
         }<!-- /reportes -->
 
       }<!-- /curso-detalle -->
+
+      <!-- ────── MODAL: CREAR/EDITAR UNIDAD ────── -->
+      @if (mostrarFormUnidad()) {
+        <div class="cd-modal-backdrop" (click)="mostrarFormUnidad.set(false)">
+          <div class="cd-modal" (click)="$event.stopPropagation()" style="max-width: 600px;">
+            <div class="cd-modal-header">
+              <h3 class="cd-modal-title">{{ formUnidad().idUnidad ? 'Editar Unidad Didáctica' : 'Crear Unidad Didáctica' }}</h3>
+              <button class="cd-modal-close" (click)="mostrarFormUnidad.set(false)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            
+            <div class="cd-modal-body" style="display: flex; flex-direction: column; gap: 16px; padding: 20px; max-height: 70vh; overflow-y: auto;">
+              <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+                <div>
+                  <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Número de Unidad</label>
+                  <input type="number" [(ngModel)]="formUnidad().numero" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;" required />
+                </div>
+                <div>
+                  <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Título de Unidad</label>
+                  <input type="text" [(ngModel)]="formUnidad().titulo" placeholder="Ej: Fundamentos de la Álgebra" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;" required />
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div>
+                  <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Bimestre</label>
+                  <select [(ngModel)]="formUnidad().bimestre" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;">
+                    <option value="Bimestre I">Bimestre I</option>
+                    <option value="Bimestre II">Bimestre II</option>
+                    <option value="Bimestre III">Bimestre III</option>
+                    <option value="Bimestre IV">Bimestre IV</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Semanas de Duración</label>
+                  <input type="text" [(ngModel)]="formUnidad().semanas" placeholder="Ej: Semanas 1-4" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;" />
+                </div>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Contenidos Temáticos (Uno por línea)</label>
+                <textarea [(ngModel)]="formUnidad().contenidos" placeholder="Concepto A&#10;Concepto B&#10;Concepto C" rows="3" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: inherit; resize: vertical; font-size: 13px;"></textarea>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Objetivos de Aprendizaje (Uno por línea)</label>
+                <textarea [(ngModel)]="formUnidad().objetivos" placeholder="Objetivo 1&#10;Objetivo 2" rows="3" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: inherit; resize: vertical; font-size: 13px;"></textarea>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Indicadores de Logro (Uno por línea)</label>
+                <textarea [(ngModel)]="formUnidad().indicadores" placeholder="Indicador 1&#10;Indicador 2" rows="3" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: inherit; resize: vertical; font-size: 13px;"></textarea>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">Estado Inicial</label>
+                <select [(ngModel)]="formUnidad().estado" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;">
+                  <option value="pendiente">Pendiente</option>
+                  <option value="en_curso">En Curso</option>
+                  <option value="concluido">Concluido</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="cd-modal-footer">
+              <button class="cd-modal-cancel" (click)="mostrarFormUnidad.set(false)">Cancelar</button>
+              <button class="cd-modal-submit" (click)="guardarUnidad()" [disabled]="!formUnidad().titulo.trim()">Guardar Unidad</button>
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- ────── MODAL: SUBIR MATERIAL ────── -->
       @if (modalMaterial()) {
@@ -1858,7 +2135,10 @@
                 <!-- Bloques de clase fija (Mis Clases) -->
                 @if (calendarioTab() === 'mis-clases') {
                   @for (clase of clasesDelDia(dia.num); track clase.horaInicio + clase.curso) {
-                    <div class="cal-block"
+                    <div class="cal-block" style="cursor: pointer;"
+                         (click)="abrirCursoDesdeCalendario(clase.curso, clase.grado, clase.seccion)"
+                         role="button" tabindex="0"
+                         (keydown.enter)="abrirCursoDesdeCalendario(clase.curso, clase.grado, clase.seccion)"
                          [style.top.px]="blockTop(clase.horaInicio)"
                          [style.height.px]="blockHeight(clase.horaInicio, clase.horaFin)"
                          [style.background-color]="cursoColor(clase.curso)">
@@ -2008,6 +2288,7 @@
                 <label class="cd-modal-label">Fecha</label>
                 <input class="cd-modal-input" type="date"
                        [ngModel]="formReserva().fecha"
+                       [min]="today"
                        (ngModelChange)="setFormReserva('fecha', $event)"/>
               </div>
 
@@ -2218,47 +2499,157 @@
 
                 <!-- Mensaje original: clase según quién lo inició -->
                 <div class="msg-bubble" [class.docente]="msg.iniciadoPorDocente" [class.padre]="!msg.iniciadoPorDocente">
-                  <div class="msg-bubble-cuerpo">{{ msg.cuerpo }}</div>
-                  <div class="msg-bubble-fecha">{{ msg.fechaEnvio }}</div>
+                  @if (msg.cuerpo.startsWith('[AUDIO]')) {
+                    <div class="msg-bubble-cuerpo" style="display: flex; align-items: center; gap: 12px; min-width: 230px; padding: 4px 0;">
+                      <button (click)="toggleAudioPlay(msg)" 
+                              style="background: #00a884; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; outline: none; transition: background 0.15s; flex-shrink: 0;">
+                        @if (msg.isPlaying) {
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                        } @else {
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        }
+                      </button>
+                      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+                        <div (click)="seekAudio($event, msg)" 
+                             style="height: 5px; background: rgba(0,0,0,0.08); border-radius: 3px; position: relative; cursor: pointer; overflow: hidden;">
+                          <div [style.width.%]="msg.audioProgress || 0" 
+                               style="position: absolute; left: 0; top: 0; bottom: 0; background: #00a884; border-radius: 3px; transition: width 0.1s linear;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 10px; color: #667781; font-weight: 500;">
+                          <span>{{ formatAudioTime(msg.currentTime || 0) }}</span>
+                          <span style="display: flex; align-items: center; gap: 2px;">
+                            🎤 {{ formatAudioTime(msg.duration || 0) }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="msg-bubble-cuerpo">{{ msg.cuerpo }}</div>
+                  }
+                  <div class="msg-bubble-fecha">
+                    {{ msg.fechaEnvio }}
+                    @if (msg.iniciadoPorDocente) {
+                      <span style="margin-left: 2px; font-weight: 700; color: #3b82f6;">✓✓</span>
+                    }
+                  </div>
                 </div>
 
                 <!-- Respuestas del hilo -->
                 @for (r of msg.respuestas; track r.id) {
                   <div class="msg-bubble" [class.docente]="r.esMaestro" [class.padre]="!r.esMaestro">
-                    <div class="msg-bubble-cuerpo">{{ r.cuerpo }}</div>
-                    <div class="msg-bubble-fecha">{{ r.fecha }}</div>
+                    @if (r.cuerpo.startsWith('[AUDIO]')) {
+                      <div class="msg-bubble-cuerpo" style="display: flex; align-items: center; gap: 12px; min-width: 230px; padding: 4px 0;">
+                        <button (click)="toggleAudioPlay(r)" 
+                                style="background: #00a884; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; outline: none; transition: background 0.15s; flex-shrink: 0;">
+                          @if (r.isPlaying) {
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                          } @else {
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                          }
+                        </button>
+                        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+                          <div (click)="seekAudio($event, r)" 
+                               style="height: 5px; background: rgba(0,0,0,0.08); border-radius: 3px; position: relative; cursor: pointer; overflow: hidden;">
+                            <div [style.width.%]="r.audioProgress || 0" 
+                                 style="position: absolute; left: 0; top: 0; bottom: 0; background: #00a884; border-radius: 3px; transition: width 0.1s linear;"></div>
+                          </div>
+                          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #667781; font-weight: 500;">
+                            <span>{{ formatAudioTime(r.currentTime || 0) }}</span>
+                            <span style="display: flex; align-items: center; gap: 2px;">
+                              🎤 {{ formatAudioTime(r.duration || 0) }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="msg-bubble-cuerpo">{{ r.cuerpo }}</div>
+                    }
+                    <div class="msg-bubble-fecha">
+                      {{ r.fecha }}
+                      @if (r.esMaestro) {
+                        <span style="margin-left: 2px; font-weight: 700; color: #3b82f6;">✓✓</span>
+                      }
+                    </div>
                   </div>
                 }
               </div>
 
-              <!-- Input de respuesta estilo chat -->
-              <div class="msg-reply-bar">
-                <input class="msg-reply-input-chat"
-                       type="text"
-                       placeholder="Escribe un mensaje..."
-                       [ngModel]="replyText()"
-                       (ngModelChange)="replyText.set($event)"
-                       (keyup.enter)="enviarRespuesta()"
-                       [disabled]="enviandoReply()"/>
-                <div class="msg-reply-bar-actions">
-                  <button class="msg-reply-icon-btn" title="Adjuntar">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                    </svg>
-                  </button>
-                  <button class="msg-reply-icon-btn" title="Fecha">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                    </svg>
-                  </button>
-                  <button class="msg-reply-send"
-                          (click)="enviarRespuesta()"
-                          [disabled]="!replyText().trim() || enviandoReply()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                    </svg>
-                  </button>
-                </div>
+              <!-- Input de respuesta estilo WhatsApp -->
+              <div class="msg-reply-bar" style="background: #f0f2f5; border-top: 1px solid #cbd5e1; padding: 8px 16px;">
+                @if (grabando()) {
+                  <!-- Grabador de voz activo -->
+                  <div class="audio-recording-overlay">
+                    <div class="audio-recording-wave">
+                      <div class="pulsing-mic-icon"></div>
+                      <span>Grabando nota de voz... {{ formatAudioTime(duracionGrabacion()) }}</span>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                      <button (click)="cancelarGrabacion()" 
+                              style="background: #ea4335; color: white; border: none; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        🗑️ Descartar
+                      </button>
+                      <button (click)="detenerGrabacion()" 
+                              style="background: #00a884; color: white; border: none; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        ⏹️ Detener y Enviar
+                      </button>
+                    </div>
+                  </div>
+                } @else {
+                  <!-- Barra de escritura normal -->
+                  <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                    <!-- Botón de Adjuntos -->
+                    <button class="msg-reply-icon-btn" title="Adjuntar" style="padding: 8px; color: #54656f; background: none; border: none; cursor: pointer;">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                      </svg>
+                    </button>
+
+                    <!-- Textarea de entrada -->
+                    <textarea class="msg-reply-input-chat"
+                              placeholder="Escribe un mensaje..."
+                              rows="1"
+                              style="flex-grow: 1; border: none; outline: none; padding: 9px 12px; border-radius: 8px; background: white; font-family: inherit; font-size: 14px; min-height: 20px; max-height: 120px; resize: none; color: #111b21;"
+                              [ngModel]="replyText()"
+                              (ngModelChange)="replyText.set($event)"
+                              (keydown.enter)="$event.preventDefault(); enviarRespuesta()"
+                              [disabled]="enviandoReply()"></textarea>
+
+                    <!-- Botón de Refinar con IA -->
+                    <button (click)="refinarMensajeConIA('respuesta')"
+                            [disabled]="refinandoConIA() || !replyText().trim()"
+                            style="background: none; border: none; padding: 8px; color: #8696a0; cursor: pointer; display: flex; align-items: center;"
+                            title="Refinar con IA">
+                      @if (refinandoConIA()) {
+                        <div class="pd-spinner" style="width: 16px; height: 16px; border-width: 2px; border-color: #8696a0 transparent #8696a0 transparent;"></div>
+                      } @else {
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7e22ce" stroke-width="2">
+                          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                      }
+                    </button>
+
+                    <!-- Botón Dinámico de Enviar o Grabar Micrófono -->
+                    @if (replyText().trim().length > 0) {
+                      <button class="msg-reply-send"
+                              (click)="enviarRespuesta()"
+                              [disabled]="enviandoReply()"
+                              style="background: none; border: none; padding: 8px; color: #00a884; cursor: pointer; display: flex; align-items: center;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                      </button>
+                    } @else {
+                      <button (click)="iniciarGrabacion()"
+                              style="background: none; border: none; padding: 8px; color: #54656f; cursor: pointer; display: flex; align-items: center;"
+                              title="Grabar nota de voz">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                          <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v4M8 23h8"/>
+                        </svg>
+                      </button>
+                    }
+                  </div>
+                }
               </div>
             }
 
@@ -2314,10 +2705,10 @@
                 <!-- Acciones rápidas -->
                 <div class="msg-ctx-section-title">ACCIONES RÁPIDAS</div>
                 <div class="msg-ctx-actions">
-                  <button class="msg-ctx-action-btn">Enviar citación formal</button>
-                  <button class="msg-ctx-action-btn">Reportar inasistencia</button>
-                  <button class="msg-ctx-action-btn">Notificar bajo rendimiento</button>
-                  <button class="msg-ctx-action-btn">Confirmar recuperación</button>
+                  <button class="msg-ctx-action-btn" (click)="aplicarAccionRapida('citacion')">Enviar citación formal</button>
+                  <button class="msg-ctx-action-btn" (click)="aplicarAccionRapida('inasistencia')">Reportar inasistencia</button>
+                  <button class="msg-ctx-action-btn" (click)="aplicarAccionRapida('rendimiento')">Notificar bajo rendimiento</button>
+                  <button class="msg-ctx-action-btn" (click)="aplicarAccionRapida('recuperacion')">Confirmar recuperación</button>
                 </div>
 
                 <!-- Datos del alumno -->
@@ -2441,7 +2832,14 @@
 
                 <!-- Mensaje -->
                 <div class="nc-field">
-                  <label class="nc-label">Mensaje</label>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <label class="nc-label" style="margin: 0;">Mensaje</label>
+                    <button type="button" (click)="refinarMensajeConIA('nuevo')" 
+                            [disabled]="refinandoConIA() || !nuevoChatMensaje().trim()"
+                            style="background: #f3e8ff; color: #7e22ce; border: 1px solid #c084fc; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                      ✨ {{ refinandoConIA() ? 'Refinando...' : 'Refinar con IA' }}
+                    </button>
+                  </div>
                   <textarea class="nc-textarea"
                             rows="5"
                             placeholder="Escribe el mensaje que recibirá el apoderado..."
@@ -2564,8 +2962,9 @@
               <div class="com-form-group">
                 <label class="com-form-label">Fecha del evento</label>
                 <input class="com-form-input"
-                       type="date"
-                       [ngModel]="formCom().fechaEvento"
+                        type="date"
+                        [min]="today"
+                        [ngModel]="formCom().fechaEvento"
                        (ngModelChange)="setFormCom('fechaEvento', $event)"/>
               </div>
 
