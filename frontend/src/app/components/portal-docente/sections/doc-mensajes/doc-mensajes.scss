@@ -923,3 +923,263 @@ $verde-wa:   #00a884;
   border-top-color: $navy-600;
   animation: spin 0.8s linear infinite;
 }
+
+/* ===================================================================
+   Mensajes: Panel de Contexto del Alumno (msg-ctx-*)
+   =================================================================== */
+.msg-context-panel {
+  width: 300px;
+  flex-shrink: 0;
+  border-left: 1px solid $slate-200;
+  background: $white;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  padding: 1.5rem 1.25rem;
+  box-sizing: border-box;
+}
+
+.msg-ctx-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 0;
+}
+
+.msg-ctx-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.65rem;
+  border-bottom: 1px solid $slate-100;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.msg-ctx-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $navy-800, $navy-600);
+  color: $white;
+  font-size: 1.1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.msg-ctx-nombre {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: $navy-800;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.msg-ctx-aula {
+  font-size: 0.78rem;
+  color: $slate-500;
+  font-weight: 600;
+}
+
+.msg-ctx-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: $slate-500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 1.25rem;
+  margin-bottom: 0.65rem;
+  border-bottom: 1px solid $slate-100;
+  padding-bottom: 4px;
+}
+
+.msg-ctx-indicators {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.msg-ctx-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: $slate-50;
+  border: 1px solid $slate-200;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $slate-700;
+
+  &.warn {
+    color: $gold-600;
+    background: #fffbeb;
+    border-color: #fde68a;
+  }
+
+  &.ok {
+    color: $emerald-700;
+    background: $emerald-50;
+    border-color: $emerald-100;
+  }
+}
+
+.msg-ctx-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.msg-ctx-action-btn {
+  background: $white;
+  border: 1px solid $slate-300;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: $slate-700;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  transition: all 180ms $ease-out-strong;
+
+  &:hover {
+    background: linear-gradient(135deg, $navy-800, $navy-700);
+    color: $white;
+    border-color: $navy-800;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.msg-ctx-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.msg-ctx-dato {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  border-bottom: 1px solid $slate-100;
+  padding-bottom: 6px;
+
+  span {
+    color: $slate-400;
+    font-weight: 600;
+  }
+
+  strong {
+    color: $slate-700;
+    font-weight: 700;
+  }
+}
+
+/* ===================================================================
+   Mensajes: Visualizador de Grabación de Audio WhatsApp Web Style
+   =================================================================== */
+.audio-recording-overlay {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #f0f2f5;
+  border-radius: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  animation: waFadeIn 200ms ease-out;
+}
+
+@keyframes waFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reply-audio-btn--cancel {
+  background: none;
+  border: none;
+  color: #ea4335;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all 150ms ease;
+
+  &:hover {
+    background: rgba(234, 67, 53, 0.1);
+    transform: scale(1.1);
+  }
+}
+
+.audio-rec-timer {
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: $slate-600;
+  min-width: 42px;
+}
+
+.wa-mic-wave-container {
+  flex: 1;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: $white;
+  border-radius: 20px;
+  padding: 0 16px;
+  border: 1px solid $slate-200;
+  overflow: hidden;
+}
+
+.wa-mic-wave-bar {
+  width: 3px;
+  min-height: 4px;
+  max-height: 32px;
+  background-color: $verde-wa;
+  border-radius: 2px;
+  transition: height 50ms ease-out;
+}
+
+.wa-mic-btn-send {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: $verde-wa;
+  color: $white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: all 180ms ease;
+
+  &:hover {
+    background: #008f72;
+    transform: scale(1.08);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Spinner animado */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

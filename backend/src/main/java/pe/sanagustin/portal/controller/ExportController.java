@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pe.sanagustin.portal.service.ExportService;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api")
@@ -30,12 +31,11 @@ public class ExportController {
     }
 
     @GetMapping("/admin/export/estudiantes/pdf")
-    public ResponseEntity<byte[]> exportEstudiantesPdf() {
-        byte[] data = exportService.exportEstudiantesPdf();
-        return ResponseEntity.ok()
+    public CompletableFuture<ResponseEntity<byte[]>> exportEstudiantesPdf() {
+        return exportService.exportEstudiantesPdf().thenApply(data -> ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte_estudiantes.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
-                .body(data);
+                .body(data));
     }
 
     // ── EXPORTACIÓN DOCENTE (CURSOS) ────────────────────────────────────
@@ -49,11 +49,10 @@ public class ExportController {
     }
 
     @GetMapping("/portal/docente/export/curso/{id}/pdf")
-    public ResponseEntity<byte[]> exportCursoPdf(@PathVariable Long id) {
-        byte[] data = exportService.exportCursoPdf(id);
-        return ResponseEntity.ok()
+    public CompletableFuture<ResponseEntity<byte[]>> exportCursoPdf(@PathVariable Long id) {
+        return exportService.exportCursoPdf(id).thenApply(data -> ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte_curso_" + id + ".pdf")
                 .contentType(MediaType.APPLICATION_PDF)
-                .body(data);
+                .body(data));
     }
 }

@@ -29,21 +29,7 @@ public class MensajeService {
     private final SimpMessagingTemplate ws;
     private final OpenAiService openAiService;
 
-    @jakarta.annotation.PostConstruct
-    @org.springframework.transaction.annotation.Transactional
-    public void initDatabaseSchema() {
-        try {
-            em.createNativeQuery("ALTER TABLE mensajes_respuestas ADD COLUMN IF NOT EXISTS transcripcion TEXT").executeUpdate();
-            em.createNativeQuery("ALTER TABLE mensajes_respuestas ADD COLUMN IF NOT EXISTS sentimiento VARCHAR(50)").executeUpdate();
-            em.createNativeQuery("ALTER TABLE mensajes_respuestas ADD COLUMN IF NOT EXISTS analisis_causa TEXT").executeUpdate();
-            
-            em.createNativeQuery("ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS transcripcion TEXT").executeUpdate();
-            em.createNativeQuery("ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS sentimiento VARCHAR(50)").executeUpdate();
-            em.createNativeQuery("ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS analisis_causa TEXT").executeUpdate();
-        } catch (Exception e) {
-            System.err.println("Error ejecutando DDL de migración: " + e.getMessage());
-        }
-    }
+
 
     /* ─────────────────────────────────────────────────────────
        SQL reutilizable: columnas comunes para resumen y detalle

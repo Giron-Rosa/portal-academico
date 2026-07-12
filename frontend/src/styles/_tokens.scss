@@ -1,0 +1,55 @@
+// ===================================================================
+// Design Tokens - Portal Académico
+// ===================================================================
+
+// Colors
+$navy-900:   #090d16;
+$navy-800:   #0d1b2a; // Deep Institutional Navy
+$navy-700:   #1b2a4a;
+$navy-600:   #1b3a5c; // Medium Institutional Navy
+
+$slate-50:   #f8fafc;
+$slate-100:  #f1f5f9;
+$slate-200:  #e2e8f0;
+$slate-300:  #cbd5e1;
+$slate-400:  #94a3b8;
+$slate-500:  #64748b;
+$slate-600:  #475569;
+$slate-700:  #334155;
+$slate-800:  #1e293b;
+
+$red-500:    #c1121f; // Crimson Red
+$red-600:    #a8101b;
+$rose-50:    #fff1f2;
+$rose-100:   #ffe4e6;
+$rose-600:   #e11d48;
+$rose-700:   #be123c;
+
+$gold-400:   #fbc02d; // Golden / Amber
+$gold-500:   #eab308;
+$gold-600:   #d97706;
+
+$emerald-50: #ecfdf5;
+$emerald-100:#d1fae5;
+$emerald-500:#22c55e;
+$emerald-600:#16a34a;
+$emerald-700:#047857;
+
+$blue-50:    #eff6ff;
+$blue-100:   #dbeafe;
+$blue-500:   #3b82f6;
+$blue-600:   #2563eb;
+
+$white:      #ffffff;
+$verde-wa:   #00a884;
+
+// Transitions & Curves
+$ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+$transition-default: all 200ms cubic-bezier(0.23, 1, 0.32, 1);
+$transition-fast: all 120ms ease;
+
+// Shadows
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$shadow-premium: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);

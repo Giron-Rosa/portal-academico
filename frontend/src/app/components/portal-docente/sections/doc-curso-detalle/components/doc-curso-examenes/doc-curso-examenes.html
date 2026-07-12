@@ -1,0 +1,323 @@
+<!-- Cabecera -->
+<div class="cd-section-header">
+  <h3 class="cd-section-title">Exámenes</h3>
+  @if (!mostrarFormExamen()) {
+    <button class="cd-btn-subir" (click)="toggleFormExamen(true)">+ Nuevo Examen</button>
+  }
+</div>
+
+<!-- ── Formulario de creación ── -->
+@if (mostrarFormExamen()) {
+  <div class="tr-form-panel">
+    <div class="tr-form-header ex-form-header">
+      <span>Nuevo Examen</span>
+      <button class="cd-modal-close" (click)="toggleFormExamen(false)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="tr-form-grid">
+      <!-- Fila 1: Semana / Clase / N° Examen / Fecha -->
+      <div class="tr-field">
+        <label class="cd-modal-label">Semana</label>
+        <div class="cd-stepper">
+          <button (click)="stepperExamen('semana', -1)">−</button>
+          <span>{{ formExamen().semana }}</span>
+          <button (click)="stepperExamen('semana', +1)">+</button>
+        </div>
+      </div>
+      <div class="tr-field">
+        <label class="cd-modal-label">Clase</label>
+        <div class="cd-stepper">
+          <button (click)="stepperExamen('clase', -1)">−</button>
+          <span>{{ formExamen().clase }}</span>
+          <button (click)="stepperExamen('clase', +1)">+</button>
+        </div>
+      </div>
+      <div class="tr-field">
+        <label class="cd-modal-label">N° Examen</label>
+        <div class="cd-stepper">
+          <button (click)="stepperExamen('numeroExamen', -1)">−</button>
+          <span>{{ formExamen().numeroExamen }}</span>
+          <button (click)="stepperExamen('numeroExamen', +1)">+</button>
+        </div>
+      </div>
+      <div class="tr-field">
+        <label class="cd-modal-label">Fecha del Examen</label>
+        <input class="cd-modal-input" type="date"
+               [ngModel]="formExamen().fechaExamen"
+               [min]="today"
+               (ngModelChange)="setFormExamen('fechaExamen', $event)"/>
+      </div>
+
+      <!-- Fila 2: Título (full width) -->
+      <div class="tr-field tr-full">
+        <label class="cd-modal-label">Título del Examen *</label>
+        <input class="cd-modal-input" type="text"
+               placeholder="Ej: Examen Parcial Bimestral"
+               maxlength="200"
+               [ngModel]="formExamen().titulo"
+               (ngModelChange)="setFormExamen('titulo', $event)"/>
+      </div>
+
+      <!-- Descripción -->
+      <div class="tr-field tr-full">
+        <label class="cd-modal-label">Temas a evaluar / Descripción</label>
+        <textarea class="tr-textarea" rows="3"
+                  placeholder="Temas, fórmulas permitidas, indicaciones..."
+                  [ngModel]="formExamen().descripcion"
+                  (ngModelChange)="setFormExamen('descripcion', $event)"></textarea>
+      </div>
+
+      <!-- Fila 3: Tipo / Duración / Nota Máxima -->
+      <div class="tr-field">
+        <label class="cd-modal-label">Tipo de Examen</label>
+        <select class="cd-modal-input"
+                [ngModel]="formExamen().tipo"
+                (ngModelChange)="setFormExamen('tipo', $event)">
+          <option value="escrito">📝 Escrito</option>
+          <option value="oral">🗣️ Oral / Exposición</option>
+          <option value="practica">💻 Práctica Dirigida</option>
+          <option value="proyecto">🎨 Proyecto / Entregable</option>
+          <option value="otro">📌 Otro</option>
+        </select>
+      </div>
+      <div class="tr-field">
+        <label class="cd-modal-label">Duración (Minutos)</label>
+        <div class="cd-stepper">
+          <button (click)="stepperExamen('duracionMinutos', -10)">−</button>
+          <span>{{ formExamen().duracionMinutos }} min</span>
+          <button (click)="stepperExamen('duracionMinutos', +10)">+</button>
+        </div>
+      </div>
+      <div class="tr-field">
+        <label class="cd-modal-label">Nota Máxima</label>
+        <div class="cd-stepper">
+          <button (click)="stepperExamen('notaMaxima', -1)">−</button>
+          <span>{{ formExamen().notaMaxima }}</span>
+          <button (click)="stepperExamen('notaMaxima', +1)">+</button>
+        </div>
+      </div>
+      <div class="tr-field">
+        <label class="cd-modal-label">URL de Referencia (Temario/Guía)</label>
+        <input class="cd-modal-input" type="url"
+               placeholder="https://..."
+               [ngModel]="formExamen().url"
+               (ngModelChange)="setFormExamen('url', $event)"/>
+      </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="tr-form-actions">
+      <button class="cd-modal-cancel" (click)="toggleFormExamen(false)">Cancelar</button>
+      <button class="cd-modal-submit ex-btn-submit"
+              (click)="enviarExamenForm()"
+              [disabled]="!formExamen().titulo.trim() || enviandoExamen()">
+        @if (enviandoExamen()) { Creando… } @else { Crear Examen }
+      </button>
+    </div>
+  </div>
+}
+
+<!-- Estado de carga -->
+@if (cargandoExamenes) {
+  <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando exámenes...</span></div>
+}
+
+<!-- Estado vacío -->
+@if (!cargandoExamenes && examenes.length === 0) {
+  <div class="cd-empty">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="9" y2="9"/>
+    </svg>
+    <p>No hay exámenes creados. Usa "+ Nuevo Examen" para agregar el primero.</p>
+  </div>
+}
+
+<!-- ── Lista de Exámenes ── -->
+@for (examen of examenes; track examen.id) {
+  <div class="tr-tarea-block ex-examen-block">
+
+    <!-- Header (acordeón) -->
+    <button class="tr-tarea-header ex-examen-header" (click)="toggleExamen(examen.id)">
+      <div class="tr-tarea-header-left">
+        <span class="tr-tarea-num ex-examen-num">Ev. {{ examen.numeroExamen }}</span>
+        <span class="tr-tarea-titulo">{{ examen.titulo }}</span>
+        @if (examen.fechaExamen) {
+          <span class="tr-fecha-badge">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            {{ examen.fechaExamen }}
+          </span>
+        }
+      </div>
+      <div class="tr-tarea-header-right">
+        <!-- Stats -->
+        <span class="tr-stat-badge ex-stat-asistio" title="Asistieron">{{ examen.asistieron }}</span>
+        <span class="tr-stat-badge ex-stat-falto" title="Ausentes">{{ examen.noAsistieron }}</span>
+        <span class="tr-stat-badge tr-stat-total" title="Total alumnos">{{ examen.totalAlumnos }}</span>
+        <!-- Eliminar -->
+        <button class="cd-mat-delete" (click)="$event.stopPropagation(); eliminarExamen.emit(examen.id)" title="Eliminar examen">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14H6L5 6"/>
+            <path d="M10 11v6"/><path d="M14 11v6"/>
+            <path d="M9 6V4h6v2"/>
+          </svg>
+        </button>
+        <svg class="cd-chevron" [class.open]="examenesExpandidos().has(examen.id)"
+             width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="18 15 12 9 6 15"/>
+        </svg>
+      </div>
+    </button>
+
+    <!-- Detalle expandido -->
+    @if (examenesExpandidos().has(examen.id)) {
+      <div class="tr-tarea-detail ex-examen-detail">
+
+        <!-- Datos -->
+        @if (examen.descripcion || examen.tipo || examen.duracionMinutos) {
+          <div class="tr-meta-row">
+            @if (examen.descripcion) {
+              <div class="tr-meta-item">
+                <span class="tr-meta-label">Temario / Descripción</span>
+                <span class="tr-meta-value">{{ examen.descripcion }}</span>
+              </div>
+            }
+            <div class="tr-meta-item">
+              <span class="tr-meta-label">Tipo</span>
+              <span class="tr-meta-value text-capitalize">{{ examen.tipo }}</span>
+            </div>
+            @if (examen.duracionMinutos) {
+              <div class="tr-meta-item">
+                <span class="tr-meta-label">Duración</span>
+                <span class="tr-meta-value">{{ examen.duracionMinutos }} min</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Stats row -->
+        <div class="tr-stats-row">
+          <div class="tr-stat-card ex-sc-asistio">
+            <span class="tr-sc-num">{{ examen.asistieron }}</span>
+            <span class="tr-sc-label">Asistieron</span>
+          </div>
+          <div class="tr-stat-card ex-sc-falto">
+            <span class="tr-sc-num">{{ examen.noAsistieron }}</span>
+            <span class="tr-sc-label">Ausentes</span>
+          </div>
+          <div class="tr-stat-card tr-sc-total">
+            <span class="tr-sc-num">{{ examen.totalAlumnos }}</span>
+            <span class="tr-sc-label">Total Alumnos</span>
+          </div>
+          <div class="tr-stat-card tr-sc-nota">
+            <span class="tr-sc-num">/ {{ examen.notaMaxima }}</span>
+            <span class="tr-sc-label">Nota Máx.</span>
+          </div>
+        </div>
+
+        <!-- Tabla de calificaciones -->
+        @if (notasPorExamen.get(examen.id); as notasEx) {
+          <div class="tr-tabla-wrap">
+            <table class="tr-tabla">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Nombres y Apellidos</th>
+                  <th class="tr-th-center">Asistencia</th>
+                  <th class="tr-th-center">Nota</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ne of notasEx; track ne.idNotaExamen) {
+                  <tr [class.tr-row-entregado]="ne.asistio"
+                      [class.ex-row-ausente]="!ne.asistio">
+
+                    <td class="tr-td-codigo">{{ ne.codigo }}</td>
+                    <td class="tr-td-nombre">{{ ne.nombres }}</td>
+
+                    <!-- Toggle asistencia -->
+                    <td class="tr-td-center">
+                      <button class="tr-toggle-entregado"
+                              [class.activo]="ne.asistio"
+                              (click)="toggleAsistio.emit({ idNotaExamen: ne.idNotaExamen, idExamen: examen.id, asistio: ne.asistio })"
+                              [title]="ne.asistio ? 'Marcar como ausente' : 'Marcar como asistente'">
+                        @if (ne.asistio) {
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        } @else {
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
+                        }
+                      </button>
+                    </td>
+
+                    <!-- Nota inline -->
+                    <td class="tr-td-center">
+                      @if (editandoNotaEx().has(ne.idNotaExamen)) {
+                        <div class="tr-nota-edit">
+                          <input class="tr-nota-input"
+                                 type="number" min="0" [max]="examen.notaMaxima" step="0.5"
+                                 [disabled]="!ne.asistio"
+                                 [ngModel]="editandoNotaEx().get(ne.idNotaExamen)"
+                                 (ngModelChange)="setEditNotaEx(ne.idNotaExamen, $event)"
+                                 (keydown.enter)="guardarNotaExamenForm(ne.idNotaExamen, examen.id)"
+                                 (keydown.escape)="cancelarEditNotaEx(ne.idNotaExamen)"
+                                 autofocus/>
+                          <span class="tr-nota-max">/{{ examen.notaMaxima }}</span>
+                          <button class="tr-nota-ok"
+                                  [disabled]="guardandoNotaEx.has(ne.idNotaExamen)"
+                                  (click)="guardarNotaExamenForm(ne.idNotaExamen, examen.id)">
+                            @if (guardandoNotaEx.has(ne.idNotaExamen)) { … } @else {
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                            }
+                          </button>
+                          <button class="tr-nota-cancel" (click)="cancelarEditNotaEx(ne.idNotaExamen)">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        </div>
+                      } @else {
+                        <button class="tr-nota-display"
+                                [disabled]="!ne.asistio"
+                                (click)="iniciarEditNotaEx(ne.idNotaExamen, ne.nota)"
+                                title="Haz clic para calificar">
+                          <span [class.tr-nota-vacia]="ne.nota === null">
+                            {{ ne.nota !== null ? ne.nota : '—' }}
+                          </span>
+                          <span class="tr-nota-max">/{{ examen.notaMaxima }}</span>
+                        </button>
+                      }
+                    </td>
+
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="tr-loading-notas">
+            <div class="pd-spinner" style="width:18px;height:18px;border-width:2px"></div>
+            <span>Cargando alumnos...</span>
+          </div>
+        }
+
+      </div>
+    }
+
+  </div>
+}

@@ -22,6 +22,8 @@ import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Async;
+import java.util.concurrent.CompletableFuture;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -92,7 +94,8 @@ public class ExportService {
     }
 
     // ── EXPORTAR ESTUDIANTES A PDF ──────────────────────────────────────
-    public byte[] exportEstudiantesPdf() {
+    @Async("academicExecutor")
+    public CompletableFuture<byte[]> exportEstudiantesPdf() {
         String sql = """
                 SELECT a.nombre, a.apellido, u.codigo, a.grado, a.seccion, u.email, m.estado
                 FROM alumnos a
@@ -149,9 +152,9 @@ public class ExportService {
 
             document.add(table);
             document.close();
-            return out.toByteArray();
+            return CompletableFuture.completedFuture(out.toByteArray());
         } catch (Exception e) {
-            throw new RuntimeException("Error al generar PDF de estudiantes", e);
+            return CompletableFuture.failedFuture(new RuntimeException("Error al generar PDF de estudiantes", e));
         }
     }
 
@@ -250,7 +253,8 @@ public class ExportService {
     }
 
     // ── EXPORTAR CURSO A PDF ────────────────────────────────────────────
-    public byte[] exportCursoPdf(Long idAulaCurso) {
+    @Async("academicExecutor")
+    public CompletableFuture<byte[]> exportCursoPdf(Long idAulaCurso) {
         String sqlCursoInfo = """
                 SELECT c.nombre, g.nombre AS grado, s.nombre AS seccion
                 FROM aula_cursos ac
@@ -338,9 +342,9 @@ public class ExportService {
 
             document.add(table);
             document.close();
-            return out.toByteArray();
+            return CompletableFuture.completedFuture(out.toByteArray());
         } catch (Exception e) {
-            throw new RuntimeException("Error al generar PDF de curso", e);
+            return CompletableFuture.failedFuture(new RuntimeException("Error al generar PDF de curso", e));
         }
     }
 }

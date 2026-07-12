@@ -1,0 +1,77 @@
+/* ─── Tab: EXÁMENES ─── */
+.ex-form-header {
+  background: #fffbeb;
+  border-bottom-color: #fde68a;
+  color: #b45309;
+}
+
+.ex-btn-submit {
+  padding: 0.45rem 1.25rem;
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover:not(:disabled) { background: #b45309; }
+  &:disabled { background: #9ca3af; cursor: not-allowed; }
+}
+
+.ex-num {
+  color: #b45309 !important;
+  background: #fffbeb !important;
+}
+
+.ex-header {
+  &:hover { background: #fffbeb !important; }
+}
+
+.ex-tipo-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: #f3f4f6;
+  color: #374151;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ex-duracion-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.ex-stat-cal { background: #fef3c7; color: #d97706; }
+
+.ex-sc-cal {
+  background: #fffbeb;
+  .tr-sc-num   { color: #d97706; }
+  .tr-sc-label { color: #fcd34d; }
+}
+
+.ex-row-asistio { background: #f0fdf4 !important; }
+.ex-row-ausente { background: #fafafa !important; }
+
+.ex-ausente-label {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.ex-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: #2563eb;
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}

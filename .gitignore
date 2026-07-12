@@ -13,3 +13,7 @@ portal-academico/
 
 # Agents Context
 .agents/context/
+
+# Explanations and logs to ignore from IA agent indexer
+documentacion/explicaciones/
+backend_logs.txt

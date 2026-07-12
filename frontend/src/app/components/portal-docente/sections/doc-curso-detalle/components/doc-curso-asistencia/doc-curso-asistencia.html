@@ -1,0 +1,286 @@
+<!-- ── Banner: curso no programado hoy ── -->
+@if (cursoActivo && !clasesDeHoy.some(c => c.idAulaCurso === cursoActivo.idAulaCurso)) {
+  <div style="display:flex;align-items:center;gap:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#92400e;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" style="flex-shrink:0">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <span><strong>Este curso no está programado para hoy.</strong> Puedes seleccionar una fecha anterior para ver o modificar la asistencia registrada, o tomar asistencia para hoy si corresponde.</span>
+  </div>
+}
+
+<!-- ── Barra de control de fecha ── -->
+<div class="as-control-bar">
+  <div class="as-fecha-group">
+    <label class="as-fecha-label">Fecha</label>
+    <input class="as-fecha-input" type="date"
+           [ngModel]="fechaAsistencia"
+           (ngModelChange)="cambiarFechaAsistencia.emit($event)"/>
+    <span class="as-fecha-display">{{ formatFechaCorta(fechaAsistencia) }}</span>
+  </div>
+
+  <!-- Historial de sesiones guardadas -->
+  @if (fechasSesiones.length > 0) {
+    <div class="as-historial">
+      <span class="as-historial-label">Guardadas:</span>
+      @for (f of fechasSesiones.slice(0, 5); track f) {
+        <button class="as-hist-chip"
+                [class.as-hist-activa]="f === fechaAsistencia"
+                (click)="cambiarFechaAsistencia.emit(f)">
+          {{ formatFechaCorta(f) }}
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Indicador de cambios sin guardar -->
+  @if (asistenciaModificada) {
+    <span class="as-sin-guardar">● Sin guardar</span>
+  }
+</div>
+
+<!-- ── Barra de estadísticas ── -->
+@if (asistenciaLocal.length > 0) {
+  <div class="as-stats-bar">
+    <div class="as-stat as-stat-presente">
+      <span class="as-stat-num">{{ asistenciaStats.presentes }}</span>
+      <span class="as-stat-label">Presentes</span>
+    </div>
+    <div class="as-stat as-stat-falta">
+      <span class="as-stat-num">{{ asistenciaStats.faltas }}</span>
+      <span class="as-stat-label">Faltas</span>
+    </div>
+    <div class="as-stat as-stat-tardanza">
+      <span class="as-stat-num">{{ asistenciaStats.tardanzas }}</span>
+      <span class="as-stat-label">Tardanzas</span>
+    </div>
+    <div class="as-stat as-stat-justificado">
+      <span class="as-stat-num">{{ asistenciaStats.justificados }}</span>
+      <span class="as-stat-label">Justificados</span>
+    </div>
+    <div class="as-stat-progress">
+      <div class="as-progress-bar">
+        <div class="as-progress-presente"
+             [style.width.%]="(asistenciaStats.presentes / asistenciaLocal.length) * 100"></div>
+        <div class="as-progress-tardanza"
+             [style.width.%]="(asistenciaStats.tardanzas / asistenciaLocal.length) * 100"></div>
+        <div class="as-progress-justificado"
+             [style.width.%]="(asistenciaStats.justificados / asistenciaLocal.length) * 100"></div>
+        <div class="as-progress-falta"
+             [style.width.%]="(asistenciaStats.faltas / asistenciaLocal.length) * 100"></div>
+      </div>
+      <span class="as-progress-pct">
+        {{ ((asistenciaStats.presentes + asistenciaStats.tardanzas) / asistenciaLocal.length * 100) | number:'1.0-0' }}% asistencia
+      </span>
+    </div>
+  </div>
+}
+
+<!-- ── Acciones rápidas ── -->
+<div class="as-actions-row">
+  <button class="as-btn-todos" (click)="marcarTodosPresentes.emit()"
+          [disabled]="cargandoAsistencia">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    Todos presentes
+  </button>
+  <button class="as-btn-guardar"
+          (click)="guardarAsistencia.emit()"
+          [disabled]="!asistenciaModificada || guardandoAsistencia || cargandoAsistencia">
+    @if (guardandoAsistencia) {
+      <svg class="as-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+      Guardando…
+    } @else {
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+        <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+      </svg>
+      Guardar asistencia
+    }
+  </button>
+</div>
+
+<!-- ── Estado de carga ── -->
+@if (cargandoAsistencia) {
+  <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando lista...</span></div>
+}
+
+<!-- ── Lista de alumnos ── -->
+@if (!cargandoAsistencia && asistenciaLocal.length > 0) {
+  <div class="as-list-header-row">
+    <h4 class="as-list-title">
+      @if (mostrarConsolidado) { Consolidado Mensual } @else { Lista — {{ formatFechaLarga(fechaAsistencia) }} }
+    </h4>
+    <div class="as-list-actions">
+      <button class="as-btn-outline" [class.active]="mostrarConsolidado" (click)="verConsolidado.emit()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        @if(mostrarConsolidado) { Volver a Lista } @else { Ver Consolidado Mensual }
+      </button>
+      @if (!mostrarConsolidado) {
+        <button class="as-btn-guardar-top"
+                (click)="guardarAsistencia.emit()"
+                [disabled]="!asistenciaModificada || guardandoAsistencia">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+          </svg>
+          Guardar
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (mostrarConsolidado) {
+    <!-- CONSOLIDADO MENSUAL UI -->
+    <div class="cs-wrap">
+      <div class="cs-toolbar">
+        <button class="cs-btn-mes" (click)="cambiarMesConsolidado.emit(-1)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="cs-mes-label">{{ formatMes(mesConsolidado) }}</span>
+        <button class="cs-btn-mes" (click)="cambiarMesConsolidado.emit(1)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+
+      @if (cargandoConsolidado) {
+        <div class="pd-loading"><div class="pd-spinner"></div><span>Cargando consolidado...</span></div>
+      } @else if (datosConsolidado) {
+        <div class="cs-table-wrap">
+          <table class="cs-table">
+            <thead>
+              <tr>
+                <th class="cs-th-fijo">Estudiante</th>
+                <th class="cs-th-center">% Asistencia</th>
+                @for (f of datosConsolidado.fechas; track f) {
+                  <th class="cs-th-center">
+                    <div class="cs-fecha-head">
+                      <span>{{ f.split('-')[2] }}</span>
+                    </div>
+                  </th>
+                }
+                @if(datosConsolidado.fechas.length === 0) {
+                  <th class="cs-th-center">Sin sesiones registradas este mes</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of datosConsolidado.alumnos; track a.idAlumno) {
+                <tr>
+                  <td class="cs-td-fijo">
+                    <span class="cs-nombre">{{ a.nombres }}</span>
+                  </td>
+                  <td class="cs-td-center">
+                    <span class="cs-pct-badge" [class.cs-pct-riesgo]="a.alertaRiesgo">
+                      {{ a.porcentajeAsistencia }}%
+                    </span>
+                  </td>
+                  @for (e of a.estados; track $index) {
+                    <td class="cs-td-center">
+                      <span class="cs-estado-chip" [class]="'cs-chip-' + e">
+                        {{ e.charAt(0).toUpperCase() }}
+                      </span>
+                    </td>
+                  }
+                  @if(a.estados.length === 0) {
+                    <td class="cs-td-center">-</td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- LISTA DE ASISTENCIA DIARIA NORMAL -->
+    <div class="as-alumno-list">
+      <!-- Encabezados de la tabla -->
+      <div class="as-list-table-header">
+        <div class="as-th-num">#</div>
+        <div class="as-th-estudiante">ESTUDIANTE</div>
+        <div class="as-th-asistencia">ASISTENCIA</div>
+        <div class="as-th-observacion">OBSERVACIÓN</div>
+      </div>
+
+      @for (alumno of asistenciaLocal; track alumno.idAlumno; let idx = $index) {
+        <div class="as-alumno-row" [class]="'as-row-' + alumno.estado">
+
+          <!-- Número + nombre -->
+          <div class="as-alumno-id">
+            <span class="as-alumno-num">{{ idx + 1 }}</span>
+            <div class="as-alumno-info">
+              <span class="as-alumno-nombre">{{ alumno.nombres }}</span>
+              <span class="as-alumno-codigo">{{ alumno.codigo }}</span>
+            </div>
+          </div>
+
+          <!-- Botones de estado -->
+          <div class="as-estado-btns">
+            <button class="as-btn-estado as-btn-presente"
+                    [class.as-activo]="alumno.estado === 'presente'"
+                    (click)="setEstadoAsistencia.emit({ idAlumno: alumno.idAlumno, estado: 'presente' })"
+                    title="Presente">
+              <span>P</span>
+            </button>
+            <button class="as-btn-estado as-btn-falta"
+                    [class.as-activo]="alumno.estado === 'falta'"
+                    (click)="setEstadoAsistencia.emit({ idAlumno: alumno.idAlumno, estado: 'falta' })"
+                    title="Falta">
+              <span>F</span>
+            </button>
+            <button class="as-btn-estado as-btn-tardanza"
+                    [class.as-activo]="alumno.estado === 'tardanza'"
+                    (click)="setEstadoAsistencia.emit({ idAlumno: alumno.idAlumno, estado: 'tardanza' })"
+                    title="Tardanza">
+              <span>T</span>
+            </button>
+            <button class="as-btn-estado as-btn-justificado"
+                    [class.as-activo]="alumno.estado === 'justificado'"
+                    (click)="setEstadoAsistencia.emit({ idAlumno: alumno.idAlumno, estado: 'justificado' })"
+                    title="Justificado">
+              <span>J</span>
+            </button>
+          </div>
+
+          <!-- Campo de observación siempre visible -->
+          <div class="as-justificante-wrap">
+            <input class="as-justificante-input"
+                   type="text"
+                   placeholder="Nota..."
+                   [ngModel]="alumno.justificante"
+                   (ngModelChange)="setJustificanteAsistencia.emit({ idAlumno: alumno.idAlumno, justificante: $event })"/>
+          </div>
+
+        </div>
+      }
+    </div>
+
+    <!-- Botón guardar al final de la lista -->
+    <div class="as-footer-actions">
+      <button class="as-btn-guardar as-btn-guardar-lg"
+              (click)="guardarAsistencia.emit()"
+              [disabled]="!asistenciaModificada || guardandoAsistencia">
+        @if (guardandoAsistencia) { Guardando… }
+        @else if (!asistenciaModificada) { ✓ Asistencia guardada }
+        @else { Guardar asistencia del {{ formatFechaCorta(fechaAsistencia) }} }
+      </button>
+    </div>
+  }
+}
+
+<!-- Estado vacío (sin alumnos) -->
+@if (!cargandoAsistencia && asistenciaLocal.length === 0) {
+  <div class="cd-placeholder-tab">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.3">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+    </svg>
+    <p>No hay alumnos matriculados en este curso.</p>
+  </div>
+}

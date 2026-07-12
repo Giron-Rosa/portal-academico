@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://db:5432/portal_academico
-    username: sa_admin
-    password: Sa2025*Secure
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://ep-wispy-heart-ahwgglaz-pooler.c-3.us-east-1.aws.neon.tech:5432/neondb?sslmode=require&channel_binding=require}
+    username: ${SPRING_DATASOURCE_USERNAME:neondb_owner}
+    password: ${SPRING_DATASOURCE_PASSWORD:npg_iSOaxk1TYZp8}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -26,4 +26,16 @@ openai:
     key: ${GEMINI_API_KEY:${OPENAI_API_KEY:}}
     url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
     model: "gemini-3.5-flash"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    metrics:
+      enabled: true
+    health:
+      show-details: always
+
 
