@@ -23,7 +23,7 @@ jwt:
 
 openai:
   api:
-    key: ${OPENAI_API_KEY:tu_clave_oculta_aqui}
-    url: "https://api.openai.com/v1/chat/completions"
-    model: "gpt-4o-mini"
+    key: ${GEMINI_API_KEY:${OPENAI_API_KEY:}}
+    url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+    model: "gemini-3.5-flash"
 

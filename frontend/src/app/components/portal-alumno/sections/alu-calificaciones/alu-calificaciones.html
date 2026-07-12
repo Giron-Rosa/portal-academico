@@ -1,85 +1,81 @@
-<div class="pa-calendar-view animate-fade-in" style="padding: 24px;">
-  <div class="pa-view-header" style="margin-bottom: 24px;">
+<div class="pa-qual-view animate-fade-in">
+  <div class="pa-view-header">
     <div class="pa-header-info">
-      <h2 class="pa-view-title" style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">Calificaciones Bimestrales</h2>
-      <p class="pa-view-subtitle" style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Resumen global de promedios de todas tus asignaturas</p>
+      <h2 class="pa-view-title">Calificaciones Bimestrales</h2>
+      <p class="pa-view-subtitle">Resumen global de promedios de todas tus asignaturas</p>
     </div>
   </div>
 
   <!-- Tarjetas KPI Calificaciones -->
-  <div class="pa-kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 24px;">
-    <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-      <div style="background: #eff6ff; color: #3b82f6; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">📈</div>
-      <div>
-        <div style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Promedio General</div>
-        <div style="font-size: 1.5rem; font-weight: 800; color: #1e3a8a;">{{ promedioGeneral | number:'1.1-1' }}</div>
+  <div class="pa-kpi-grid">
+    <div class="pa-kpi-card kpi-promedio">
+      <div class="pa-kpi-icon">📈</div>
+      <div class="pa-kpi-content">
+        <span class="pa-kpi-label">Promedio General</span>
+        <span class="pa-kpi-value value-promedio">{{ promedioGeneral | number:'1.1-1' }}</span>
       </div>
     </div>
     
-    <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-      <div style="background: #e6f4ea; color: #137333; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">✅</div>
-      <div>
-        <div style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Cursos Aprobados</div>
-        <div style="font-size: 1.5rem; font-weight: 800; color: #137333;">{{ cursosAprobados }}</div>
+    <div class="pa-kpi-card kpi-aprobados">
+      <div class="pa-kpi-icon">✅</div>
+      <div class="pa-kpi-content">
+        <span class="pa-kpi-label">Cursos Aprobados</span>
+        <span class="pa-kpi-value value-aprobados">{{ cursosAprobados }}</span>
       </div>
     </div>
 
-    <div class="pa-kpi-card" style="background: white; border: 1px solid rgba(27,58,92,0.08); border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
-      <div style="background: #fce8e6; color: #c5221f; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">⚠️</div>
-      <div>
-        <div style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Por Recuperar</div>
-        <div style="font-size: 1.5rem; font-weight: 800; color: #c5221f;">{{ cursosPorRecuperar }}</div>
+    <div class="pa-kpi-card kpi-recuperar">
+      <div class="pa-kpi-icon">⚠️</div>
+      <div class="pa-kpi-content">
+        <span class="pa-kpi-label">Por Recuperar</span>
+        <span class="pa-kpi-value value-recuperar">{{ cursosPorRecuperar }}</span>
       </div>
     </div>
   </div>
 
   @if (cargandoCalificaciones) {
-    <div class="pa-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px;">
+    <div class="pa-loading">
       <div class="pa-spinner"></div>
-      <span style="margin-top: 12px; color: #6b7280;">Cargando tus notas globales...</span>
+      <span>Cargando tus notas globales...</span>
     </div>
   }
 
   @if (!cargandoCalificaciones && calificacionesGlobales.length > 0) {
-    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-      <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+    <div class="pa-table-card">
+      <table class="pa-notes-table">
         <thead>
-          <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
-            <th style="padding: 16px; font-weight: 600; color: #374151;">Asignatura</th>
-            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Bimestre I</th>
-            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Bimestre II</th>
-            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Bimestre III</th>
-            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Bimestre IV</th>
-            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Promedio Final</th>
-            <th style="padding: 16px; font-weight: 600; color: #374151; text-align: center;">Estado</th>
+          <tr>
+            <th>Asignatura</th>
+            <th class="text-center">Bimestre I</th>
+            <th class="text-center">Bimestre II</th>
+            <th class="text-center">Bimestre III</th>
+            <th class="text-center">Bimestre IV</th>
+            <th class="text-center">Promedio Final</th>
+            <th class="text-center">Estado</th>
           </tr>
         </thead>
         <tbody>
           @for (c of calificacionesGlobales; track c.idAulaCurso) {
-            <tr style="border-bottom: 1px solid #f3f4f6; transition: background 0.2s; cursor: default;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
-              <td style="padding: 16px; font-weight: 600; color: #111827;">{{ c.curso }}</td>
+            <tr>
+              <td class="course-name">{{ c.curso }}</td>
               
               <!-- Bimestre 1 -->
-              <td style="padding: 16px; text-align: center; font-weight: 500;" 
-                  [style.color]="c.bim1 !== null ? (c.bim1 >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
+              <td class="score-cell text-center" [class.passed]="c.bim1 !== null && c.bim1 >= 11" [class.failed]="c.bim1 !== null && c.bim1 < 11">
                 {{ c.bim1 !== null ? c.bim1 : '—' }}
               </td>
               
               <!-- Bimestre 2 -->
-              <td style="padding: 16px; text-align: center; font-weight: 500;" 
-                  [style.color]="c.bim2 !== null ? (c.bim2 >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
+              <td class="score-cell text-center" [class.passed]="c.bim2 !== null && c.bim2 >= 11" [class.failed]="c.bim2 !== null && c.bim2 < 11">
                 {{ c.bim2 !== null ? c.bim2 : '—' }}
               </td>
               
               <!-- Bimestre 3 -->
-              <td style="padding: 16px; text-align: center; font-weight: 500;" 
-                  [style.color]="c.bim3 !== null ? (c.bim3 >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
+              <td class="score-cell text-center" [class.passed]="c.bim3 !== null && c.bim3 >= 11" [class.failed]="c.bim3 !== null && c.bim3 < 11">
                 {{ c.bim3 !== null ? c.bim3 : '—' }}
               </td>
               
               <!-- Bimestre 4 -->
-              <td style="padding: 16px; text-align: center; font-weight: 500;" 
-                  [style.color]="c.bim4 !== null ? (c.bim4 >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
+              <td class="score-cell text-center" [class.passed]="c.bim4 !== null && c.bim4 >= 11" [class.failed]="c.bim4 !== null && c.bim4 < 11">
                 {{ c.bim4 !== null ? c.bim4 : '—' }}
               </td>
 
@@ -91,21 +87,18 @@
               );
               @let hasGrades = (c.bim1 !== null || c.bim2 !== null || c.bim3 !== null || c.bim4 !== null);
               
-              <td style="padding: 16px; text-align: center; font-weight: 700;" 
-                  [style.color]="hasGrades ? (finalAvg >= 11 ? '#137333' : '#c5221f') : '#9ca3af'">
+              <td class="score-cell final-score text-center" [class.passed]="hasGrades && finalAvg >= 11" [class.failed]="hasGrades && finalAvg < 11">
                 {{ hasGrades ? (finalAvg | number:'1.1-1') : '—' }}
               </td>
 
               <!-- Estado Badge -->
-              <td style="padding: 16px; text-align: center;">
+              <td class="text-center">
                 @if (hasGrades) {
-                  <span style="font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase;"
-                        [style.background]="finalAvg >= 11 ? '#e6f4ea' : '#fce8e6'"
-                        [style.color]="finalAvg >= 11 ? '#137333' : '#c5221f'">
+                  <span class="status-badge" [class.passed]="finalAvg >= 11" [class.failed]="finalAvg < 11">
                     {{ finalAvg >= 11 ? 'Aprobado' : 'Desaprobado' }}
                   </span>
                 } @else {
-                  <span style="font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; background: #f1f3f4; color: #5f6368;">
+                  <span class="status-badge pending">
                     Pendiente
                   </span>
                 }

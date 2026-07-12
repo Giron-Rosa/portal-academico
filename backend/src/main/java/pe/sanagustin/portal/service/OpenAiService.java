@@ -29,6 +29,10 @@ public class OpenAiService {
             .build();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private String getActiveKey() {
+        return apiKey;
+    }
+
     public String llamarOpenAi(String systemPrompt, String userPrompt, boolean forceJson) {
         try {
             java.util.Map<String, Object> requestBody = new java.util.HashMap<>(Map.of(
@@ -49,7 +53,7 @@ public class OpenAiService {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(apiUrl))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Authorization", "Bearer " + getActiveKey())
                     .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
                     .timeout(Duration.ofSeconds(60))
                     .build();
@@ -105,7 +109,7 @@ public class OpenAiService {
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
                     .uri(URI.create("https://api.openai.com/v1/audio/transcriptions"))
                     .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Authorization", "Bearer " + getActiveKey())
                     .POST(java.net.http.HttpRequest.BodyPublishers.ofByteArray(requestBody))
                     .build();
                     

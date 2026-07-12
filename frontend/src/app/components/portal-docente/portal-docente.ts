@@ -2032,14 +2032,20 @@ export class PortalDocente implements OnDestroy {
     const curso = this.cursoActivo();
     if (!curso) return;
     this.enviandoMat.set(true);
-    const body = {
-      semana: f.semana,
-      clase:  f.clase,
-      titulo: f.titulo.trim(),
-      tipo:   f.tipo,
-      url:    f.url?.trim() || null,
-    };
-    this.docenteService.crearMaterial(curso.idAulaCurso, body).subscribe({
+
+    const formData = new FormData();
+    formData.append('semana', String(f.semana));
+    formData.append('clase', String(f.clase));
+    formData.append('titulo', f.titulo.trim());
+    formData.append('tipo', f.tipo);
+    if (f.url) {
+      formData.append('url', f.url.trim());
+    }
+    if (f.file) {
+      formData.append('file', f.file);
+    }
+
+    this.docenteService.crearMaterial(curso.idAulaCurso, formData).subscribe({
       next: () => {
         this.modalMaterial.set(false);
         this.enviandoMat.set(false);

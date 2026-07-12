@@ -67,8 +67,37 @@ public class MaterialService {
     @Transactional
     public MaterialDto crearMaterial(long idAulaCurso,
                                      NuevoMaterialRequest req,
+                                     org.springframework.web.multipart.MultipartFile file,
                                      String codigoDocente) {
         verificarAutorizacion(idAulaCurso, codigoDocente);
+
+        String fileUrl = req.getUrl();
+        if (file != null && !file.isEmpty()) {
+            // Guardar archivo físico en uploads/materiales
+            String originalName = file.getOriginalFilename();
+            
+            // Sanitizar nombre de archivo para URL segura
+            String safeOriginalName = originalName != null 
+                    ? originalName.replaceAll("[^a-zA-Z0-9.-]", "_") 
+                    : "archivo";
+            
+            String filename = "material-" + System.currentTimeMillis() + "-" + safeOriginalName;
+            java.io.File materialesDir = new java.io.File("uploads/materiales");
+            if (!materialesDir.exists()) {
+                materialesDir.mkdirs();
+            }
+            java.io.File dest = new java.io.File(materialesDir, filename);
+            try {
+                java.nio.file.Files.write(dest.getAbsoluteFile().toPath(), file.getBytes());
+                fileUrl = "http://localhost:8080/uploads/materiales/" + filename;
+            } catch (java.io.IOException e) {
+                e.printStackTrace();
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, 
+                        "Error al guardar el archivo de material"
+                );
+            }
+        }
 
         String sql = """
                 INSERT INTO materiales_curso
@@ -83,7 +112,7 @@ public class MaterialService {
                 .setParameter("clase",  req.getClase())
                 .setParameter("titulo", req.getTitulo().trim())
                 .setParameter("tipo",   req.getTipo())
-                .setParameter("url",    req.getUrl())
+                .setParameter("url",    fileUrl)
                 .getSingleResult();
 
         long id = newId.longValue();

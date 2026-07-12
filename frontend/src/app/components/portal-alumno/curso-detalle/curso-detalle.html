@@ -359,13 +359,13 @@
                             </div>
                             <div class="cd-mat-actions">
                               @if (mat.url) {
-                                <a class="cd-mat-link" [href]="mat.url" target="_blank" rel="noopener">
+                                <button class="cd-mat-link" (click)="abrirMaterial(mat)" title="Previsualizar y descargar material">
                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
                                     <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
                                   </svg>
                                   Abrir
-                                </a>
+                                </button>
                               }
                               <button class="cd-mat-ia-btn" (click)="abrirChatIa(mat)" title="Preguntar a la IA sobre este material">
                                 🤖 IA
@@ -436,6 +436,67 @@
               <polygon points="22 2 15 22 11 13 2 9 22 2"/>
             </svg>
           </button>
+        </div>
+      </div>
+    }
+
+    <!-- ══════════════════════════════════════════════
+         VISOR DE MATERIALES — Modal flotante
+    ══════════════════════════════════════════════ -->
+    @if (materialSeleccionadoParaVer()) {
+      <div class="cd-viewer-overlay" (click)="cerrarMaterial()"></div>
+      <div class="cd-viewer-panel">
+        <div class="cd-viewer-header">
+          <div class="cd-viewer-header-info">
+            <span class="cd-viewer-chip">{{ tipoIcon(materialSeleccionadoParaVer()!.tipo) }} {{ materialSeleccionadoParaVer()!.tipo.toUpperCase() }}</span>
+            <span class="cd-viewer-mat-titulo">{{ materialSeleccionadoParaVer()!.titulo }}</span>
+          </div>
+          <button class="cd-viewer-close" (click)="cerrarMaterial()">✕</button>
+        </div>
+
+        <div class="cd-viewer-body">
+          @if (materialSeleccionadoParaVer()!.tipo === 'pdf') {
+            <!-- Visor de PDF embebido -->
+            <div class="cd-viewer-frame-container">
+              <iframe [src]="safeUrl()" width="100%" height="100%" class="cd-viewer-iframe" title="Visor de Material PDF"></iframe>
+            </div>
+          } @else if (materialSeleccionadoParaVer()!.tipo === 'youtube') {
+            <!-- Reproductor de YouTube embebido -->
+            <div class="cd-viewer-frame-container aspect-video">
+              <iframe [src]="safeUrl()" width="100%" height="100%" class="cd-viewer-iframe" title="Reproductor de Video" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+            </div>
+          } @else if (materialSeleccionadoParaVer()!.tipo === 'word') {
+            <!-- Archivo Word: Información de descarga -->
+            <div class="cd-viewer-fallback-card">
+              <span class="cd-fallback-icon">📝</span>
+              <h3>Documento de Word (.docx)</h3>
+              <p>Este archivo es un documento de Microsoft Word. Para ver y editar este material didáctico, por favor descárgalo a tu dispositivo.</p>
+              <a [href]="materialSeleccionadoParaVer()!.url" class="cd-viewer-btn cd-btn--primary" download>
+                📥 Descargar Archivo
+              </a>
+            </div>
+          } @else {
+            <!-- URL / Enlace Externo: Información -->
+            <div class="cd-viewer-fallback-card">
+              <span class="cd-fallback-icon">🔗</span>
+              <h3>Recurso Externo</h3>
+              <p>Este material se encuentra alojado en una plataforma externa (como GeoGebra, Khan Academy, etc.). Haz clic abajo para abrir el recurso en una nueva pestaña.</p>
+              <a [href]="materialSeleccionadoParaVer()!.url" target="_blank" rel="noopener" class="cd-viewer-btn cd-btn--primary">
+                🌐 Ir al Recurso Externo
+              </a>
+            </div>
+          }
+        </div>
+
+        <div class="cd-viewer-footer">
+          <button class="cd-viewer-btn cd-btn--secondary" (click)="cerrarMaterial()">
+            Cerrar
+          </button>
+          @if (materialSeleccionadoParaVer()!.tipo === 'pdf') {
+            <a [href]="materialSeleccionadoParaVer()!.url" class="cd-viewer-btn cd-btn--primary" download target="_blank">
+              📥 Descargar PDF
+            </a>
+          }
         </div>
       </div>
     }

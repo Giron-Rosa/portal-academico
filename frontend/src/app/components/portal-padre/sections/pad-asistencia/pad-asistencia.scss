@@ -4,21 +4,51 @@
 
 :host { display: block; }
 
-$rojo:       #c1121f;
-$azul:       #0d1b2a;
-$azul-med:   #003566;
-$blanco:     #ffffff;
-$gris-fondo: #f0f2f5;
-$gris-borde: #e2e8f0;
-$gris-texto: #64748b;
-$verde:      #22c55e;
-$amarillo:   #eab308;
+// Institutional color palette
+$navy-900:   #090d16;
+$navy-800:   #0d1b2a; // Deep Institutional Navy
+$navy-700:   #1b2a4a;
+$navy-600:   #1b3a5c; // Medium Institutional Navy
+
+$slate-50:   #f8fafc;
+$slate-100:  #f1f5f9;
+$slate-200:  #e2e8f0;
+$slate-300:  #cbd5e1;
+$slate-400:  #94a3b8;
+$slate-500:  #64748b;
+$slate-600:  #475569;
+$slate-700:  #334155;
+$slate-800:  #1e293b;
+
+$red-500:    #c1121f; // Crimson Red
+$red-600:    #a8101b;
+$rose-50:    #fff1f2;
+$rose-100:   #ffe4e6;
+$rose-600:   #e11d48;
+$rose-700:   #be123c;
+
+$gold-400:   #fbc02d; // Golden / Amber for achievements
+$gold-500:   #eab308;
+$gold-600:   #d97706;
+
+$emerald-50: #ecfdf5;
+$emerald-100:#d1fae5;
+$emerald-500:#22c55e;
+$emerald-600:#16a34a;
+$emerald-700:#047857;
+
+$blue-100:   #dbeafe;
+$blue-500:   #3b82f6;
+$blue-600:   #2563eb;
+
+$white:      #ffffff;
+$ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 
 // ─── Shared: hijo-tabs ───────────────────────────────
 .hijo-tabs {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
 
@@ -26,32 +56,53 @@ $amarillo:   #eab308;
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.4rem 0.9rem;
-  border: 1.5px solid $gris-borde;
+  padding: 0.5rem 1rem;
+  border: 1px solid $slate-200;
   border-radius: 20px;
-  background: $blanco;
+  background: $white;
   font-size: 0.82rem;
-  font-weight: 500;
-  color: $gris-texto;
+  font-weight: 600;
+  color: $slate-500;
   cursor: pointer;
-  transition: all .2s;
+  transition: transform 150ms $ease-out-strong, background-color 150ms $ease-out-strong, border-color 150ms $ease-out-strong, color 150ms $ease-out-strong;
 
-  &:hover { background: #f1f5f9; border-color: $azul-med; color: $azul-med; }
+  &:hover {
+    background: $slate-50;
+    border-color: $navy-600;
+    color: $navy-600;
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
 
   &--active {
-    background: $azul-med;
-    border-color: $azul-med;
-    color: $blanco;
-    font-weight: 600;
+    background: linear-gradient(135deg, $navy-800, $navy-700);
+    border-color: $navy-800;
+    color: $white;
+    font-weight: 700;
+    box-shadow: 0 4px 6px -1px rgba(13, 27, 42, 0.15);
+
+    &:hover {
+      background: $navy-900;
+      border-color: $navy-900;
+      color: $white;
+    }
   }
 }
 
 .hijo-tab-avatar {
   width: 22px; height: 22px;
   border-radius: 50%;
-  background: rgba(255,255,255,.25);
+  background: rgba(0, 0, 0, 0.06);
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.8rem; font-weight: 700;
+  font-size: 0.8rem; font-weight: 800;
+  color: $navy-800;
+
+  .hijo-tab--active & {
+    background: rgba(255, 255, 255, 0.2);
+    color: $white;
+  }
 }
 
 // ─── Loading / Error / Empty ──────────────────────────
@@ -62,14 +113,14 @@ $amarillo:   #eab308;
   justify-content: center;
   gap: 0.75rem;
   padding: 3rem;
-  color: $gris-texto;
+  color: $slate-500;
   font-size: 0.9rem;
 }
 
 .curso-spinner {
   width: 36px; height: 36px;
-  border: 3px solid $gris-borde;
-  border-top-color: $azul-med;
+  border: 3px solid $slate-200;
+  border-top-color: $navy-600;
   border-radius: 50%;
   animation: spin .8s linear infinite;
 }
@@ -83,7 +134,7 @@ $amarillo:   #eab308;
   gap: 0.75rem;
   padding: 3rem;
   text-align: center;
-  color: $rojo;
+  color: $red-500;
   font-size: 0.9rem;
 }
 
@@ -94,21 +145,24 @@ $amarillo:   #eab308;
   justify-content: center;
   gap: 0.75rem;
   padding: 4rem 2rem;
-  color: $gris-texto;
+  color: $slate-400;
   font-size: 0.9rem;
   text-align: center;
 }
 
 .btn-retry {
-  padding: 0.4rem 1.2rem;
-  background: $rojo;
-  color: $blanco;
+  padding: 0.5rem 1.5rem;
+  background: linear-gradient(135deg, $red-500, $red-600);
+  color: $white;
   border: none;
-  border-radius: 6px;
+  border-radius: 12px;
   font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: opacity .2s;
-  &:hover { opacity: 0.85; }
+  transition: transform 150ms $ease-out-strong, opacity 150ms $ease-out-strong;
+  
+  &:hover { opacity: 0.9; }
+  &:active { transform: scale(0.96); }
 }
 
 // ─── Layout principal ─────────────────────────────────
@@ -121,38 +175,51 @@ $amarillo:   #eab308;
 // ─── KPIs de Asistencia ───────────────────────────────
 .asistencia-kpis {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   flex-wrap: wrap;
 }
 
 .asist-kpi-card {
-  background: $blanco;
-  border-radius: 12px;
-  border: 1.5px solid $gris-borde;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  background: $white;
+  border-radius: 16px;
+  border: 1px solid $slate-200;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  min-width: 220px;
+  gap: 1.5rem;
+  min-width: 260px;
+  transition: transform 250ms $ease-out-strong, box-shadow 250ms $ease-out-strong;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px -3px rgba(0, 0, 0, 0.06);
+  }
 
   &--percentage {
-    flex: 1;
-    border-left: 4px solid $azul-med;
+    flex: 1.2;
+    border-top: 4px solid $navy-600;
   }
 }
 
 .kpi-circle-wrap {
   flex-shrink: 0;
-  width: 72px; height: 72px;
+  width: 76px; height: 76px;
   border-radius: 50%;
-  border: 4px solid $gris-borde;
+  border: 4px solid $slate-100;
   display: flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  transition: transform 300ms $ease-out-strong, border-color 300ms $ease-out-strong;
+
+  .asist-kpi-card:hover & {
+    transform: scale(1.06);
+    border-color: $navy-600;
+  }
 }
 
 .kpi-pct-text {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 800;
 }
 
 .kpi-info {
@@ -161,72 +228,84 @@ $amarillo:   #eab308;
   gap: 0.25rem;
 
   h4 {
-    font-size: 0.92rem;
-    font-weight: 700;
-    color: $azul;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: $navy-800;
     margin: 0;
   }
 
   p {
-    font-size: 0.8rem;
-    color: $gris-texto;
+    font-size: 0.82rem;
+    color: $slate-500;
     margin: 0;
-    line-height: 1.4;
+    line-height: 1.45;
+    font-weight: 500;
   }
 }
 
 .asist-kpi-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
+  gap: 0.85rem;
   flex: 1;
   min-width: 240px;
 }
 
 .kpi-subcard {
-  background: $blanco;
-  border-radius: 10px;
-  border: 1.5px solid $gris-borde;
-  padding: 0.85rem 1rem;
+  background: $white;
+  border-radius: 12px;
+  border: 1px solid $slate-200;
+  padding: 0.9rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.15rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  gap: 0.25rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 
-  &--presente  { border-top: 3px solid $verde; }
-  &--tardanza  { border-top: 3px solid $amarillo; }
-  &--falta     { border-top: 3px solid $rojo; }
-  &--justificado { border-top: 3px solid #6366f1; }
+  &--presente  { border-top: 3px solid $emerald-500; }
+  &--tardanza  { border-top: 3px solid $gold-500; }
+  &--falta     { border-top: 3px solid $red-500; }
+  &--justificado { border-top: 3px solid $blue-500; }
 }
 
 .kpi-sub-num {
   font-size: 1.6rem;
-  font-weight: 700;
-  color: $azul;
+  font-weight: 800;
+  color: $navy-800;
   line-height: 1;
 }
 
 .kpi-sub-lbl {
-  font-size: 0.75rem;
-  color: $gris-texto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: $slate-500;
   text-align: center;
 }
 
 // ─── Lista / Tabla de asistencia ─────────────────────
 .asist-list-wrap {
-  background: $blanco;
-  border-radius: 12px;
-  border: 1.5px solid $gris-borde;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  background: $white;
+  border-radius: 16px;
+  border: 1px solid $slate-200;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+
+  // Entrance animation for table container
+  opacity: 0;
+  animation: tableFadeIn 350ms $ease-out-strong forwards;
+}
+
+@keyframes tableFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .asist-list-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: $azul;
-  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: $navy-800;
+  margin: 0 0 1.1rem;
+  letter-spacing: -0.2px;
 }
 
 // ─── Tabla shared ─────────────────────────────────────
@@ -236,39 +315,42 @@ $amarillo:   #eab308;
   font-size: 0.85rem;
 
   thead th {
-    background: $gris-fondo;
-    color: $azul-med;
-    font-weight: 600;
-    padding: 0.6rem 0.85rem;
+    background: $slate-50;
+    color: $navy-800;
+    font-weight: 700;
+    padding: 0.75rem 1rem;
     text-align: left;
-    border-bottom: 2px solid $gris-borde;
+    border-bottom: 2px solid $slate-200;
   }
 
   tbody tr {
-    border-bottom: 1px solid $gris-borde;
+    border-bottom: 1px solid $slate-100;
     transition: background .15s;
-    &:hover { background: #f8fafc; }
+    &:hover { background: $slate-50; }
+    &:last-child { border-bottom: none; }
   }
 
-  td { padding: 0.55rem 0.85rem; color: #334155; vertical-align: middle; }
+  td { padding: 0.75rem 1rem; color: $slate-700; vertical-align: middle; font-weight: 500; }
 }
 
-.nt-fecha  { color: $gris-texto; font-size: 0.8rem; white-space: nowrap; }
-.nt-titulo { font-weight: 500; color: $azul; }
+.nt-fecha  { color: $slate-500; font-size: 0.8rem; white-space: nowrap; font-weight: 600; }
+.nt-titulo { font-weight: 700; color: $navy-800; }
 
 // ─── Badges de asistencia ────────────────────────────
 .asist-badge {
-  display: inline-block;
-  padding: 0.2rem 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
   border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
 
-  &--presente    { background: #dcfce7; color: #15803d; }
-  &--tardanza    { background: #fef9c3; color: #854d0e; }
-  &--falta       { background: #fee2e2; color: $rojo; }
-  &--justificado { background: #ede9fe; color: #6366f1; }
+  &--presente    { background: $emerald-100; color: $emerald-700; }
+  &--tardanza    { background: $gold-400; color: $gold-600; }
+  &--falta       { background: $rose-100; color: $red-500; }
+  &--justificado { background: $blue-100; color: $blue-600; }
 }
 
-.asist-justificante    { font-size: 0.8rem; color: $gris-texto; }
-.asist-no-justificante { color: #cbd5e1; }
+.asist-justificante    { font-size: 0.8rem; color: $slate-500; font-weight: 500; }
+.asist-no-justificante { color: $slate-300; font-weight: 500; }

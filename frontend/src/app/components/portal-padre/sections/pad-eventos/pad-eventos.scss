@@ -4,21 +4,51 @@
 
 :host { display: block; }
 
-$rojo:       #c1121f;
-$azul:       #0d1b2a;
-$azul-med:   #003566;
-$blanco:     #ffffff;
-$gris-fondo: #f0f2f5;
-$gris-borde: #e2e8f0;
-$gris-texto: #64748b;
-$verde:      #22c55e;
-$amarillo:   #eab308;
+// Institutional color palette
+$navy-900:   #090d16;
+$navy-800:   #0d1b2a; // Deep Institutional Navy
+$navy-700:   #1b2a4a;
+$navy-600:   #1b3a5c; // Medium Institutional Navy
+
+$slate-50:   #f8fafc;
+$slate-100:  #f1f5f9;
+$slate-200:  #e2e8f0;
+$slate-300:  #cbd5e1;
+$slate-400:  #94a3b8;
+$slate-500:  #64748b;
+$slate-600:  #475569;
+$slate-700:  #334155;
+$slate-800:  #1e293b;
+
+$red-500:    #c1121f; // Crimson Red
+$red-600:    #a8101b;
+$rose-50:    #fff1f2;
+$rose-100:   #ffe4e6;
+$rose-600:   #e11d48;
+$rose-700:   #be123c;
+
+$gold-400:   #fbc02d; // Golden / Amber for achievements
+$gold-500:   #eab308;
+$gold-600:   #d97706;
+
+$emerald-50: #ecfdf5;
+$emerald-100:#d1fae5;
+$emerald-500:#22c55e;
+$emerald-600:#16a34a;
+$emerald-700:#047857;
+
+$blue-100:   #dbeafe;
+$blue-500:   #3b82f6;
+$blue-600:   #2563eb;
+
+$white:      #ffffff;
+$ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 
 // ─── Shared: hijo-tabs ───────────────────────────────
 .hijo-tabs {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
 
@@ -26,33 +56,53 @@ $amarillo:   #eab308;
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.4rem 0.9rem;
-  border: 1.5px solid $gris-borde;
+  padding: 0.5rem 1rem;
+  border: 1px solid $slate-200;
   border-radius: 20px;
-  background: $blanco;
+  background: $white;
   font-size: 0.82rem;
-  font-weight: 500;
-  color: $gris-texto;
+  font-weight: 600;
+  color: $slate-500;
   cursor: pointer;
-  transition: all .2s;
+  transition: transform 150ms $ease-out-strong, background-color 150ms $ease-out-strong, border-color 150ms $ease-out-strong, color 150ms $ease-out-strong;
 
-  &:hover { background: #f1f5f9; border-color: $azul-med; color: $azul-med; }
+  &:hover {
+    background: $slate-50;
+    border-color: $navy-600;
+    color: $navy-600;
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
 
   &--active {
-    background: $azul-med;
-    border-color: $azul-med;
-    color: $blanco;
-    font-weight: 600;
+    background: linear-gradient(135deg, $navy-800, $navy-700);
+    border-color: $navy-800;
+    color: $white;
+    font-weight: 700;
+    box-shadow: 0 4px 6px -1px rgba(13, 27, 42, 0.15);
+
+    &:hover {
+      background: $navy-900;
+      border-color: $navy-900;
+      color: $white;
+    }
   }
 }
 
 .hijo-tab-avatar {
   width: 22px; height: 22px;
   border-radius: 50%;
-  background: rgba(255,255,255,.25);
+  background: rgba(0, 0, 0, 0.06);
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: 0.8rem; font-weight: 800;
+  color: $navy-800;
+
+  .hijo-tab--active & {
+    background: rgba(255, 255, 255, 0.2);
+    color: $white;
+  }
 }
 
 // ─── Loading / Error / Empty ──────────────────────────
@@ -63,14 +113,14 @@ $amarillo:   #eab308;
   justify-content: center;
   gap: 0.75rem;
   padding: 3rem;
-  color: $gris-texto;
+  color: $slate-500;
   font-size: 0.9rem;
 }
 
 .curso-spinner {
   width: 36px; height: 36px;
-  border: 3px solid $gris-borde;
-  border-top-color: $azul-med;
+  border: 3px solid $slate-200;
+  border-top-color: $navy-600;
   border-radius: 50%;
   animation: spin .8s linear infinite;
 }
@@ -84,7 +134,7 @@ $amarillo:   #eab308;
   gap: 0.75rem;
   padding: 3rem;
   text-align: center;
-  color: $rojo;
+  color: $red-500;
   font-size: 0.9rem;
 }
 
@@ -95,21 +145,24 @@ $amarillo:   #eab308;
   justify-content: center;
   gap: 0.75rem;
   padding: 4rem 2rem;
-  color: $gris-texto;
+  color: $slate-400;
   font-size: 0.9rem;
   text-align: center;
 }
 
 .btn-retry {
-  padding: 0.4rem 1.2rem;
-  background: $rojo;
-  color: $blanco;
+  padding: 0.5rem 1.5rem;
+  background: linear-gradient(135deg, $red-500, $red-600);
+  color: $white;
   border: none;
-  border-radius: 6px;
+  border-radius: 12px;
   font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: opacity .2s;
-  &:hover { opacity: 0.85; }
+  transition: transform 150ms $ease-out-strong, opacity 150ms $ease-out-strong;
+  
+  &:hover { opacity: 0.9; }
+  &:active { transform: scale(0.96); }
 }
 
 // ─── Layout ───────────────────────────────────────────
@@ -128,42 +181,59 @@ $amarillo:   #eab308;
 
 .evento-card {
   display: flex;
-  gap: 1rem;
-  background: $blanco;
-  border-radius: 12px;
-  border: 1.5px solid $gris-borde;
-  padding: 1rem 1.25rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
-  transition: box-shadow .2s, border-color .2s;
+  gap: 1.25rem;
+  background: $white;
+  border-radius: 16px;
+  border: 1px solid $slate-200;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
+  transition: transform 200ms $ease-out-strong, box-shadow 200ms $ease-out-strong, border-color 200ms $ease-out-strong;
 
-  &:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,.1);
-    border-color: $azul-med;
+  // Staggered entry animation for event timeline cards
+  opacity: 0;
+  animation: eventSlideUp 400ms $ease-out-strong forwards;
+  @for $i from 1 through 15 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 45}ms;
+    }
   }
 
-  // Variantes por tipo
-  &--examen       { border-left: 4px solid #6366f1; }
-  &--actividad    { border-left: 4px solid $verde; }
-  &--reunion_padres { border-left: 4px solid $azul-med; }
-  &--paseo        { border-left: 4px solid $amarillo; }
-  &--dia_festivo  { border-left: 4px solid $rojo; }
-  &--comunicado, &--general { border-left: 4px solid $gris-borde; }
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+    border-color: $navy-600;
+  }
+
+  // Variantes por tipo (accent top borders instead of thick left border)
+  &--examen       { border-top: 4px solid $blue-500; }
+  &--actividad    { border-top: 4px solid $emerald-500; }
+  &--reunion_padres { border-top: 4px solid $navy-600; }
+  &--paseo        { border-top: 4px solid $gold-500; }
+  &--dia_festivo  { border-top: 4px solid $red-500; }
+  &--comunicado, &--general { border-top: 4px solid $slate-300; }
+}
+
+@keyframes eventSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .evento-icon-wrap {
   flex-shrink: 0;
-  width: 44px; height: 44px;
-  border-radius: 10px;
-  background: $gris-fondo;
+  width: 46px; height: 46px;
+  border-radius: 12px;
+  background: $slate-50;
+  border: 1px solid $slate-100;
   display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
-.evento-emoji { font-size: 1.4rem; }
+.evento-emoji { font-size: 1.40rem; }
 
 .evento-body {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
   flex: 1;
   min-width: 0;
 }
@@ -171,54 +241,64 @@ $amarillo:   #eab308;
 .evento-meta-row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
 .evento-tipo-badge {
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.15rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 10px;
   border-radius: 20px;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
 }
 
 // Badge colors por tipo
-.et-badge--examen        { background: #ede9fe; color: #6366f1; }
-.et-badge--actividad     { background: #dcfce7; color: #15803d; }
-.et-badge--reunion_padres{ background: #dbeafe; color: $azul-med; }
-.et-badge--paseo         { background: #fef9c3; color: #854d0e; }
-.et-badge--dia_festivo   { background: #fee2e2; color: $rojo; }
+.et-badge--examen        { background: $blue-100; color: $blue-600; }
+.et-badge--actividad     { background: $emerald-100; color: $emerald-700; }
+.et-badge--reunion_padres{ background: $blue-100; color: $navy-600; }
+.et-badge--paseo         { background: $gold-400; color: $gold-600; }
+.et-badge--dia_festivo   { background: $rose-100; color: $red-500; }
 .et-badge--comunicado,
-.et-badge--general       { background: #f1f5f9; color: $gris-texto; }
+.et-badge--general       { background: $slate-100; color: $slate-500; }
 
 .evento-fecha-val {
   font-size: 0.8rem;
-  color: $gris-texto;
+  color: $slate-500;
+  font-weight: 600;
 }
 
 .evento-docente-val {
   font-size: 0.78rem;
-  color: $gris-texto;
+  color: $slate-500;
+  font-weight: 500;
   margin-left: auto;
+  
+  @media (max-width: 500px) {
+    margin-left: 0;
+    width: 100%;
+  }
 }
 
 .evento-titulo-h3 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: $azul;
+  font-size: 1rem;
+  font-weight: 800;
+  color: $navy-800;
   margin: 0;
+  letter-spacing: -0.2px;
 }
 
 .evento-descripcion-p {
   font-size: 0.85rem;
-  color: #475569;
+  color: $slate-600;
   line-height: 1.5;
   margin: 0;
+  font-weight: 500;
 }
 
 .evento-creacion-val {
   font-size: 0.74rem;
-  color: #94a3b8;
+  color: $slate-400;
+  font-weight: 500;
 }

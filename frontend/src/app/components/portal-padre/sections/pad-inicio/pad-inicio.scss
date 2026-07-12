@@ -4,27 +4,57 @@
 
 :host { display: block; }
 
-$rojo:       #c1121f;
-$azul:       #0d1b2a;
-$azul-med:   #003566;
-$blanco:     #ffffff;
-$gris-fondo: #f0f2f5;
-$gris-borde: #e2e8f0;
-$gris-texto: #64748b;
-$verde:      #22c55e;
-$amarillo:   #eab308;
+// Institutional color palette
+$navy-900:   #090d16;
+$navy-800:   #0d1b2a; // Deep Institutional Navy
+$navy-700:   #1b2a4a;
+$navy-600:   #1b3a5c; // Medium Institutional Navy
+
+$slate-50:   #f8fafc;
+$slate-100:  #f1f5f9;
+$slate-200:  #e2e8f0;
+$slate-300:  #cbd5e1;
+$slate-400:  #94a3b8;
+$slate-500:  #64748b;
+$slate-600:  #475569;
+$slate-700:  #334155;
+$slate-800:  #1e293b;
+
+$red-500:    #c1121f; // Crimson Red
+$red-600:    #a8101b;
+$rose-50:    #fff1f2;
+$blue-100:   #dbeafe;
+$blue-500:   #3b82f6;
+$blue-600:   #2563eb;
+$rose-100:   #ffe4e6;
+$rose-600:   #e11d48;
+$rose-700:   #be123c;
+
+$gold-400:   #fbc02d; // Golden / Amber for achievements
+$gold-500:   #eab308;
+$gold-600:   #d97706;
+
+$emerald-50: #ecfdf5;
+$emerald-100:#d1fae5;
+$emerald-500:#22c55e;
+$emerald-600:#16a34a;
+$emerald-700:#047857;
+
+$white:      #ffffff;
+$ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 
 // ─── Shared page title / subtitle ────────────────────
 .page-title {
-  font-size: 1.45rem;
-  font-weight: 700;
-  color: $azul;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: $navy-800;
   margin: 0 0 0.25rem;
+  letter-spacing: -0.5px;
 }
 
 .page-subtitle {
   font-size: 0.88rem;
-  color: $gris-texto;
+  color: $slate-500;
   margin: 0 0 1.5rem;
 }
 
@@ -34,14 +64,14 @@ $amarillo:   #eab308;
   align-items: center;
   gap: 0.75rem;
   padding: 2rem;
-  color: $gris-texto;
+  color: $slate-500;
   font-size: 0.9rem;
 
   &::before {
     content: '';
     width: 20px; height: 20px;
-    border: 2px solid $gris-borde;
-    border-top-color: $azul-med;
+    border: 2px solid $slate-200;
+    border-top-color: $navy-600;
     border-radius: 50%;
     animation: spin .8s linear infinite;
   }
@@ -49,8 +79,8 @@ $amarillo:   #eab308;
 
 .pp-spinner {
   width: 36px; height: 36px;
-  border: 3px solid $gris-borde;
-  border-top-color: $azul-med;
+  border: 3px solid $slate-200;
+  border-top-color: $navy-600;
   border-radius: 50%;
   animation: spin .8s linear infinite;
 }
@@ -58,11 +88,11 @@ $amarillo:   #eab308;
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .pp-error {
-  background: #fff0f0;
-  border: 1px solid #fca5a5;
-  border-radius: 8px;
+  background: $rose-50;
+  border: 1px solid $rose-100;
+  border-radius: 12px;
   padding: 0.85rem 1.25rem;
-  color: $rojo;
+  color: $red-500;
   font-size: 0.88rem;
   margin-bottom: 1rem;
 }
@@ -72,15 +102,15 @@ $amarillo:   #eab308;
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  background: #fff0f0;
-  border: 1.5px solid #fca5a5;
-  border-left: 4px solid $rojo;
-  border-radius: 10px;
+  background: $rose-50;
+  border: 1px solid $rose-100;
+  border-left: 4px solid $red-500;
+  border-radius: 12px;
   padding: 0.9rem 1.25rem;
   margin-bottom: 1.5rem;
 
-  strong { font-size: 0.88rem; color: $rojo; display: block; }
-  p      { font-size: 0.82rem; color: #9a3412; margin: 0.1rem 0 0; }
+  strong { font-size: 0.88rem; color: $red-500; display: block; font-weight: 700; }
+  p      { font-size: 0.82rem; color: $rose-700; margin: 0.1rem 0 0; font-weight: 500; }
 }
 
 // ─── Sección inicio ───────────────────────────────────
@@ -93,28 +123,52 @@ $amarillo:   #eab308;
 // ─── Grid de tarjetas de hijos ───────────────────────
 .hijos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
 // ─── Tarjeta de hijo ─────────────────────────────────
 .hijo-card {
-  background: $blanco;
-  border-radius: 14px;
-  border: 1.5px solid $gris-borde;
-  padding: 1.25rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
-  transition: box-shadow .2s, border-color .2s;
+  background: $white;
+  border-radius: 16px;
+  border: 1px solid $slate-200;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+  transition: transform 250ms $ease-out-strong, box-shadow 250ms $ease-out-strong, border-color 250ms $ease-out-strong;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
 
-  &:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+  // Staggered entry animation
+  opacity: 0;
+  animation: cardSlideUp 400ms $ease-out-strong forwards;
+  
+  @for $i from 1 through 10 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 45}ms;
+    }
+  }
 
-  &.estado-riesgo      { border-left: 4px solid $rojo; }
-  &.estado-observacion { border-left: 4px solid $amarillo; }
-  &.estado-bueno       { border-left: 4px solid $verde; }
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  }
+
+  &.estado-riesgo      { border-top: 4px solid $red-500; }
+  &.estado-observacion { border-top: 4px solid $gold-500; }
+  &.estado-bueno       { border-top: 4px solid $emerald-500; }
+}
+
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hijo-card-header {
@@ -124,11 +178,14 @@ $amarillo:   #eab308;
 }
 
 .hijo-avatar {
-  width: 46px; height: 46px;
-  border-radius: 50%;
-  background: #e8eef7;
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: $slate-100;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  svg {
+    fill: $navy-800;
+  }
 }
 
 .hijo-info {
@@ -139,17 +196,18 @@ $amarillo:   #eab308;
 }
 
 .hijo-nombre {
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  color: $azul;
+  color: $navy-800;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .hijo-grado {
-  font-size: 0.78rem;
-  color: $gris-texto;
+  font-size: 0.8rem;
+  color: $slate-500;
+  font-weight: 500;
 }
 
 // ─── Badge de estado ─────────────────────────────────
@@ -157,18 +215,18 @@ $amarillo:   #eab308;
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.2rem 0.65rem;
+  padding: 4px 10px;
   border-radius: 20px;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
 
-  &.badge-bueno       { background: #dcfce7; color: #15803d; }
-  &.badge-observacion { background: #fef9c3; color: #854d0e; }
-  &.badge-riesgo      { background: #fee2e2; color: $rojo; }
+  &.badge-bueno       { background: $emerald-100; color: $emerald-700; }
+  &.badge-observacion { background: $gold-400; color: $gold-600; }
+  &.badge-riesgo      { background: $rose-100; color: $red-500; }
 
-  &.badge-lg { font-size: 0.82rem; padding: 0.3rem 0.9rem; }
+  &.badge-lg { font-size: 0.82rem; padding: 6px 12px; border-radius: 20px; }
 }
 
 // ─── Métricas de hijo ────────────────────────────────
@@ -182,23 +240,30 @@ $amarillo:   #eab308;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.1rem;
-  background: $gris-fondo;
-  border-radius: 8px;
-  padding: 0.5rem 0.25rem;
+  gap: 0.15rem;
+  background: $slate-50;
+  border: 1px solid $slate-100;
+  border-radius: 10px;
+  padding: 0.6rem 0.25rem;
+  transition: background-color 150ms $ease-out-strong, transform 100ms $ease-out-strong;
+
+  &:hover {
+    background-color: $slate-100;
+  }
 }
 
 .metrica-val {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: $azul;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: $navy-800;
 
-  &.val-riesgo { color: $rojo; }
+  &.val-riesgo { color: $red-500; }
 }
 
 .metrica-lbl {
   font-size: 0.68rem;
-  color: $gris-texto;
+  font-weight: 600;
+  color: $slate-500;
   text-align: center;
 }
 
@@ -206,13 +271,13 @@ $amarillo:   #eab308;
 .cursos-monitor {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .cursos-monitor-title {
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  color: $gris-texto;
+  color: $slate-400;
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
@@ -220,12 +285,13 @@ $amarillo:   #eab308;
 .curso-bar-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .curso-bar-nombre {
-  font-size: 0.78rem;
-  color: $azul;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $slate-700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -235,23 +301,24 @@ $amarillo:   #eab308;
 
 .curso-bar-track {
   flex: 1;
-  height: 5px;
-  background: $gris-borde;
-  border-radius: 3px;
+  height: 6px;
+  background: $slate-100;
+  border-radius: 4px;
   overflow: hidden;
 }
 
 .curso-bar-fill {
   height: 100%;
-  border-radius: 3px;
-  transition: width .4s;
+  border-radius: 4px;
+  transition: width 400ms $ease-out-strong;
 }
 
 .curso-bar-pct {
-  font-size: 0.72rem;
-  color: $gris-texto;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: $slate-500;
   white-space: nowrap;
-  width: 30px;
+  width: 32px;
   text-align: right;
   flex-shrink: 0;
 }
@@ -260,37 +327,50 @@ $amarillo:   #eab308;
 .btn-detalles {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.4rem 0.9rem;
-  background: $azul-med;
-  color: $blanco;
+  gap: 0.35rem;
+  padding: 0.6rem 1.25rem;
+  background: linear-gradient(135deg, $navy-800, $navy-700);
+  color: $white;
   border: none;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
   cursor: pointer;
   width: 100%;
   justify-content: center;
-  transition: opacity .2s;
+  transition: transform 150ms $ease-out-strong, background-color 150ms $ease-out-strong;
 
-  &:hover { opacity: 0.85; }
+  &:hover {
+    background: $navy-900;
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  svg {
+    transition: transform 150ms $ease-out-strong;
+  }
+  &:hover svg {
+    transform: translateX(2px);
+  }
 }
 
 // ─── Leyenda ─────────────────────────────────────────
 .leyenda {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.75rem;
-  background: $blanco;
-  border: 1px solid $gris-borde;
-  border-radius: 10px;
+  background: $white;
+  border: 1px solid $slate-200;
+  border-radius: 12px;
   padding: 0.85rem 1.25rem;
   margin-bottom: 1.5rem;
   font-size: 0.82rem;
-  color: $azul;
+  color: $slate-700;
   flex-wrap: wrap;
 
-  strong { font-weight: 600; margin-right: 0.5rem; }
+  strong { font-weight: 700; color: $navy-800; }
 }
 
 .leyenda-items {
@@ -302,13 +382,13 @@ $amarillo:   #eab308;
 
 .dot {
   display: inline-block;
-  width: 10px; height: 10px;
+  width: 8px; height: 8px;
   border-radius: 50%;
   margin-right: 4px;
 
-  &-verde    { background: $verde; }
-  &-amarillo { background: $amarillo; }
-  &-rojo     { background: $rojo; }
+  &-verde    { background: $emerald-500; }
+  &-amarillo { background: $gold-500; }
+  &-rojo     { background: $red-500; }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -325,36 +405,41 @@ $amarillo:   #eab308;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.35rem 0.85rem;
-  background: transparent;
-  border: 1.5px solid $gris-borde;
-  border-radius: 6px;
+  padding: 0.45rem 1rem;
+  background: $white;
+  border: 1px solid $slate-200;
+  border-radius: 10px;
   font-size: 0.82rem;
-  color: $gris-texto;
+  font-weight: 600;
+  color: $slate-600;
   cursor: pointer;
-  transition: all .2s;
+  transition: transform 150ms $ease-out-strong, background-color 150ms $ease-out-strong, color 150ms $ease-out-strong;
   align-self: flex-start;
 
-  &:hover { background: $gris-fondo; color: $azul; border-color: $azul-med; }
+  &:hover { background: $slate-50; color: $navy-800; border-color: $slate-300; }
+  &:active { transform: scale(0.97); }
 }
 
 .detalle-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background: $blanco;
-  border-radius: 12px;
-  border: 1.5px solid $gris-borde;
+  gap: 1.25rem;
+  background: $white;
+  border-radius: 16px;
+  border: 1px solid $slate-200;
   padding: 1.25rem 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
 
 .detalle-avatar {
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  background: #e8eef7;
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  background: $slate-100;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  svg {
+    fill: $navy-800;
+  }
 }
 
 .detalle-info {
@@ -364,26 +449,28 @@ $amarillo:   #eab308;
 }
 
 .detalle-nombre {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: $azul;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: $navy-800;
   margin: 0;
+  letter-spacing: -0.3px;
 }
 
 .detalle-meta {
-  font-size: 0.82rem;
-  color: $gris-texto;
+  font-size: 0.85rem;
+  color: $slate-500;
+  font-weight: 500;
 }
 
 // ─── Métricas bar ────────────────────────────────────
 .detalle-metricas-bar {
   display: flex;
-  gap: 1rem;
-  background: $blanco;
-  border-radius: 12px;
-  border: 1.5px solid $gris-borde;
-  padding: 1rem 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  gap: 1.5rem;
+  background: $white;
+  border-radius: 16px;
+  border: 1px solid $slate-200;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   flex-wrap: wrap;
 }
 
@@ -391,10 +478,10 @@ $amarillo:   #eab308;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.1rem;
+  gap: 0.15rem;
   flex: 1;
-  min-width: 80px;
-  border-right: 1px solid $gris-borde;
+  min-width: 90px;
+  border-right: 1px solid $slate-100;
   padding: 0 1rem;
   text-align: center;
 
@@ -402,60 +489,62 @@ $amarillo:   #eab308;
 }
 
 .dmetrica-val {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: $azul;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: $navy-800;
 
-  &.val-riesgo { color: $rojo; }
+  &.val-riesgo { color: $red-500; }
 }
 
 .dmetrica-lbl {
   font-size: 0.75rem;
-  color: $gris-texto;
+  font-weight: 600;
+  color: $slate-500;
 }
 
 .dmetrica-sub {
   font-size: 0.72rem;
-  color: $azul-med;
-  font-weight: 500;
+  color: $navy-600;
+  font-weight: 700;
+  margin-top: 2px;
 }
 
 // ─── Descripción ─────────────────────────────────────
 .detalle-descripcion {
-  background: $blanco;
-  border-radius: 10px;
-  border: 1px solid $gris-borde;
-  padding: 0.85rem 1.25rem;
+  background: $white;
+  border-radius: 12px;
+  border: 1px solid $slate-200;
+  padding: 0.9rem 1.25rem;
 
-  p { font-size: 0.85rem; color: $gris-texto; margin: 0; }
+  p { font-size: 0.85rem; color: $slate-600; margin: 0; font-weight: 500; }
 }
 
 // ─── Detalle grid ─────────────────────────────────────
 .detalle-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  gap: 1.5rem;
 
   @media (max-width: 900px) { grid-template-columns: 1fr; }
 }
 
 .detalle-eventos,
 .detalle-horario {
-  background: $blanco;
-  border-radius: 12px;
-  border: 1.5px solid $gris-borde;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  background: $white;
+  border-radius: 16px;
+  border: 1px solid $slate-200;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
 
 .detalle-section-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: $azul;
-  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: $navy-800;
+  margin: 0 0 0.85rem;
 
   &.mt-lg { margin-top: 2rem; }
 }
@@ -463,20 +552,35 @@ $amarillo:   #eab308;
 // ─── Cursos detalle grid ──────────────────────────────
 .cursos-detalle-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
   margin-top: 0.5rem;
 }
 
 .curso-detalle-card {
-  background: $blanco;
-  border-radius: 10px;
-  border: 1.5px solid $gris-borde;
-  padding: 0.9rem 1rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  background: $white;
+  border-radius: 12px;
+  border: 1px solid $slate-200;
+  padding: 1.1rem 1.25rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,.02);
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  transition: transform 200ms $ease-out-strong, box-shadow 200ms $ease-out-strong;
+
+  // Staggered entry for course detail cards
+  opacity: 0;
+  animation: cardSlideUp 350ms $ease-out-strong forwards;
+  @for $i from 1 through 20 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 35}ms;
+    }
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.06);
+  }
 }
 
 .cdc-header {
@@ -486,16 +590,16 @@ $amarillo:   #eab308;
 }
 
 .cdc-nombre {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: $azul;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: $navy-800;
   flex: 1;
 }
 
 .cdc-pct {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: $azul-med;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: $navy-600;
   margin-left: 0.5rem;
 }
 
@@ -504,19 +608,20 @@ $amarillo:   #eab308;
   align-items: center;
   gap: 0.25rem;
   font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
   align-self: flex-start;
+  text-transform: uppercase;
 
-  &-excelente { background: #dcfce7; color: #15803d; }
-  &-regular   { background: #fef9c3; color: #854d0e; }
-  &-riesgo    { background: #fee2e2; color: $rojo; }
+  &-excelente { background: $emerald-100; color: $emerald-700; }
+  &-regular   { background: $gold-400; color: $gold-600; }
+  &-riesgo    { background: $rose-100; color: $red-500; }
 }
 
 .cdc-bar-track {
-  height: 5px;
-  background: $gris-borde;
+  height: 6px;
+  background: $slate-100;
   border-radius: 3px;
   overflow: hidden;
   margin: 0.25rem 0;
@@ -525,7 +630,7 @@ $amarillo:   #eab308;
 .cdc-bar-fill {
   height: 100%;
   border-radius: 3px;
-  transition: width .4s;
+  transition: width 400ms $ease-out-strong;
 }
 
 .cdc-footer {
@@ -542,63 +647,227 @@ $amarillo:   #eab308;
 }
 
 .cdc-stat-lbl {
-  font-size: 0.65rem;
-  color: $gris-texto;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: $slate-400;
 }
 
 .cdc-stat-val {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: $azul;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: $slate-700;
 
-  &.val-verde { color: $verde; }
+  &.val-verde { color: $emerald-600; }
 }
 
 // ─── CTA mensaje ─────────────────────────────────────
 .cta-mensaje {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background: linear-gradient(135deg, #e8eef7, #dbeafe);
-  border: 1px solid #bfdbfe;
-  border-radius: 12px;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, $slate-100, #eff6ff);
+  border: 1px solid $blue-100;
+  border-radius: 16px;
   padding: 1.25rem 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,53,102,.07);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
   margin-top: 1rem;
   flex-wrap: wrap;
 }
 
 .cta-icon {
-  width: 46px; height: 46px;
-  background: $blanco;
-  border-radius: 50%;
+  width: 44px; height: 44px;
+  background: $white;
+  border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
   flex-shrink: 0;
+  font-size: 1.25rem;
 }
 
 .cta-text {
   flex: 1;
 
-  strong { font-size: 0.92rem; color: $azul; display: block; margin-bottom: 0.2rem; }
-  p { font-size: 0.82rem; color: $gris-texto; margin: 0; }
+  strong { font-size: 0.95rem; color: $navy-800; display: block; margin-bottom: 0.2rem; font-weight: 700; }
+  p { font-size: 0.82rem; color: $slate-500; margin: 0; font-weight: 500; }
 }
 
 .btn-enviar-mensaje {
-  padding: 0.5rem 1.25rem;
-  background: $azul-med;
-  color: $blanco;
+  padding: 0.6rem 1.5rem;
+  background: linear-gradient(135deg, $navy-800, $navy-700);
+  color: $white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity .2s;
+  transition: transform 150ms $ease-out-strong, background-color 150ms $ease-out-strong;
   flex-shrink: 0;
 
-  &:hover { opacity: 0.85; }
+  &:hover { background: $navy-900; }
+  &:active { transform: scale(0.96); }
 }
 
 // ─── val-verde helper ─────────────────────────────────
-.val-verde { color: $verde; }
+.val-verde { color: $emerald-600; }
+
+// ─── Eventos List ─────────────────────────────────────
+.eventos-list {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 12px;
+}
+
+.evento-item {
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  color: $slate-700;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.evento-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: $navy-600;
+  flex-shrink: 0;
+}
+
+.evento-empty {
+  color: $slate-400;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+// ─── Horario escolar semanal ──────────────────────────
+.horario-container {
+  background: $white;
+  border: 1px solid $slate-200;
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-top: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.horario-loading,
+.horario-empty {
+  text-align: center;
+  padding: 20px;
+  color: $slate-500;
+  font-size: 0.9rem;
+}
+
+.horario-empty {
+  font-style: italic;
+}
+
+.horario-error {
+  text-align: center;
+  padding: 20px;
+  color: $red-500;
+  font-size: 0.9rem;
+}
+
+.horario-table-wrapper {
+  overflow-x: auto;
+}
+
+.horario-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+  text-align: center;
+  font-size: 0.85rem;
+
+  thead {
+    tr {
+      background: $slate-50;
+      border-bottom: 2px solid $slate-200;
+    }
+    th {
+      padding: 10px;
+      font-weight: 700;
+      color: $slate-700;
+      border-right: 1px solid $slate-200;
+      
+      &:last-child { border-right: none; }
+      
+      &.col-hora { width: 120px; }
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid $slate-100;
+      
+      &:last-child { border-bottom: none; }
+    }
+    
+    .horario-row:hover {
+      background-color: $slate-50;
+    }
+  }
+}
+
+.cell-hora {
+  padding: 12px;
+  font-weight: 700;
+  color: $slate-500;
+  background: $slate-50;
+  border-right: 1px solid $slate-200;
+}
+
+.cell-clase {
+  padding: 8px;
+  border-right: 1px solid $slate-100;
+  vertical-align: middle;
+  
+  &:last-child { border-right: none; }
+}
+
+.clase-card {
+  background: #eff6ff;
+  color: $blue-600;
+  border-left: 3px solid $blue-500;
+  padding: 6px 10px;
+  border-radius: 8px;
+  text-align: left;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.clase-curso {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.clase-codigo {
+  display: block;
+  font-size: 0.7rem;
+  color: $blue-600;
+  margin-top: 1px;
+}
+
+.clase-empty {
+  color: $slate-300;
+  font-weight: 500;
+}
+
+.recreo-row {
+  background: $slate-100;
+  border-bottom: 1px solid $slate-200;
+}
+
+.cell-recreo {
+  padding: 8px;
+  font-weight: 700;
+  color: $slate-600;
+  letter-spacing: 1.5px;
+  text-align: center;
+}
+
