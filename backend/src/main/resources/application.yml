@@ -1,5 +1,7 @@
 server:
   port: 8080
+  error:
+    include-message: always
 
 spring:
   datasource:
@@ -25,7 +27,7 @@ openai:
   api:
     key: ${GEMINI_API_KEY:${OPENAI_API_KEY:}}
     url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-    model: "gemini-3.5-flash"
+    model: "gemini-2.5-flash"
 
 management:
   endpoints:

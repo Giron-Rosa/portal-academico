@@ -12,7 +12,7 @@ import type { CursoAlumno as Curso } from '../../../shared/models/alumno.models'
 import type {
   MaterialAlumno, TareaAlumno, ActividadAlumno,
   AsistenciaRegistroCurso as AsistenciaRegistro, AsistenciaCurso,
-  ReporteAlumno, UnidadAlumno as Unidad
+  ReporteAlumno, UnidadAlumno as Unidad, StudentNote
 } from '../../../shared/models/alumno.models';
 
 // ──────────────────────────────────────────────────────────────────────
@@ -38,6 +38,7 @@ interface SemanaNodo { semana: number; clases: ClaseNodo[]; }
 export class CursoDetalle implements OnInit {
   @Input({ required: true }) curso!: Curso;
   @Output() volver = new EventEmitter<void>();
+  @Output() irANotebook = new EventEmitter<StudentNote>();
 
   private alumnoService = inject(AlumnoService);
   private auth = inject(AuthService);
@@ -45,6 +46,7 @@ export class CursoDetalle implements OnInit {
 
   // ── Previsualización de Materiales ─────────────────────────────────
   materialSeleccionadoParaVer = signal<MaterialAlumno | null>(null);
+  importandoMaterial = signal(false);
   safeUrl = computed(() => {
     const mat = this.materialSeleccionadoParaVer();
     if (!mat || !mat.url) return null;
@@ -340,5 +342,21 @@ export class CursoDetalle implements OnInit {
       event.preventDefault();
       this.enviarMensajeIa();
     }
+  }
+
+  importarAOpenNotebook(material: MaterialAlumno) {
+    this.importandoMaterial.set(true);
+    this.alumnoService.importarMaterialANota(material.idMaterial).subscribe({
+      next: (note) => {
+        this.importandoMaterial.set(false);
+        this.cerrarMaterial();
+        this.irANotebook.emit(note);
+      },
+      error: (err) => {
+        console.error('Error al importar material a la libreta', err);
+        this.importandoMaterial.set(false);
+        alert(err.error?.message || 'Error al importar el material a la libreta. Verifica tu conexión.');
+      }
+    });
   }
 }

@@ -1189,5 +1189,20 @@
       color: #1e293b;
     }
   }
+
+  &.cd-btn--notebook {
+    background: linear-gradient(135deg, #8b0000, #500000);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(139, 0, 0, 0.15);
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #a30000, #650000);
+      box-shadow: 0 6px 16px rgba(139, 0, 0, 0.25);
+      transform: translateY(-1px);
+    }
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
 }
 

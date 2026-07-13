@@ -17,3 +17,6 @@ portal-academico/
 # Explanations and logs to ignore from IA agent indexer
 documentacion/explicaciones/
 backend_logs.txt
+
+# Local Environment Variables
+.env

@@ -49,6 +49,9 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+                        // Permitir dispatches asíncronos (necesario en Spring Security 6 para CompletableFuture)
+                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ASYNC).permitAll()
+
                         // Autenticación pública, actuator de monitoreo y páginas de error internas
                         .requestMatchers("/api/auth/**", "/error", "/actuator/**").permitAll()
 

@@ -12,13 +12,15 @@ import { AluCalendario } from './sections/alu-calendario/alu-calendario';
 import { AluTareas } from './sections/alu-tareas/alu-tareas';
 import { AluRefuerzo } from './sections/alu-refuerzo/alu-refuerzo';
 import { AluRecursos } from './sections/alu-recursos/alu-recursos';
+import { AluNotebook } from './sections/alu-notebook/alu-notebook';
 
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import type {
   CursoAlumno, CursoAlumnoApi, CalificacionGlobal, AsistenciaGlobal,
   ActividadDashboard, TareaAlumno, TareaAlumnoExt, ActividadAlumno,
-  ActividadAlumnoExt, MaterialAlumno, MaterialAlumnoExt, SeccionAlumno
+  ActividadAlumnoExt, MaterialAlumno, MaterialAlumnoExt, SeccionAlumno,
+  StudentNote, SaveNoteRequest
 } from '../../shared/models/alumno.models';
 
 type Seccion = SeccionAlumno;
@@ -29,7 +31,7 @@ type Actividad = ActividadDashboard;
 
 @Component({
   selector: 'app-portal-alumno',
-  imports: [CommonModule, CursoDetalle, AluInicio, AluCalificaciones, AluAsistencia, AluCalendario, AluTareas, AluRefuerzo, AluRecursos],
+  imports: [CommonModule, CursoDetalle, AluInicio, AluCalificaciones, AluAsistencia, AluCalendario, AluTareas, AluRefuerzo, AluRecursos, AluNotebook],
   templateUrl: './portal-alumno.html',
   styleUrl: './portal-alumno.scss',
 })
@@ -45,6 +47,13 @@ export class PortalAlumno implements OnInit, OnDestroy {
   cargando = signal(true);
   errorCarga = signal('');
   cursos = signal<Curso[]>([]);
+  
+  // ── Open Notebook signals ──
+  notes = signal<StudentNote[]>([]);
+  cargandoNotes = signal(false);
+  notaActiva = signal<StudentNote | null>(null);
+  guardandoNota = signal(false);
+  generandoResumen = signal(false);
 
   // ── Global metrics signals ──
   calificacionesGlobales = signal<CalificacionGlobal[]>([]);
@@ -140,6 +149,7 @@ export class PortalAlumno implements OnInit, OnDestroy {
     { id: 'kanban', label: 'Tablero Kanban', icon: 'kanban' },
     { id: 'refuerzo', label: 'Refuerzo', icon: 'refuerzo' },
     { id: 'recursos', label: 'Recursos', icon: 'recursos' },
+    { id: 'notebook', label: 'Open Notebook', icon: 'notebook' },
   ];
 
   // Actividades calculadas dinámicamente desde tareas y exámenes de la BD
@@ -500,6 +510,7 @@ export class PortalAlumno implements OnInit, OnDestroy {
         // Cargar los datos adicionales una vez tenemos los cursos
         this.cargarDatosConsolidados(mappedCursos);
         this.cargarRecursos();
+        this.cargarNotas();
       },
       error: () => {
         this.errorCarga.set('No se pudieron cargar los cursos. Intenta de nuevo.');
@@ -800,6 +811,136 @@ export class PortalAlumno implements OnInit, OnDestroy {
         console.error('Error al cargar recursos de la biblioteca', err);
       }
     });
+  }
+
+  // ── Open Notebook Methods ──────────────────────────────────────────
+  cargarNotas() {
+    this.cargandoNotes.set(true);
+    this.alumnoService.getNotes().subscribe({
+      next: (data) => {
+        this.notes.set(data);
+        this.cargandoNotes.set(false);
+        // Sync active note if selected
+        const active = this.notaActiva();
+        if (active) {
+          const found = data.find(n => n.idNota === active.idNota);
+          this.notaActiva.set(found || null);
+        }
+      },
+      error: (err) => {
+        console.error('Error al cargar apuntes del alumno', err);
+        this.cargandoNotes.set(false);
+      }
+    });
+  }
+
+  seleccionarNota(note: StudentNote | null) {
+    this.notaActiva.set(note);
+  }
+
+  crearNuevaNota(body: SaveNoteRequest) {
+    this.cargandoNotes.set(true);
+    this.alumnoService.crearNote(body).subscribe({
+      next: (newNote) => {
+        this.cargarNotas();
+        this.notaActiva.set(newNote);
+      },
+      error: (err) => {
+        console.error('Error al crear nuevo apunte', err);
+        this.cargandoNotes.set(false);
+      }
+    });
+  }
+
+  guardarNota(event: { idNota: number, body: SaveNoteRequest }) {
+    this.guardandoNota.set(true);
+    this.alumnoService.updateNote(event.idNota, event.body).subscribe({
+      next: (updated) => {
+        this.guardandoNota.set(false);
+        this.cargarNotas();
+        // Update local active note if it's the saved one
+        if (this.notaActiva()?.idNota === event.idNota) {
+          this.notaActiva.set(updated);
+        }
+      },
+      error: (err) => {
+        console.error('Error al guardar el apunte', err);
+        this.guardandoNota.set(false);
+      }
+    });
+  }
+
+  eliminarNota(idNota: number) {
+    this.cargandoNotes.set(true);
+    this.alumnoService.deleteNote(idNota).subscribe({
+      next: () => {
+        if (this.notaActiva()?.idNota === idNota) {
+          this.notaActiva.set(null);
+        }
+        this.cargarNotas();
+      },
+      error: (err) => {
+        console.error('Error al eliminar el apunte', err);
+        this.cargandoNotes.set(false);
+      }
+    });
+  }
+
+  generarResumenIa(idNota: number) {
+    this.generandoResumen.set(true);
+    this.alumnoService.generarResumenIa(idNota).subscribe({
+      next: (updated) => {
+        this.generandoResumen.set(false);
+        this.cargarNotas();
+        if (this.notaActiva()?.idNota === idNota) {
+          this.notaActiva.set(updated);
+        }
+      },
+      error: (err) => {
+        console.error('Error al generar resumen con IA', err);
+        this.generandoResumen.set(false);
+        alert(err.error?.message || 'Error al conectar con el servicio de IA. Verifica tu API Key.');
+      }
+    });
+  }
+
+  subirDocumento(file: File) {
+    this.cargandoNotes.set(true);
+    this.alumnoService.subirDocumentoNota(file).subscribe({
+      next: (newNote) => {
+        this.cargarNotas();
+        this.notaActiva.set(newNote);
+      },
+      error: (err) => {
+        console.error('Error al subir e importar documento', err);
+        this.cargandoNotes.set(false);
+        alert(err.error?.message || 'Error al procesar el archivo. Asegúrate de subir un PDF o Word válido.');
+      }
+    });
+  }
+
+  generarPodcast(idNota: number) {
+    this.generandoResumen.set(true);
+    this.alumnoService.generarPodcast(idNota).subscribe({
+      next: (updated) => {
+        this.generandoResumen.set(false);
+        this.cargarNotas();
+        if (this.notaActiva()?.idNota === idNota) {
+          this.notaActiva.set(updated);
+        }
+      },
+      error: (err) => {
+        console.error('Error al generar podcast con IA', err);
+        this.generandoResumen.set(false);
+        alert(err.error?.message || 'Error al conectar con el servicio de IA para generar el podcast.');
+      }
+    });
+  }
+
+  onIrANotebook(note: StudentNote) {
+    this.seccionActiva.set('notebook');
+    this.notaActiva.set(note);
+    this.cargarNotas();
   }
 
   ngOnDestroy() {

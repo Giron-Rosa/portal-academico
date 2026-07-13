@@ -30,13 +30,25 @@ public class OpenAiService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private String getActiveKey() {
-        return apiKey;
+        String key = System.getenv("GEMINI_API_KEY");
+        if (key != null && !key.trim().isEmpty()) {
+            return key.trim();
+        }
+        return apiKey != null ? apiKey.trim() : "";
+    }
+
+    public String getActiveUrl() {
+        return apiUrl;
+    }
+
+    public String getActiveModel() {
+        return apiModel;
     }
 
     public String llamarOpenAi(String systemPrompt, String userPrompt, boolean forceJson) {
         try {
             java.util.Map<String, Object> requestBody = new java.util.HashMap<>(Map.of(
-                "model", apiModel,
+                "model", getActiveModel(),
                 "messages", List.of(
                     Map.of("role", "system", "content", systemPrompt),
                     Map.of("role", "user", "content", userPrompt)
@@ -51,7 +63,7 @@ public class OpenAiService {
             String requestBodyJson = objectMapper.writeValueAsString(requestBody);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(apiUrl))
+                    .uri(URI.create(getActiveUrl()))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + getActiveKey())
                     .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
@@ -68,18 +80,19 @@ public class OpenAiService {
                     Map<?, ?> message = (Map<?, ?>) firstChoice.get("message");
                     return (String) message.get("content");
                 }
+                return "ERROR_API: Respuesta vacía del proveedor de IA (choices es nulo o vacío)";
             } else if (response.statusCode() == 429) {
-                return "ERROR_LIMIT: El servicio de IA está saturado actualmente debido a que muchos alumnos del salón están usando la misma API Key en este momento. Por favor, intenta de nuevo en unos minutos.";
+                return "ERROR_LIMIT: [429] El servicio de IA está saturado. Detalle del proveedor: " + response.body();
             } else if (response.statusCode() == 401 || response.statusCode() == 403) {
-                return "ERROR_AUTH: La API Key provista por el docente no tiene saldo suficiente o ha sido desactivada. Comunícate con el profesor.";
+                return "ERROR_AUTH: [401/403] Error de autenticación. Detalle del proveedor: " + response.body();
             } else {
                 System.err.println("Error no esperado de OpenAI (" + response.statusCode() + "): " + response.body());
-                return "ERROR_API: OpenAI respondió con un código de error " + response.statusCode() + ". Inténtalo más tarde.";
+                return "ERROR_API: [Código " + response.statusCode() + "] Detalle: " + response.body();
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return "ERROR_EXCEPTION: Excepción en el backend. Detalle: " + e.getClass().getName() + " - " + e.getMessage();
         }
-        return "ERROR_CONEXION: Ocurrió un error inesperado al conectar con el servidor de IA de OpenAI. Revisa los logs del servidor.";
     }
 
     public String transcribirAudio(java.io.File audioFile) {
