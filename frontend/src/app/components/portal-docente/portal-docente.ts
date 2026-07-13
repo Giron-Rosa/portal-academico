@@ -2257,7 +2257,10 @@ export class PortalDocente implements OnDestroy {
     this.cargandoExamenes.set(true);
     this.docenteService.getExamenes(idAulaCurso).subscribe({
       next: data => { this.examenes.set(data); this.cargandoExamenes.set(false); },
-      error: ()   => this.cargandoExamenes.set(false),
+      error: (err) => {
+        console.error('[Exámenes] Error en getExamenes:', err);
+        this.cargandoExamenes.set(false);
+      }
     });
   }
 
@@ -2307,7 +2310,10 @@ export class PortalDocente implements OnDestroy {
         this.enviandoExamen.set(false);
         this.cargarExamenes(curso.idAulaCurso);
       },
-      error: () => this.enviandoExamen.set(false),
+      error: (err) => {
+        console.error('[Exámenes] Error al crear examen:', err);
+        this.enviandoExamen.set(false);
+      }
     });
   }
 
@@ -2317,7 +2323,10 @@ export class PortalDocente implements OnDestroy {
     this.examenesExpandidos.update(s => { const n = new Set(s); n.delete(id); return n; });
     this.notasPorExamen.update(m => { const n = new Map(m); n.delete(id); return n; });
     this.docenteService.eliminarExamen(id).subscribe({
-      error: () => curso && this.cargarExamenes(curso.idAulaCurso)
+      error: (err) => {
+        console.error('[Exámenes] Error al eliminar examen:', err);
+        if (curso) this.cargarExamenes(curso.idAulaCurso);
+      }
     });
   }
 
@@ -2337,6 +2346,7 @@ export class PortalDocente implements OnDestroy {
   cargarNotasExamen(idExamen: number) {
     this.docenteService.getNotasExamen(idExamen).subscribe({
       next: data => this.notasPorExamen.update(m => new Map(m).set(idExamen, data)),
+      error: (err) => console.error('[Exámenes] Error al cargar notas del examen:', err)
     });
   }
 
@@ -2375,7 +2385,10 @@ export class PortalDocente implements OnDestroy {
         this.guardandoNotaEx.update(s => { const n = new Set(s); n.delete(idNota); return n; });
         this.cancelarEditNotaEx(idNota);
       },
-      error: () => this.guardandoNotaEx.update(s => { const n = new Set(s); n.delete(idNota); return n; }),
+      error: (err) => {
+        console.error('[Exámenes] Error al guardar nota del examen:', err);
+        this.guardandoNotaEx.update(s => { const n = new Set(s); n.delete(idNota); return n; });
+      }
     });
   }
 

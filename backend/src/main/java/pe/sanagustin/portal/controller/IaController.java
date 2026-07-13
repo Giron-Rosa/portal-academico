@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 public class IaController {
 
     private final IaService iaService;
+    private final pe.sanagustin.portal.service.OpenAiService openAiService;
 
     @GetMapping("/api/portal/docente/predicciones/{idAlumno}/ia-advisory")
     public CompletableFuture<ResponseEntity<Map<String, String>>> obtenerRecomendaciones(
@@ -86,5 +87,16 @@ public class IaController {
     public CompletableFuture<ResponseEntity<Map<String, String>>> chatMaterial(@RequestBody ChatMaterialRequest request) {
         return iaService.chatMaterial(request)
                 .thenApply(ResponseEntity::ok);
+    }
+
+    @GetMapping("/api/auth/test-ia")
+    public Map<String, Object> testIa(@RequestParam(required = false, defaultValue = "Hola, responde con un saludo muy corto.") String prompt) {
+        String res = openAiService.llamarOpenAi("Eres un asistente de pruebas de integración.", prompt, false);
+        return Map.of(
+            "status", res.startsWith("ERROR_") ? "ERROR" : "SUCCESS",
+            "activeModel", openAiService.getActiveModel(),
+            "activeUrl", openAiService.getActiveUrl(),
+            "response", res
+        );
     }
 }

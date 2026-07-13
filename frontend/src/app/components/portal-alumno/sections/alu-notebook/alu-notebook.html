@@ -1,0 +1,293 @@
+<div class="nb-wrapper">
+  <!-- Blobs para efecto Liquid Glass -->
+  <div class="nb-blob nb-blob-primary"></div>
+  <div class="nb-blob nb-blob-secondary"></div>
+  <div class="nb-blob nb-blob-tertiary"></div>
+
+  <div class="nb-container">
+    <!-- ================= LADO IZQUIERDO: LISTADO DE NOTAS ================= -->
+    <aside class="nb-sidebar">
+      <div class="nb-sidebar-header">
+        <h3 class="nb-sidebar-title">Mis Apuntes</h3>
+        <div class="nb-sidebar-actions">
+          <button class="nb-btn-new" (click)="onNewNote()" title="Crear nueva nota">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Nueva
+          </button>
+          <button class="nb-btn-upload" (click)="fileInput.click()" title="Subir PDF o Word">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Subir
+          </button>
+          <input #fileInput 
+                 type="file" 
+                 (change)="onFileSelected($event)" 
+                 accept=".pdf,.docx" 
+                 style="display: none;" />
+        </div>
+      </div>
+
+      <!-- Buscador -->
+      <div class="nb-search-box">
+        <svg class="nb-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Buscar apuntes..." class="nb-search-input" />
+      </div>
+
+      <!-- Lista de Notas -->
+      <div class="nb-notes-list">
+        @if (cargandoNotes) {
+          <div class="nb-loading">
+            <div class="nb-spinner"></div>
+            <span>Cargando apuntes...</span>
+          </div>
+        } @else if (filteredNotes.length === 0) {
+          <div class="nb-empty-state-list">
+            <p>No se encontraron apuntes</p>
+          </div>
+        } @else {
+          @for (n of filteredNotes; track n.idNota) {
+            <div class="nb-note-item" 
+                 [class.active]="notaActiva?.idNota === n.idNota"
+                 (click)="onSelect(n)">
+              <div class="nb-note-item-title">{{ n.titulo }}</div>
+              <div class="nb-note-item-preview">
+                {{ n.contenido || 'Sin contenido' }}
+              </div>
+              <div class="nb-note-item-meta">
+                <span>📅 {{ n.fechaActualizacion | date:'dd/MM/yyyy' }}</span>
+                @if (n.resumenIa) {
+                  <span class="nb-badge-ia">IA Activa</span>
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </aside>
+
+    <!-- ================= LADO DERECHO: WORKSPACE / DETALLE ================= -->
+    <main class="nb-workspace">
+      @if (!notaActiva) {
+        <div class="nb-no-active-note">
+          <div class="nb-empty-icon">📓</div>
+          <h3>Tu Libreta de Apuntes Inteligente</h3>
+          <p>Selecciona una nota de la lista o crea una nueva para comenzar a redactar y analizar tus clases con la ayuda de la IA.</p>
+          <button class="nb-btn-new-empty" (click)="onNewNote()">
+            Crear mi primer apunte
+          </button>
+        </div>
+      } @else {
+        <!-- Header de la Nota -->
+        <div class="nb-note-header">
+          <div class="nb-note-title-container">
+            <input type="text" 
+                   [(ngModel)]="editTitle" 
+                   class="nb-note-title-input" 
+                   placeholder="Título del apunte..." />
+            <span class="nb-saving-indicator" [class.visible]="guardandoNota">
+              <span class="nb-spinner-mini"></span> Guardando...
+            </span>
+          </div>
+
+          <div class="nb-note-actions">
+            <button class="nb-btn-action btn-save" (click)="onSave()" [disabled]="guardandoNota" title="Guardar nota">
+              Guardar
+            </button>
+            <button class="nb-btn-action btn-delete" (click)="onDelete()" title="Eliminar nota">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Pestañas: Edición vs Tutor IA -->
+        <div class="nb-tabs">
+          <button class="nb-tab" 
+                  [class.active]="activeTab === 'edit'" 
+                  (click)="activeTab = 'edit'">
+            📝 Editor de Apuntes
+          </button>
+          <button class="nb-tab tab-ia" 
+                  [class.active]="activeTab === 'ia'" 
+                  (click)="activeTab = 'ia'">
+            ✨ Tutor IA & Resumen
+          </button>
+        </div>
+
+        <!-- Panel de Contenido -->
+        <div class="nb-content-panel">
+          
+          <!-- PESTAÑA: EDITOR -->
+          @if (activeTab === 'edit') {
+            @if (notaActiva.urlDocumento) {
+              <!-- Split-pane: documento original + editor -->
+              <div class="nb-split-workspace">
+                <div class="nb-document-viewer">
+                  <div class="nb-doc-viewer-header">
+                    <span class="nb-doc-viewer-chip">📄 Documento Original</span>
+                    <a [href]="notaActiva.urlDocumento" target="_blank" class="nb-doc-viewer-external" title="Abrir en nueva pestaña">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                      </svg>
+                    </a>
+                  </div>
+                  @if (isPdfDocument(notaActiva.urlDocumento)) {
+                    <iframe class="nb-doc-iframe" [src]="getSafeDocumentUrl(notaActiva.urlDocumento)"></iframe>
+                  } @else {
+                    <div class="nb-doc-fallback">
+                      <div class="nb-doc-fallback-icon">📄</div>
+                      <h4>Documento Word adjunto</h4>
+                      <p>La previsualización de documentos Word no está disponible en el navegador.</p>
+                      <a [href]="notaActiva.urlDocumento" download class="nb-doc-download-btn">
+                        📥 Descargar documento
+                      </a>
+                    </div>
+                  }
+                </div>
+                <div class="nb-editor-pane">
+                  <textarea 
+                    [(ngModel)]="editContent" 
+                    class="nb-note-textarea" 
+                    placeholder="Escribe tus apuntes de la clase aquí... Puedes incluir fórmulas, explicaciones del maestro, o dudas pendientes."></textarea>
+                </div>
+              </div>
+            } @else {
+              <!-- Editor a pantalla completa -->
+              <div class="nb-editor-pane">
+                <textarea 
+                  [(ngModel)]="editContent" 
+                  class="nb-note-textarea" 
+                  placeholder="Escribe tus apuntes de la clase aquí... Puedes incluir fórmulas, explicaciones del maestro, o dudas pendientes."></textarea>
+              </div>
+            }
+          }
+
+          <!-- PESTAÑA: TUTOR IA -->
+          @if (activeTab === 'ia') {
+            <div class="nb-ia-pane">
+              @if (generandoResumen) {
+                <div class="nb-ia-loading">
+                  <div class="nb-ia-spinner"></div>
+                  <h4>Analizando tus apuntes con IA...</h4>
+                  <p>El tutor de San Agustín está estructurando tu resumen y preparando tus preguntas de autoevaluación.</p>
+                </div>
+              } @else if (!notaActiva.resumenIa) {
+                <div class="nb-ia-empty">
+                  <div class="nb-ia-empty-icon">🤖</div>
+                  <h4>¿Quieres que el Tutor IA analice este apunte?</h4>
+                  <p>La Inteligencia Artificial puede leer tus apuntes de clase para estructurar un resumen ejecutivo, extraer conceptos clave y hacerte preguntas para estudiar para los exámenes.</p>
+                  <button class="nb-btn-ia" (click)="onGenerateAiSummary()">
+                    ✨ Generar Análisis con IA
+                  </button>
+                </div>
+              } @else {
+                <!-- SECCIÓN DEL PODCAST -->
+                <div class="nb-podcast-card">
+                  <div class="nb-podcast-header">
+                    <div class="nb-podcast-info">
+                      <span class="nb-podcast-icon">🎙️</span>
+                      <div>
+                        <h4 class="nb-podcast-title">Podcast de Estudio (Audio Resumen)</h4>
+                        <p class="nb-podcast-desc">Escucha una explicación conversacional de tu lección con voces de IA</p>
+                      </div>
+                    </div>
+                    @if (notaActiva.guionPodcast) {
+                      <div class="nb-podcast-status" [class.playing]="podcastPlaying">
+                        <span class="nb-status-dot"></span>
+                        <span>{{ podcastPlaying ? 'Reproduciendo...' : 'Listo para reproducir' }}</span>
+                      </div>
+                    }
+                  </div>
+
+                  @if (!notaActiva.guionPodcast) {
+                    <div class="nb-podcast-empty-card">
+                      <p>¿Prefieres estudiar escuchando? Convierte este apunte en un podcast dinámico tipo diálogo de 2 locutores de forma gratuita.</p>
+                      <button class="nb-btn-podcast-generate" (click)="onGeneratePodcast()">
+                        🎙️ Generar Podcast de Estudio
+                      </button>
+                    </div>
+                  } @else {
+                    <div class="nb-podcast-player">
+                      
+                      <!-- Diálogo activo (subtítulos) -->
+                      @if (podcastPlaying && activeLineText) {
+                        <div class="nb-podcast-subtitle-box">
+                          <div class="nb-subtitle-speaker" [class.tutor]="activeSpeaker === 'Tutor'">
+                            {{ activeSpeaker === 'Tutor' ? '🎓 Tutor San Agustín' : '🎙️ Conductor' }}:
+                          </div>
+                          <div class="nb-subtitle-content">"{{ activeLineText }}"</div>
+                        </div>
+                      } @else {
+                        <div class="nb-podcast-subtitle-box empty">
+                          <div class="nb-subtitle-content">Presiona Reproducir para iniciar la conversación de estudio.</div>
+                        </div>
+                      }
+
+                      <!-- Controles y Visualizador -->
+                      <div class="nb-player-controls-row">
+                        <div class="nb-player-buttons">
+                          @if (!podcastPlaying) {
+                            <button class="nb-player-btn play" (click)="playPodcast()" title="Reproducir">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            </button>
+                          } @else {
+                            <button class="nb-player-btn pause" (click)="pausePodcast()" title="Pausar">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                            </button>
+                          }
+                          <button class="nb-player-btn stop" (click)="stopPodcast()" [disabled]="!podcastPlaying && !podcastPaused" title="Detener">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16"></rect></svg>
+                          </button>
+                        </div>
+
+                        <!-- Visualizador de ondas de sonido -->
+                        <div class="nb-audio-wave" [class.active]="podcastPlaying">
+                          <span class="wave-bar bar-1"></span>
+                          <span class="wave-bar bar-2"></span>
+                          <span class="wave-bar bar-3"></span>
+                          <span class="wave-bar bar-4"></span>
+                          <span class="wave-bar bar-5"></span>
+                          <span class="wave-bar bar-6"></span>
+                          <span class="wave-bar bar-7"></span>
+                          <span class="wave-bar bar-8"></span>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+
+                <!-- Resultado del análisis de IA -->
+                <div class="nb-ia-result">
+                  <div class="nb-ia-result-header">
+                    <span class="nb-ia-badge">✨ Análisis del Tutor IA</span>
+                    <button class="nb-btn-ia-refresh" (click)="onGenerateAiSummary()" title="Volver a generar análisis">
+                      🔄 Actualizar
+                    </button>
+                  </div>
+                  
+                  <!-- Cuerpo en Markdown formateado con estilos CSS -->
+                  <div class="nb-ia-markdown-body" [innerHTML]="renderMarkdown(notaActiva.resumenIa)">
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+        </div>
+      }
+    </main>
+  </div>
+</div>

@@ -3235,3 +3235,19 @@ WHERE titulo ILIKE '%emas%vanzados%endencias%';
 SELECT id_unidad, titulo, estado FROM unidades_didacticas ORDER BY numero LIMIT 20;
 
 
+-- ============================================================
+-- MIGRACIÓN: student_notes (Libreta de apuntes del estudiante)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS student_notes (
+    id_nota             BIGSERIAL PRIMARY KEY,
+    id_alumno           BIGINT       NOT NULL REFERENCES alumnos(id_alumno) ON DELETE CASCADE,
+    titulo              VARCHAR(150) NOT NULL,
+    contenido           TEXT,
+    resumen_ia          TEXT,
+    fecha_creacion      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    fecha_actualizacion TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_student_notes_alumno ON student_notes(id_alumno);
+
+

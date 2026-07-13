@@ -6,7 +6,7 @@
 // ── Tipos de navegación ──────────────────────────────────────────
 export type SeccionAlumno =
   | 'inicio' | 'calificaciones' | 'asistencias'
-  | 'calendario' | 'kanban' | 'refuerzo' | 'recursos';
+  | 'calendario' | 'kanban' | 'refuerzo' | 'recursos' | 'notebook';
 
 // ── Curso ────────────────────────────────────────────────────────
 export interface CursoAlumno {
@@ -175,3 +175,21 @@ export interface SemanaNodoAlumno {
   semana:  number;
   clases:  ClaseNodoAlumno[];
 }
+
+// ── Student Note (Libreta de Apuntes) ────────────────────────────
+export interface StudentNote {
+  idNota:             number;
+  titulo:             string;
+  contenido:          string | null;
+  resumenIa:          string | null;
+  guionPodcast:       string | null;
+  urlDocumento:       string | null;
+  fechaCreacion:      string;
+  fechaActualizacion: string;
+}
+
+export interface SaveNoteRequest {
+  titulo:    string;
+  contenido: string;
+}
+

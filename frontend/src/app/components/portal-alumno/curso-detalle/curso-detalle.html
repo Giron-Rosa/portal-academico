@@ -492,6 +492,13 @@
           <button class="cd-viewer-btn cd-btn--secondary" (click)="cerrarMaterial()">
             Cerrar
           </button>
+          @if (materialSeleccionadoParaVer()!.tipo === 'pdf' || materialSeleccionadoParaVer()!.tipo === 'word') {
+            <button class="cd-viewer-btn cd-btn--notebook" 
+                    [disabled]="importandoMaterial()"
+                    (click)="importarAOpenNotebook(materialSeleccionadoParaVer()!)">
+              📖 {{ importandoMaterial() ? 'Importando...' : 'Llevar a Open Notebook' }}
+            </button>
+          }
           @if (materialSeleccionadoParaVer()!.tipo === 'pdf') {
             <a [href]="materialSeleccionadoParaVer()!.url" class="cd-viewer-btn cd-btn--primary" download target="_blank">
               📥 Descargar PDF
