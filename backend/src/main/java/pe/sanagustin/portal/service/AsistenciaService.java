@@ -23,6 +23,7 @@ import java.util.HashMap;
 public class AsistenciaService {
 
     private final EntityManager em;
+    private final N8nWebhookService n8nWebhookService;
 
     // ────────────────────────────────────────────────────────
     // Obtener sesión de asistencia para una fecha
@@ -107,6 +108,8 @@ public class AsistenciaService {
                     .setParameter("estado", ra.getEstado())
                     .setParameter("just",   ra.getJustificante())
                     .executeUpdate();
+
+            n8nWebhookService.procesarAlertaAsistencia(ra.getIdAlumno(), req.getFecha(), ra.getEstado(), ra.getJustificante(), idAulaCurso);
         }
 
         return getSesion(idAulaCurso, req.getFecha(), codigoDocente);

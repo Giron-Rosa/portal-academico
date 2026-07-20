@@ -19,6 +19,7 @@ public class TareaService {
 
     private final EntityManager em;
     private final NotificacionWsService notificacionWsService;
+    private final N8nWebhookService n8nWebhookService;
 
     // ────────────────────────────────────────────────────────
     // Listar tareas de un aula_curso con estadísticas
@@ -279,6 +280,8 @@ public class TareaService {
                         "Se ha registrado la nota " + req.getNota() + " para la tarea '" + tTitulo + "'.",
                         cNombre
                 );
+
+                n8nWebhookService.procesarAlertaNota(idAlumno, req.getNota(), cNombre, tTitulo);
             } catch (Exception e) {
                 // Ignore
             }

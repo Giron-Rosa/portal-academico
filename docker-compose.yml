@@ -28,6 +28,36 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: none
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      N8N_ALERT_WEBHOOK_URL: ${N8N_ALERT_WEBHOOK_URL}
+      TEST_EMAIL_RECIPIENT: ${TEST_EMAIL_RECIPIENT}
+      ENTORNO: ${ENTORNO}
     volumes:
       - ./backend/uploads:/app/uploads
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: portal-academico-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/Lima
+      - N8N_ENCRYPTION_KEY=cGFydGFsYWNhZGVtaWNvU2FuQWd1c3RpbkNhbXB1czIwMjVTZWN1cmVLZXk=
+      - N8N_SMTP_HOST=${MAIL_HOST}
+      - N8N_SMTP_PORT=${MAIL_PORT}
+      - N8N_SMTP_USER=${MAIL_USERNAME}
+      - N8N_SMTP_PASS=${MAIL_PASSWORD}
+      - N8N_SMTP_SENDER=${MAIL_USERNAME}
+      - N8N_SMTP_SSL=false
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+
 

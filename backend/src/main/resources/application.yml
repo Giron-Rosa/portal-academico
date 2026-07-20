@@ -10,6 +10,28 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:npg_iSOaxk1TYZp8}
     driver-class-name: org.postgresql.Driver
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:soporteamazzonas@gmail.com}
+    password: ${MAIL_PASSWORD:vneqickvtjoxboto}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+n8n:
+  webhook-url: ${N8N_ALERT_WEBHOOK_URL:http://n8n:5678/webhook/alerta-padres}
+  test-email: ${TEST_EMAIL_RECIPIENT:dayro100806@gmail.com}
+  entorno: ${ENTORNO:desarrollo}
+
+
   jpa:
     hibernate:
       ddl-auto: validate

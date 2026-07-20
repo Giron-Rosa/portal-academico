@@ -19,6 +19,7 @@ public class ExamenService {
 
     private final EntityManager em;
     private final NotificacionWsService notificacionWsService;
+    private final N8nWebhookService n8nWebhookService;
 
     // ────────────────────────────────────────────────────────
     // Listar exámenes de un aula_curso con estadísticas
@@ -264,6 +265,8 @@ public class ExamenService {
                         "Se ha registrado la nota " + req.getNota() + " para el examen '" + eTitulo + "'.",
                         cNombre
                 );
+
+                n8nWebhookService.procesarAlertaNota(idAlumno, req.getNota(), cNombre, eTitulo);
             } catch (Exception e) {
                 // Ignore
             }
