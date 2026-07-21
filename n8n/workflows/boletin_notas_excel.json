@@ -34,12 +34,13 @@
     },
     {
       "parameters": {
+        "batchSize": 1,
         "options": {}
       },
       "id": "b9cc1e21-0a4a-4e31-bc66-3d71ff9115fa",
       "name": "Loop Over Parents",
-      "type": "n8n-nodes-base.loopOverItems",
-      "typeVersion": 1.2,
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
       "position": [
         480,
         240
@@ -67,6 +68,8 @@
     },
     {
       "parameters": {
+        "operation": "create",
+        "fileFormat": "xlsx",
         "options": {
           "fileName": "=Notas_{{ $json[0]?.['Estudiante']?.replace(' ', '_') || 'Estudiante' }}.xlsx"
         }
@@ -179,4 +182,3 @@
   },
   "versionId": "b1b86d9a-b50a-4286-90b9-0b798782bb19"
 }
-
