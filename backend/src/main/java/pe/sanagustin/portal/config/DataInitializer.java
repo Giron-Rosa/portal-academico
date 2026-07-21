@@ -55,10 +55,12 @@ public class DataInitializer implements CommandLineRunner {
 
         List<Usuario> usuarios = usuarioRepository.findAll();
         for (Usuario u : usuarios) {
-            u.setContrasenaHash(passwordEncoder.encode("password"));
-            usuarioRepository.save(u);
-            log.info("Hash actualizado para usuario: {} ({})", u.getCodigo(), u.getRol());
+            if (u.getContrasenaHash() == null || !u.getContrasenaHash().startsWith("$2a$")) {
+                u.setContrasenaHash(passwordEncoder.encode("password"));
+                usuarioRepository.save(u);
+                log.info("Hash inicializado para usuario: {} ({})", u.getCodigo(), u.getRol());
+            }
         }
-        log.info("DataInitializer: Todos los usuarios actualizados con contraseña 'password'");
+        log.info("DataInitializer: Verificación y hash de contraseñas completado.");
     }
 }

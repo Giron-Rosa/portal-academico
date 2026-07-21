@@ -51,7 +51,7 @@ export class Login {
     }).subscribe({
       next: (res) => {
         this.loading.set(false);
-        this.auth.saveSession(res.token, res.rol, res.codigo, res.nombre, res.email);
+        this.auth.saveSession(res.token, res.rol, res.codigo, res.nombre, res.email, this.remember());
         this.auth.closeLogin();
         this.router.navigate([this.auth.getPortalRoute()]);
       },
