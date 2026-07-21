@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, ViewEncapsulation } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -26,6 +26,7 @@ import type {
   imports: [FormsModule, AdmDashboard, AdmEstudiantes, AdmDocentes, AdmApoderados, AdmKanban, AdmModal],
   templateUrl: './portal-admin.html',
   styleUrl: './portal-admin.scss',
+  encapsulation: ViewEncapsulation.None
 })
 export class PortalAdmin implements OnInit {
   private router = inject(Router);
