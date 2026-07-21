@@ -1,0 +1,182 @@
+{
+  "name": "Reporte de Notas Excel - Portal Académico",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "e4a5ee3d-2a4e-4f11-bc66-3d71ff9115fa",
+      "name": "When clicking \"Test workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        100,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT DISTINCT pa.id_padre, pa.nombre || ' ' || pa.apellido AS padre_nombre, u_pa.email AS padre_email\nFROM padres pa\nJOIN usuarios u_pa ON u_pa.id_usuario = pa.id_usuario\nJOIN padre_hijo ph ON ph.id_padre = pa.id_padre;"
+      },
+      "id": "c8cc1e21-0a4a-4e31-bc66-3d71ff9115fa",
+      "name": "Obtener Padres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [
+        280,
+        240
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-credential-id",
+          "name": "Neon Database Connection"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "b9cc1e21-0a4a-4e31-bc66-3d71ff9115fa",
+      "name": "Loop Over Parents",
+      "type": "n8n-nodes-base.loopOverItems",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT \n    al.nombre || ' ' || al.apellido AS \"Estudiante\",\n    c.nombre AS \"Curso\",\n    'Tarea' AS \"Tipo Evaluacion\",\n    tc.titulo AS \"Evaluacion\",\n    nt.nota AS \"Nota\",\n    CASE WHEN nt.entregado THEN 'Sí' ELSE 'No' END AS \"Entregado\"\nFROM alumnos al\nJOIN matriculas m ON m.id_alumno = al.id_alumno AND m.estado = 'activa'\nJOIN aula_cursos ac ON ac.id_aula = m.id_aula\nJOIN cursos c ON c.id_curso = ac.id_curso\nJOIN tareas_curso tc ON tc.id_aula_curso = ac.id_aula_curso\nJOIN notas_tarea nt ON nt.id_tarea = tc.id_tarea AND nt.id_alumno = al.id_alumno\nWHERE al.id_alumno IN (SELECT id_alumno FROM padre_hijo WHERE id_padre = {{ $json.id_padre }})\n\nUNION ALL\n\nSELECT \n    al.nombre || ' ' || al.apellido AS \"Estudiante\",\n    c.nombre AS \"Curso\",\n    'Examen' AS \"Tipo Evaluacion\",\n    ec.titulo AS \"Evaluacion\",\n    ne.nota AS \"Nota\",\n    CASE WHEN ne.asistio THEN 'Sí' ELSE 'No' END AS \"Entregado\"\nFROM alumnos al\nJOIN matriculas m ON m.id_alumno = al.id_alumno AND m.estado = 'activa'\nJOIN aula_cursos ac ON ac.id_aula = m.id_aula\nJOIN cursos c ON c.id_curso = ac.id_curso\nJOIN examenes_curso ec ON ec.id_aula_curso = ac.id_aula_curso\nJOIN notas_examen ne ON ne.id_examen = ec.id_examen AND ne.id_alumno = al.id_alumno\nWHERE al.id_alumno IN (SELECT id_alumno FROM padre_hijo WHERE id_padre = {{ $json.id_padre }})\nORDER BY \"Estudiante\", \"Curso\", \"Tipo Evaluacion\", \"Evaluacion\";"
+      },
+      "id": "a8cc1e21-0a4a-4e31-bc66-3d71ff9115fa",
+      "name": "Obtener Notas Alumno",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        140
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-credential-id",
+          "name": "Neon Database Connection"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "fileName": "=Notas_{{ $json[0]?.['Estudiante']?.replace(' ', '_') || 'Estudiante' }}.xlsx"
+        }
+      },
+      "id": "f8cc1e21-0a4a-4e31-bc66-3d71ff9115fa",
+      "name": "Crear Excel",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [
+        860,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "carlo100806@gmail.com",
+        "toEmail": "=dayro100806@gmail.com",
+        "subject": "=[Portal Académico] Consolidado de Calificaciones - {{ $node[\"Loop Over Parents\"].json.padre_nombre }}",
+        "html": "=<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; }\n    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }\n    .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: #ffffff; padding: 30px 20px; text-align: center; }\n    .content { padding: 30px 20px; }\n    .footer { background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px; text-align: center; font-size: 12px; color: #64748b; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>Portal Académico San Agustín</h1>\n      <h2>Consolidado Semanal de Notas</h2>\n    </div>\n    <div class=\"content\">\n      <p>Estimado(a) <strong>{{ $node[\"Loop Over Parents\"].json.padre_nombre }}</strong>,</p>\n      <p>Le adjuntamos el archivo Excel con el consolidado detallado de cursos, evaluaciones, entregables y calificaciones obtenidas por su hijo(a) hasta la fecha.</p>\n      <p>Por favor revise el archivo adjunto para verificar el progreso académico de su hijo(a).</p>\n    </div>\n    <div class=\"footer\">\n      Este es un correo automático enviado por el Portal Académico del Colegio San Agustín.\n    </div>\n  </div>\n</body>\n</html>",
+        "attachments": "data",
+        "options": {}
+      },
+      "id": "e9cc1e21-0a4a-4e31-bc66-3d71ff9115fa",
+      "name": "Enviar Excel",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        140
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credential-id",
+          "name": "Gmail Soporte"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When clicking \"Test workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Obtener Padres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Padres": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Parents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Parents": {
+      "main": [
+        [
+          {
+            "node": "Obtener Notas Alumno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Notas Alumno": {
+      "main": [
+        [
+          {
+            "node": "Crear Excel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Excel": {
+      "main": [
+        [
+          {
+            "node": "Enviar Excel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Excel": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Parents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b1b86d9a-b50a-4286-90b9-0b798782bb19"
+}
+

@@ -48,6 +48,12 @@ public class DatabaseInitializer implements CommandLineRunner {
                     CREATE INDEX IF NOT EXISTS idx_student_notes_alumno ON student_notes(id_alumno)
                     """;
             em.createNativeQuery(createIndexSql).executeUpdate();
+
+            String alterAsistenciaSql = """
+                    ALTER TABLE asistencia_alumno ADD COLUMN IF NOT EXISTS fecha_registro TIMESTAMP NOT NULL DEFAULT NOW()
+                    """;
+            em.createNativeQuery(alterAsistenciaSql).executeUpdate();
+
             log.info("[DB Initializer] Tabla student_notes inicializada correctamente.");
         } catch (Exception e) {
             log.error("[DB Initializer] Error al inicializar la tabla student_notes en la base de datos: ", e);

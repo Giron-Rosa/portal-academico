@@ -18,20 +18,73 @@
     },
     {
       "parameters": {
-        "dataType": "string",
-        "value1": "={{ $json.body.tipoAlerta || $json.tipoAlerta }}",
         "rules": {
-          "rules": [
+          "values": [
             {
-              "value2": "BAJA_NOTA"
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.tipoAlerta }}",
+                    "rightValue": "BAJA_NOTA",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Calificación Baja"
             },
             {
-              "value2": "INASISTENCIA",
-              "outputIndex": 1
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.tipoAlerta }}",
+                    "rightValue": "INASISTENCIA",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Inasistencia"
             },
             {
-              "value2": "SALUD",
-              "outputIndex": 2
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.tipoAlerta }}",
+                    "rightValue": "SALUD",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Alerta de Salud"
             }
           ]
         }
@@ -39,7 +92,7 @@
       "id": "8939a8ec-5f65-4f40-a35b-c2eef08b981d",
       "name": "Filtrar por Tipo",
       "type": "n8n-nodes-base.switch",
-      "typeVersion": 1,
+      "typeVersion": 3,
       "position": [
         480,
         360
@@ -47,10 +100,10 @@
     },
     {
       "parameters": {
-        "fromEmail": "soporteamazzonas@gmail.com",
-        "toEmail": "={{ $json.body.padreEmail || $json.padreEmail }}",
-        "subject": "=[Alerta Académica] Calificación Desaprobada - {{ $json.body.alumnoNombre || $json.alumnoNombre }}",
-        "html": "=<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; margin: 0; }\n    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; }\n    .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: #ffffff; padding: 30px 20px; text-align: center; }\n    .header h1 { margin: 0; font-size: 24px; font-weight: 700; }\n    .header p { margin: 5px 0 0; font-size: 14px; opacity: 0.9; }\n    .content { padding: 30px 20px; }\n    .alert-badge { display: inline-block; background-color: #fef2f2; color: #ef4444; padding: 6px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; border: 1px solid #fee2e2; margin-bottom: 20px; }\n    .student-card { background-color: #f1f5f9; border-radius: 8px; padding: 15px; margin-bottom: 20px; }\n    .student-card table { width: 100%; border-collapse: collapse; }\n    .student-card td { padding: 6px 0; font-size: 14px; }\n    .student-card td.label { font-weight: 600; color: #64748b; width: 120px; }\n    .student-card td.value { color: #0f172a; }\n    .details { font-size: 15px; line-height: 1.6; margin-bottom: 25px; border-left: 4px solid #ef4444; padding-left: 15px; }\n    .btn-container { text-align: center; margin-bottom: 25px; }\n    .btn { display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; }\n    .footer { background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px; text-align: center; font-size: 12px; color: #64748b; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>Portal Académico San Agustín</h1>\n      <p>Reporte de Alertas Escolares</p>\n    </div>\n    <div class=\"content\">\n      <div class=\"alert-badge\">⚠️ Alerta: Calificación Baja</div>\n      <p>Estimado(a) <strong>{{ $json.body.padreNombre || $json.padreNombre }}</strong>,</p>\n      <p>Le escribimos para informarle que se ha registrado una nota desaprobatoria para su hijo(a):</p>\n      \n      <div class=\"student-card\">\n        <table>\n          <tr>\n            <td class=\"label\">Estudiante:</td>\n            <td class=\"value\">{{ $json.body.alumnoNombre || $json.alumnoNombre }} ({{ $json.body.alumnoCodigo || $json.alumnoCodigo }})</td>\n          </tr>\n          <tr>\n            <td class=\"label\">Curso:</td>\n            <td class=\"value\">{{ $json.body.cursoNombre || $json.cursoNombre }}</td>\n          </tr>\n          <tr>\n            <td class=\"label\">Fecha:</td>\n            <td class=\"value\">{{ $json.body.fecha || $json.fecha }}</td>\n          </tr>\n        </table>\n      </div>\n\n      <div class=\"details\">\n        <strong>Detalle del reporte:</strong><br>\n        {{ $json.body.detalleAlerta || $json.detalleAlerta }}\n      </div>\n\n      <p>Le recomendamos revisar el portal académico para hacer seguimiento de sus calificaciones.</p>\n\n      <div class=\"btn-container\">\n        <a href=\"http://localhost:4200\" class=\"btn\" target=\"_blank\">Ir al Portal Familiar</a>\n      </div>\n    </div>\n    <div class=\"footer\">\n      Este es un correo automático enviado por el Portal Académico del Colegio San Agustín.<br>\n      Por favor no responda a este mensaje.\n    </div>\n  </div>\n</body>\n</html>",
+        "fromEmail": "carlo100806@gmail.com",
+        "toEmail": "={{ $json.body.padreEmail }}",
+        "subject": "=[Alerta Académica] Calificación Desaprobada - {{ $json.body.alumnoNombre }}",
+        "html": "=<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; margin: 0; }\n    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; }\n    .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: #ffffff; padding: 30px 20px; text-align: center; }\n    .header h1 { margin: 0; font-size: 24px; font-weight: 700; }\n    .header p { margin: 5px 0 0; font-size: 14px; opacity: 0.9; }\n    .content { padding: 30px 20px; }\n    .alert-badge { display: inline-block; background-color: #fef2f2; color: #ef4444; padding: 6px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; border: 1px solid #fee2e2; margin-bottom: 20px; }\n    .student-card { background-color: #f1f5f9; border-radius: 8px; padding: 15px; margin-bottom: 20px; }\n    .student-card table { width: 100%; border-collapse: collapse; }\n    .student-card td { padding: 6px 0; font-size: 14px; }\n    .student-card td.label { font-weight: 600; color: #64748b; width: 120px; }\n    .student-card td.value { color: #0f172a; }\n    .details { font-size: 15px; line-height: 1.6; margin-bottom: 25px; border-left: 4px solid #ef4444; padding-left: 15px; }\n    .btn-container { text-align: center; margin-bottom: 25px; }\n    .btn { display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; }\n    .footer { background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px; text-align: center; font-size: 12px; color: #64748b; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>Portal Académico San Agustín</h1>\n      <p>Reporte de Alertas Escolares</p>\n    </div>\n    <div class=\"content\">\n      <div class=\"alert-badge\">⚠️ Alerta: Calificación Baja</div>\n      <p>Estimado(a) <strong>{{ $json.body.padreNombre }}</strong>,</p>\n      <p>Le escribimos para informarle que se ha registrado una nota desaprobatoria para su hijo(a):</p>\n      \n      <div class=\"student-card\">\n        <table>\n          <tr>\n            <td class=\"label\">Estudiante:</td>\n            <td class=\"value\">{{ $json.body.alumnoNombre }} ({{ $json.body.alumnoCodigo }})</td>\n          </tr>\n          <tr>\n            <td class=\"label\">Curso:</td>\n            <td class=\"value\">{{ $json.body.cursoNombre }}</td>\n          </tr>\n          <tr>\n            <td class=\"label\">Fecha:</td>\n            <td class=\"value\">{{ $json.body.fecha }}</td>\n          </tr>\n        </table>\n      </div>\n\n      <div class=\"details\">\n        <strong>Detalle del reporte:</strong><br>\n        {{ $json.body.detalleAlerta }}\n      </div>\n\n      <p>Le recomendamos revisar el portal académico para hacer seguimiento de sus calificaciones.</p>\n\n      <div class=\"btn-container\">\n        <a href=\"http://localhost:4200\" class=\"btn\" target=\"_blank\">Ir al Portal Familiar</a>\n      </div>\n    </div>\n    <div class=\"footer\">\n      Este es un correo automático enviado por el Portal Académico del Colegio San Agustín.<br>\n      Por favor no responda a este mensaje.\n    </div>\n  </div>\n</body>\n</html>",
         "options": {}
       },
       "id": "e9cc1e21-0a4a-4e31-bc66-3d71ff9115fa",
@@ -70,10 +123,10 @@
     },
     {
       "parameters": {
-        "fromEmail": "soporteamazzonas@gmail.com",
-        "toEmail": "={{ $json.body.padreEmail || $json.padreEmail }}",
-        "subject": "=[Alerta de Asistencia] Inasistencia Registrada - {{ $json.body.alumnoNombre || $json.alumnoNombre }}",
-        "html": "=<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; margin: 0; }\n    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; }\n    .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: #ffffff; padding: 30px 20px; text-align: center; }\n    .header h1 { margin: 0; font-size: 24px; font-weight: 700; }\n    .header p { margin: 5px 0 0; font-size: 14px; opacity: 0.9; }\n    .content { padding: 30px 20px; }\n    .alert-badge { display: inline-block; background-color: #fffbeb; color: #d97706; padding: 6px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; border: 1px solid #fef3c7; margin-bottom: 20px; }\n    .student-card { background-color: #f1f5f9; border-radius: 8px; padding: 15px; margin-bottom: 20px; }\n    .student-card table { width: 100%; border-collapse: collapse; }\n    .student-card td { padding: 6px 0; font-size: 14px; }\n    .student-card td.label { font-weight: 600; color: #64748b; width: 120px; }\n    .student-card td.value { color: #0f172a; }\n    .details { font-size: 15px; line-height: 1.6; margin-bottom: 25px; border-left: 4px solid #d97706; padding-left: 15px; }\n    .btn-container { text-align: center; margin-bottom: 25px; }\n    .btn { display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; }\n    .footer { background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px; text-align: center; font-size: 12px; color: #64748b; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>Portal Académico San Agustín</h1>\n      <p>Reporte de Alertas Escolares</p>\n    </div>\n    <div class=\"content\">\n      <div class=\"alert-badge\">⚠️ Alerta: Inasistencia</div>\n      <p>Estimado(a) <strong>{{ $json.body.padreNombre || $json.padreNombre }}</strong>,</p>\n      <p>Le informamos que se ha registrado una inasistencia a clases para su hijo(a):</p>\n      \n      <div class=\"student-card\">\n        <table>\n          <tr>\n            <td class=\"label\">Estudiante:</td>\n            <td class=\"value\">{{ $json.body.alumnoNombre || $json.alumnoNombre }} ({{ $json.body.alumnoCodigo || $json.alumnoCodigo }})</td>\n          </tr>\n          <tr>\n            <td class=\"label\">Curso:</td>\n            <td class=\"value\">{{ $json.body.cursoNombre || $json.cursoNombre }}</td>\n          </tr>\n          <tr>\n            <td class=\"label\">Fecha:</td>\n            <td class=\"value\">{{ $json.body.fecha || $json.fecha }}</td>\n          </tr>\n        </table>\n      </div>\n\n      <div class=\"details\">\n        <strong>Detalle de asistencia:</strong><br>\n        {{ $json.body.detalleAlerta || $json.detalleAlerta }}\n      </div>\n\n      <p>Le recordamos la importancia de la asistencia regular a clases para el óptimo aprendizaje.</p>\n\n      <div class=\"btn-container\">\n        <a href=\"http://localhost:4200\" class=\"btn\" target=\"_blank\">Ir al Portal Familiar</a>\n      </div>\n    </div>\n    <div class=\"footer\">\n      Este es un correo automático enviado por el Portal Académico del Colegio San Agustín.<br>\n      Por favor no responda a este mensaje.\n    </div>\n  </div>\n</body>\n</html>",
+        "fromEmail": "carlo100806@gmail.com",
+        "toEmail": "={{ $json.body.padreEmail }}",
+        "subject": "=[Alerta de Asistencia] Inasistencia Registrada - {{ $json.body.alumnoNombre }}",
+        "html": "=<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; margin: 0; }\n    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; }\n    .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: #ffffff; padding: 30px 20px; text-align: center; }\n    .header h1 { margin: 0; font-size: 24px; font-weight: 700; }\n    .header p { margin: 5px 0 0; font-size: 14px; opacity: 0.9; }\n    .content { padding: 30px 20px; }\n    .alert-badge { display: inline-block; background-color: #fffbeb; color: #d97706; padding: 6px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; border: 1px solid #fef3c7; margin-bottom: 20px; }\n    .student-card { background-color: #f1f5f9; border-radius: 8px; padding: 15px; margin-bottom: 20px; }\n    .student-card table { width: 100%; border-collapse: collapse; }\n    .student-card td { padding: 6px 0; font-size: 14px; }\n    .student-card td.label { font-weight: 600; color: #64748b; width: 120px; }\n    .student-card td.value { color: #0f172a; }\n    .details { font-size: 15px; line-height: 1.6; margin-bottom: 25px; border-left: 4px solid #d97706; padding-left: 15px; }\n    .btn-container { text-align: center; margin-bottom: 25px; }\n    .btn { display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; }\n    .footer { background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px; text-align: center; font-size: 12px; color: #64748b; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>Portal Académico San Agustín</h1>\n      <p>Reporte de Alertas Escolares</p>\n    </div>\n    <div class=\"content\">\n      <div class=\"alert-badge\">⚠️ Alerta: Inasistencia</div>\n      <p>Estimado(a) <strong>{{ $json.body.padreNombre }}</strong>,</p>\n      <p>Le informamos que se ha registrado una inasistencia a clases para su hijo(a):</p>\n      \n      <div class=\"student-card\">\n        <table>\n          <tr>\n            <td class=\"label\">Estudiante:</td>\n            <td class=\"value\">{{ $json.body.alumnoNombre }} ({{ $json.body.alumnoCodigo }})</td>\n          </tr>\n          <tr>\n            <td class=\"label\">Curso:</td>\n            <td class=\"value\">{{ $json.body.cursoNombre }}</td>\n          </tr>\n          <tr>\n            <td class=\"label\">Fecha:</td>\n            <td class=\"value\">{{ $json.body.fecha }}</td>\n          </tr>\n        </table>\n      </div>\n\n      <div class=\"details\">\n        <strong>Detalle de asistencia:</strong><br>\n        {{ $json.body.detalleAlerta }}\n      </div>\n\n      <p>Le recordamos la importancia de la asistencia regular a clases para el óptimo aprendizaje.</p>\n\n      <div class=\"btn-container\">\n        <a href=\"http://localhost:4200\" class=\"btn\" target=\"_blank\">Ir al Portal Familiar</a>\n      </div>\n    </div>\n    <div class=\"footer\">\n      Este es un correo automático enviado por el Portal Académico del Colegio San Agustín.<br>\n      Por favor no responda a este mensaje.\n    </div>\n  </div>\n</body>\n</html>",
         "options": {}
       },
       "id": "e9cc1e21-0a4a-4e31-bc66-3d71ff9115f2",
@@ -93,10 +146,10 @@
     },
     {
       "parameters": {
-        "fromEmail": "soporteamazzonas@gmail.com",
-        "toEmail": "={{ $json.body.padreEmail || $json.padreEmail }}",
-        "subject": "=[Alerta de Salud] Notificación de Malestar - {{ $json.body.alumnoNombre || $json.alumnoNombre }}",
-        "html": "=<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; margin: 0; }\n    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; }\n    .header { background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff; padding: 30px 20px; text-align: center; }\n    .header h1 { margin: 0; font-size: 24px; font-weight: 700; }\n    .header p { margin: 5px 0 0; font-size: 14px; opacity: 0.9; }\n    .content { padding: 30px 20px; }\n    .alert-badge { display: inline-block; background-color: #ecfdf5; color: #059669; padding: 6px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; border: 1px solid #d1fae5; margin-bottom: 20px; }\n    .student-card { background-color: #f1f5f9; border-radius: 8px; padding: 15px; margin-bottom: 20px; }\n    .student-card table { width: 100%; border-collapse: collapse; }\n    .student-card td { padding: 6px 0; font-size: 14px; }\n    .student-card td.label { font-weight: 600; color: #64748b; width: 120px; }\n    .student-card td.value { color: #0f172a; }\n    .details { font-size: 15px; line-height: 1.6; margin-bottom: 25px; border-left: 4px solid #059669; padding-left: 15px; }\n    .btn-container { text-align: center; margin-bottom: 25px; }\n    .btn { display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; }\n    .footer { background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px; text-align: center; font-size: 12px; color: #64748b; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>Portal Académico San Agustín</h1>\n      <p>Reporte de Alertas de Salud</p>\n    </div>\n    <div class=\"content\">\n      <div class=\"alert-badge\">💚 Alerta de Salud / Justificación</div>\n      <p>Estimado(a) <strong>{{ $json.body.padreNombre || $json.padreNombre }}</strong>,</p>\n      <p>Le informamos que se ha registrado una justificación de inasistencia por motivos de salud para su hijo(a):</p>\n      \n      <div class=\"student-card\">\n        <table>\n          <tr>\n            <td class=\"label\">Estudiante:</td>\n            <td class=\"value\">{{ $json.body.alumnoNombre || $json.alumnoNombre }} ({{ $json.body.alumnoCodigo || $json.alumnoCodigo }})</td>\n          </tr>\n          <tr>\n            <td class=\"label\">Curso:</td>\n            <td class=\"value\">{{ $json.body.cursoNombre || $json.cursoNombre }}</td>\n          </tr>\n          <tr>\n            <td class=\"label\">Fecha:</td>\n            <td class=\"value\">{{ $json.body.fecha || $json.fecha }}</td>\n          </tr>\n        </table>\n      </div>\n\n      <div class=\"details\">\n        <strong>Detalle del reporte:</strong><br>\n        {{ $json.body.detalleAlerta || $json.detalleAlerta }}\n      </div>\n\n      <p>Si requiere coordinar entregas de trabajos pendientes, recuerde que puede comunicarse con el docente a través de la mensajería del portal.</p>\n\n      <div class=\"btn-container\">\n        <a href=\"http://localhost:4200\" class=\"btn\" target=\"_blank\">Ir al Portal Familiar</a>\n      </div>\n    </div>\n    <div class=\"footer\">\n      Este es un correo automático enviado por el Portal Académico del Colegio San Agustín.<br>\n      Por favor no responda a este mensaje.\n    </div>\n  </div>\n</body>\n</html>",
+        "fromEmail": "carlo100806@gmail.com",
+        "toEmail": "={{ $json.body.padreEmail }}",
+        "subject": "=[Alerta de Salud] Notificación de Malestar - {{ $json.body.alumnoNombre }}",
+        "html": "=<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; margin: 0; }\n    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; }\n    .header { background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff; padding: 30px 20px; text-align: center; }\n    .header h1 { margin: 0; font-size: 24px; font-weight: 700; }\n    .header p { margin: 5px 0 0; font-size: 14px; opacity: 0.9; }\n    .content { padding: 30px 20px; }\n    .alert-badge { display: inline-block; background-color: #ecfdf5; color: #059669; padding: 6px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; border: 1px solid #d1fae5; margin-bottom: 20px; }\n    .student-card { background-color: #f1f5f9; border-radius: 8px; padding: 15px; margin-bottom: 20px; }\n    .student-card table { width: 100%; border-collapse: collapse; }\n    .student-card td { padding: 6px 0; font-size: 14px; }\n    .student-card td.label { font-weight: 600; color: #64748b; width: 120px; }\n    .student-card td.value { color: #0f172a; }\n    .details { font-size: 15px; line-height: 1.6; margin-bottom: 25px; border-left: 4px solid #059669; padding-left: 15px; }\n    .btn-container { text-align: center; margin-bottom: 25px; }\n    .btn { display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; }\n    .footer { background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px; text-align: center; font-size: 12px; color: #64748b; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>Portal Académico San Agustín</h1>\n      <p>Reporte de Alertas de Salud</p>\n    </div>\n    <div class=\"content\">\n      <div class=\"alert-badge\">💚 Alerta de Salud / Justificación</div>\n      <p>Estimado(a) <strong>{{ $json.body.padreNombre }}</strong>,</p>\n      <p>Le informamos que se ha registrado una justificación de inasistencia por motivos de salud para su hijo(a):</p>\n      \n      <div class=\"student-card\">\n        <table>\n          <tr>\n            <td class=\"label\">Estudiante:</td>\n            <td class=\"value\">{{ $json.body.alumnoNombre }} ({{ $json.body.alumnoCodigo }})</td>\n          </tr>\n          <tr>\n            <td class=\"label\">Curso:</td>\n            <td class=\"value\">{{ $json.body.cursoNombre }}</td>\n          </tr>\n          <tr>\n            <td class=\"label\">Fecha:</td>\n            <td class=\"value\">{{ $json.body.fecha }}</td>\n          </tr>\n        </table>\n      </div>\n\n      <div class=\"details\">\n        <strong>Detalle del reporte:</strong><br>\n        {{ $json.body.detalleAlerta }}\n      </div>\n\n      <p>Si requiere coordinar entregas de trabajos pendientes, recuerde que puede comunicarse con el docente a través de la mensajería del portal.</p>\n\n      <div class=\"btn-container\">\n        <a href=\"http://localhost:4200\" class=\"btn\" target=\"_blank\">Ir al Portal Familiar</a>\n      </div>\n    </div>\n    <div class=\"footer\">\n      Este es un correo automático enviado por el Portal Académico del Colegio San Agustín.<br>\n      Por favor no responda a este mensaje.\n    </div>\n  </div>\n</body>\n</html>",
         "options": {}
       },
       "id": "e9cc1e21-0a4a-4e31-bc66-3d71ff9115f3",
