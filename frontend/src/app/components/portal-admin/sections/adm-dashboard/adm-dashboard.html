@@ -79,6 +79,22 @@
     }
   </div>
 
+  <!-- Enviar Boletines de Notas en Excel (n8n) -->
+  <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; margin-top: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+          📊 Envío de Boletines Escolares (Excel)
+        </h3>
+        <p style="margin: 3px 0 0 0; font-size: 12px; color: #64748b;">Genera y envía por correo el consolidado Excel de notas a todos los padres de familia.</p>
+      </div>
+      <button (click)="enviarBoletinesExcel.emit()" [disabled]="enviandoBoletines"
+              style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1); transition: all 0.2s;">
+        ✉️ {{ enviandoBoletines ? 'Enviando...' : 'Enviar Boletines Manualmente' }}
+      </button>
+    </div>
+  </div>
+
   <!-- Alertas Predictivas de Efectividad (IA) -->
   @if (alertasEfectividad.length > 0) {
     <div style="background: #fff5f5; border: 1.5px solid #fecaca; border-radius: 12px; padding: 20px; margin-top: 24px; box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.05); font-family: system-ui, -apple-system, sans-serif;">

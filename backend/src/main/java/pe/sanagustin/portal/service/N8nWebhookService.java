@@ -154,4 +154,17 @@ public class N8nWebhookService {
             log.error("Error al procesar alerta de asistencia para idAlumno " + idAlumno, e);
         }
     }
+
+    public void enviarBoletinExcel() {
+        String urlBase = webhookUrl.substring(0, webhookUrl.lastIndexOf("/") + 1);
+        String urlBoletin = urlBase + "boletin-excel";
+        try {
+            log.info("[n8n Webhook] Disparando boletín excel a {}", urlBoletin);
+            restTemplate.postForEntity(urlBoletin, new HashMap<>(), String.class);
+            log.info("[n8n Webhook] Boletín disparado exitosamente.");
+        } catch (Exception e) {
+            log.error("[n8n Webhook] Error al disparar boletín: {}", e.getMessage());
+            throw new RuntimeException("Error al disparar n8n: " + e.getMessage(), e);
+        }
+    }
 }

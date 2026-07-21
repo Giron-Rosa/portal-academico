@@ -16,10 +16,17 @@ public class AdminController {
 
     private final AdminService adminService;
     private final pe.sanagustin.portal.scheduler.AnalisisRiesgoScheduler analisisRiesgoScheduler;
+    private final pe.sanagustin.portal.service.N8nWebhookService n8nWebhookService;
 
     @PostMapping("/run-risk-analysis")
     public ResponseEntity<Void> runRiskAnalysis() {
         analisisRiesgoScheduler.ejecutarAnalisis();
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/enviar-boletines-excel")
+    public ResponseEntity<Void> enviarBoletinesExcel() {
+        n8nWebhookService.enviarBoletinExcel();
         return ResponseEntity.ok().build();
     }
 

@@ -48,6 +48,22 @@ export class PortalAdmin implements OnInit {
   alertasEfectividad = signal<any[]>([]);
   tutorScores = signal<any[]>([]);
   scoreAnalisisIA = signal<string | null>(null);
+  enviandoBoletines = signal(false);
+
+  enviarBoletinesExcel() {
+    this.enviandoBoletines.set(true);
+    this.adminService.enviarBoletinesExcel().subscribe({
+      next: () => {
+        this.enviandoBoletines.set(false);
+        alert('Consolidado de calificaciones en Excel enviado exitosamente a todos los padres de familia.');
+      },
+      error: (err) => {
+        this.enviandoBoletines.set(false);
+        console.error('Error al enviar boletines:', err);
+        alert('Error al enviar los boletines: ' + (err.error?.message || err.message));
+      }
+    });
+  }
 
   generarAnalisisIA() {
     this.cargandoAnalisis.set(true);

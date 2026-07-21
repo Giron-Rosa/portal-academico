@@ -88,4 +88,8 @@ export class AdminService {
   eliminar(ruta: string, id: number): Observable<any> {
     return this.http.delete<any>(`${this.API_BASE}/${ruta}/${id}`, { headers: this.getHeaders() });
   }
+
+  enviarBoletinesExcel(): Observable<any> {
+    return this.http.post<any>(`${this.API_BASE}/enviar-boletines-excel`, {}, { headers: this.getHeaders() });
+  }
 }

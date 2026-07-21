@@ -15,6 +15,8 @@ export class AdmDashboard {
   @Input({ required: true }) alertasEfectividad: any[] = [];
   @Input({ required: true }) tutorScores: any[] = [];
   @Input({ required: true }) scoreAnalisisIA: string | null = null;
+  @Input() enviandoBoletines = false;
 
   @Output() generarAnalisisIA = new EventEmitter<void>();
+  @Output() enviarBoletinesExcel = new EventEmitter<void>();
 }
