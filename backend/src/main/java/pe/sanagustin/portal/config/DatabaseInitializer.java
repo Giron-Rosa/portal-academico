@@ -96,40 +96,31 @@ public class DatabaseInitializer implements CommandLineRunner {
                                     JOIN alumnos a ON a.id_alumno = m.id_alumno
                                     WHERE m.id_aula = v_aula_curso.id_aula AND m.estado = 'activa'
                                 LOOP
-                                    INSERT INTO notas_tarea (id_alumno, id_tarea, nota, entregado, fecha_entrega, intentos, comentarios, fecha_calificacion)
+                                    INSERT INTO notas_tarea (id_alumno, id_tarea, nota, entregado, fecha_entrega)
                                     VALUES (
                                         v_alumno.id_alumno, 
                                         v_tarea1_id, 
                                         CASE WHEN v_alumno.id_alumno % 3 = 0 THEN 09.0 WHEN v_alumno.id_alumno % 3 = 1 THEN 15.0 ELSE 18.0 END,
                                         TRUE, 
-                                        CURRENT_DATE - 16, 
-                                        1, 
-                                        'Revisado por el docente.', 
-                                        CURRENT_DATE - 15
+                                        CURRENT_DATE - 16
                                     ) ON CONFLICT (id_tarea, id_alumno) DO NOTHING;
                     
-                                    INSERT INTO notas_tarea (id_alumno, id_tarea, nota, entregado, fecha_entrega, intentos, comentarios, fecha_calificacion)
+                                    INSERT INTO notas_tarea (id_alumno, id_tarea, nota, entregado, fecha_entrega)
                                     VALUES (
                                         v_alumno.id_alumno, 
                                         v_tarea2_id, 
                                         CASE WHEN v_alumno.id_alumno % 3 = 0 THEN 10.0 WHEN v_alumno.id_alumno % 3 = 1 THEN 08.5 ELSE 16.0 END,
                                         TRUE, 
-                                        CURRENT_DATE - 9, 
-                                        1, 
-                                        'Calificado.', 
-                                        CURRENT_DATE - 8
+                                        CURRENT_DATE - 9
                                     ) ON CONFLICT (id_tarea, id_alumno) DO NOTHING;
                     
-                                    INSERT INTO notas_tarea (id_alumno, id_tarea, nota, entregado, fecha_entrega, intentos, comentarios, fecha_calificacion)
+                                    INSERT INTO notas_tarea (id_alumno, id_tarea, nota, entregado, fecha_entrega)
                                     VALUES (
                                         v_alumno.id_alumno, 
                                         v_tarea3_id, 
                                         CASE WHEN v_alumno.id_alumno % 3 = 0 THEN 08.0 WHEN v_alumno.id_alumno % 3 = 1 THEN 14.5 ELSE 09.5 END,
                                         TRUE, 
-                                        CURRENT_DATE - 3, 
-                                        1, 
-                                        'Retroalimentación enviada.', 
-                                        CURRENT_DATE - 2
+                                        CURRENT_DATE - 3
                                     ) ON CONFLICT (id_tarea, id_alumno) DO NOTHING;
                     
                                 END LOOP;
