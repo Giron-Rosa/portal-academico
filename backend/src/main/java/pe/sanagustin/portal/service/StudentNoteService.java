@@ -141,14 +141,20 @@ public class StudentNoteService {
             java.io.File uploadDir = new java.io.File("uploads/materiales");
             if (!uploadDir.exists()) uploadDir.mkdirs();
             java.io.File dest = new java.io.File(uploadDir, safeFilename);
-            file.transferTo(dest);
+            java.nio.file.Files.write(dest.getAbsoluteFile().toPath(), file.getBytes());
 
-            String content = documentParserService.extractText(file);
+            String ext = "";
+            int dotIdx = filename.lastIndexOf('.');
+            if (dotIdx != -1) {
+                ext = filename.substring(dotIdx).toLowerCase();
+            }
+
+            String content = documentParserService.extractTextFromLocalFile(dest, ext);
             StudentNote note = new StudentNote();
             note.setAlumno(alumno);
             note.setTitulo(title);
             note.setContenido(content);
-            note.setUrlDocumento("/uploads/materiales/" + safeFilename);
+            note.setUrlDocumento("http://localhost:8080/uploads/materiales/" + safeFilename);
             StudentNote saved = studentNoteRepository.save(note);
             return toDto(saved);
         } catch (IllegalArgumentException e) {

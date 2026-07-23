@@ -352,9 +352,16 @@ export class PadMensajes {
       });
     };
 
-    rec.onerror = (err: any) => {
-      console.error('Error en dictado de voz:', err);
+    rec.onerror = (ev: any) => {
+      console.error('Error en dictado de voz:', ev);
       this.zone.run(() => {
+        if (ev.error === 'not-allowed') {
+          alert('Permiso de micrófono denegado para el dictado.\nHabilítalo en la configuración del navegador (ícono del candado en la barra de direcciones).');
+        } else if (ev.error === 'network') {
+          alert('Error de red en el dictado por voz:\n\nEl navegador no puede conectar con los servidores de reconocimiento de voz (Google/Microsoft).\n\n1. Si usas Brave: Habilita el reconocimiento de voz de Google en Brave (Configuración -> Privacidad y seguridad -> Usar los servicios de voz de Google).\n2. Si estás en una red escolar/corporativa: Es posible que los puertos del servicio de dictado de Google estén bloqueados por el firewall.');
+        } else {
+          alert(`Error en dictado de voz (${ev.error}). Revisa la configuración del micrófono.`);
+        }
         this._stopDictado(false);
       });
     };
